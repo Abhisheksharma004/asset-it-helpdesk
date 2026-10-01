@@ -1,5 +1,15 @@
 <?php
 // Asset Management & IT Service Desk Portal - Dashboard Page
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Redirect unauthenticated guests to login page
+if (empty($_SESSION['logged_in'])) {
+    header("Location: index.php");
+    exit;
+}
+
 $page_title = "Dashboard - Asset Management & IT Service Desk";
 $active_page = "dashboard";
 

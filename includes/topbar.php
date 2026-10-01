@@ -46,9 +46,19 @@
                 <span class="badge-dot"></span>
             </button>
 
-            <div class="user-pill" onclick="showToast('Logged in as Abhishek Sharma (IT Administrator)', 'info')">
-                <div class="avatar">AS</div>
-                <span class="user-info">Abhishek Sharma</span>
+            <?php
+            $topbar_name = $_SESSION['user_name'] ?? 'Abhishek Sharma';
+            $topbar_role = $_SESSION['user_role'] ?? 'IT Administrator';
+            $topbar_initials = '';
+            foreach (explode(' ', trim($topbar_name)) as $w) {
+                if (!empty($w)) $topbar_initials .= strtoupper($w[0]);
+                if (strlen($topbar_initials) >= 2) break;
+            }
+            if (empty($topbar_initials)) $topbar_initials = 'IT';
+            ?>
+            <div class="user-pill" onclick="showToast('Logged in as <?php echo htmlspecialchars($topbar_name); ?> (<?php echo htmlspecialchars($topbar_role); ?>)', 'info')">
+                <div class="avatar"><?php echo htmlspecialchars($topbar_initials); ?></div>
+                <span class="user-info"><?php echo htmlspecialchars($topbar_name); ?></span>
             </div>
 
         </div>

@@ -274,15 +274,25 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
     </ul>
 
     <!-- Sidebar Footer User Profile -->
+    <?php
+    $sidebar_name = $_SESSION['user_name'] ?? 'Abhishek Sharma';
+    $sidebar_role = $_SESSION['user_role'] ?? 'IT Administrator';
+    $sidebar_initials = '';
+    foreach (explode(' ', trim($sidebar_name)) as $w) {
+        if (!empty($w)) $sidebar_initials .= strtoupper($w[0]);
+        if (strlen($sidebar_initials) >= 2) break;
+    }
+    if (empty($sidebar_initials)) $sidebar_initials = 'IT';
+    ?>
     <div class="sidebar-footer">
         <div class="sidebar-user">
-            <div class="user-avatar">AS</div>
+            <div class="user-avatar"><?php echo htmlspecialchars($sidebar_initials); ?></div>
             <div class="user-details">
-                <div class="user-name">Abhishek Sharma</div>
-                <div class="user-role">IT Administrator</div>
+                <div class="user-name"><?php echo htmlspecialchars($sidebar_name); ?></div>
+                <div class="user-role"><?php echo htmlspecialchars($sidebar_role); ?></div>
             </div>
         </div>
-        <a href="index.php" class="logout-btn" title="Sign Out">
+        <a href="api/logout.php" class="logout-btn" title="Sign Out">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>

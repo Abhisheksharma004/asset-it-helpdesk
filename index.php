@@ -1,3 +1,12 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!empty($_SESSION['logged_in'])) {
+    header("Location: dashboard.php");
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,14 +24,11 @@
     <div class="login-card">
 
         <div class="logo">
-            <img src="assets/images/logo.png" alt="" style="width: 100%;">
+            <img src="assets/images/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
         </div>
 
         <h1 class="title">Welcome Back</h1>
         <p class="subtitle">Asset Management & IT Service Desk Portal</p>
-
-        <div class="error-message" id="errorMessage"></div>
-        <div class="success-message" id="successMessage"></div>
 
         <form id="loginForm">
 

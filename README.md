@@ -37,9 +37,16 @@ Designed & Maintained by **[Viros Entrepreneurs](https://virosentrepreneurs.com)
 ```text
 asset_it_helpdesk/
 │
+├── api/
+│   ├── login.php                 # Login authentication API (JSON/Form POST)
+│   └── logout.php                # Session destruction and logout handler
+│
 ├── assets/
 │   └── images/
 │       └── logo.png              # VIROS official brand logo
+│
+├── config/
+│   └── db.php                    # MSSQL Server native connection (sqlsrv)
 │
 ├── css/
 │   ├── dashboard.css             # Dashboard responsive styling
@@ -61,6 +68,86 @@ asset_it_helpdesk/
 ├── index.php                     # Portal login page
 └── README.md                     # Project documentation
 ```
+
+---
+
+## 🔐 Authentication & Login API
+
+The portal features an authentication system powered by Microsoft SQL Server (`asset_helpdesk`) and secure PHP sessions.
+
+### API Endpoint: `POST api/login.php`
+- **Request Format:** Accepts JSON (`application/json`) or URL-encoded form data.
+- **Payload:**
+  ```json
+  {
+    "email": "admin@company.com",
+    "password": "yourpassword",
+    "remember": true
+  }
+  ```
+- **Response Format:**
+  ```json
+  {
+    "success": true,
+    "message": "Login successful! Redirecting to dashboard...",
+    "redirect": "dashboard.php",
+    "user": {
+      "id": 1,
+      "name": "System Administrator",
+      "email": "admin@company.com",
+      "role": "SUPER_ADMIN",
+      "department": "IT Infrastructure"
+    }
+  }
+  ```
+
+### Active User Account:
+| Username | Email | Password | Role | Department |
+| :--- | :--- | :--- | :--- | :--- |
+| `admin` | `admin@company.com` | `admin123` | `Administrator` | IT Administration |
+
+
+---
+
+## 🗄️ Microsoft SQL Server Database Connection
+
+The application connects to **Microsoft SQL Server** using native PHP SQL Server functions (`sqlsrv`).
+
+- **Connection File:** `config/db.php`
+- **Default Database:** `asset_helpdesk`
+- **Driver:** Native Microsoft Drivers for PHP for SQL Server (`sqlsrv`)
+
+### Basic Usage:
+```php
+require_once __DIR__ . '/config/db.php';
+
+// Option 1: Direct query with pre-initialized $conn
+$sql = "SELECT id, email, role FROM users WHERE is_active = 1";
+$stmt = sqlsrv_query($conn, $sql);
+
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    echo $row['email'];
+}
+sqlsrv_free_stmt($stmt);
+
+// Option 2: Parameterized query (prevent SQL injection)
+$sql = "SELECT * FROM users WHERE email = ?";
+$params = [$userEmail];
+$stmt = sqlsrv_query($conn, $sql, $params);
+$user = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+
+// Option 3: Using helper functions
+$db = getDB(); // Returns native $conn resource
+$lastId = getLastInsertId(); // Returns last IDENTITY value
+$formattedDate = formatDateForSQLServer(new DateTime());
+```
+
+### Testing Connection:
+Run from command line:
+```bash
+php config/db.php
+```
+
 
 ---
 

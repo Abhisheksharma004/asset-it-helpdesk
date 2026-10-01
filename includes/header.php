@@ -1,4 +1,9 @@
 <?php
+// Start session if not already active
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 /**
  * Global Header Component
  * Can be included in any page across the portal.

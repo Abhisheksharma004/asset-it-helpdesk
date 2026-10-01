@@ -6,8 +6,7 @@ const password = document.getElementById("password");
 
 const togglePassword = document.getElementById("togglePassword");
 
-const errorMessage = document.getElementById("errorMessage");
-const successMessage = document.getElementById("successMessage");
+
 
 // Show / Hide Password
 togglePassword.addEventListener("click", function () {
@@ -28,8 +27,7 @@ loginForm.addEventListener("submit", function (event) {
 
     event.preventDefault();
 
-    if (errorMessage) errorMessage.style.display = "none";
-    if (successMessage) successMessage.style.display = "none";
+
 
     const emailValue = email.value.trim();
     const passwordValue = password.value.trim();
@@ -40,27 +38,75 @@ loginForm.addEventListener("submit", function (event) {
         return;
     }
 
-    // Email validation
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(emailValue)) {
-        showToast("Please enter a valid email address.", "error");
+    // If identifier contains @, validate email format
+    if (emailValue.includes("@")) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(emailValue)) {
+            showToast("Please enter a valid email address.", "error");
+            return;
+        }
+    }
+
+    // Password minimum length check
+    if (passwordValue.length < 4) {
+        showToast("Password must contain at least 4 characters.", "error");
         return;
     }
 
-    // Password validation
-    if (passwordValue.length < 6) {
-        showToast("Password must contain at least 6 characters.", "error");
-        return;
+    const submitBtn = loginForm.querySelector("button[type='submit']");
+    const originalBtnText = submitBtn ? submitBtn.textContent : "Sign In";
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Signing in...";
     }
 
-    // Demo login & redirect
-    showToast("Login successful! Redirecting to dashboard...", "success");
+    const remember = document.getElementById("remember");
 
-    console.log("Email:", emailValue);
-    console.log("Password:", passwordValue);
+    // Call Login API
+    fetch("api/login.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            email: emailValue,
+            password: passwordValue,
+            remember: remember ? remember.checked : false
+        })
+    })
+    .then(async (response) => {
+        const data = await response.json();
+        return { status: response.status, data: data };
+    })
+    .then((result) => {
+        if (result.data && result.data.success) {
+            showToast(result.data.message || "Login successful! Redirecting...", "success");
+            setTimeout(function () {
+                window.location.href = result.data.redirect || "dashboard.php";
+            }, 800);
+        } else {
+            const errorMsg = (result.data && result.data.message) 
+                ? result.data.message 
+                : "Invalid credentials. Please try again.";
 
-    setTimeout(function () {
-        window.location.href = "dashboard.php";
-    }, 800);
+            showToast(errorMsg, "error");
+
+
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+            }
+        }
+    })
+    .catch((error) => {
+        console.error("Login API Error:", error);
+        showToast("Unable to connect to login server. Please try again.", "error");
+
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+        }
+    });
 
 });
