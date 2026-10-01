@@ -53,10 +53,14 @@ loginForm.addEventListener("submit", function (event) {
         return;
     }
 
-    // Demo login
-    showToast("Login successful!", "success");
+    // Demo login & redirect
+    showToast("Login successful! Redirecting to dashboard...", "success");
 
     console.log("Email:", emailValue);
     console.log("Password:", passwordValue);
+
+    setTimeout(function () {
+        window.location.href = "dashboard.php";
+    }, 800);
 
 });

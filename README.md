@@ -42,13 +42,22 @@ asset_it_helpdesk/
 │       └── logo.png              # VIROS official brand logo
 │
 ├── css/
-│   ├── style.css                 # Main portal stylesheet
+│   ├── dashboard.css             # Dashboard responsive styling
+│   ├── style.css                 # Login page stylesheet
 │   └── toast.css                 # Standalone reusable toast notification styles
 │
-├── js/
-│   ├── toast.js                  # Standalone reusable toast notification engine
-│   └── script.js                 # Login page validation & UI interactions
+├── includes/
+│   ├── header.php                # Reusable HTML head & container open
+│   ├── sidebar.php               # Reusable sidebar navigation
+│   ├── topbar.php                # Reusable sticky header & search
+│   └── footer.php                # Reusable footer, modal & script tags
 │
+├── js/
+│   ├── dashboard.js              # Sidebar toggle, table search & ticket modal
+│   ├── script.js                 # Login page validation & UI interactions
+│   └── toast.js                  # Standalone reusable toast notification engine
+│
+├── dashboard.php                 # Main dashboard page
 ├── index.php                     # Portal login page
 └── README.md                     # Project documentation
 ```
