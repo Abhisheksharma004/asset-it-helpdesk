@@ -66,7 +66,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
             </a>
             <ul class="submenu">
                 <li>
-                    <a href="#master-category" class="submenu-link <?php echo ($active_page === 'master_category') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Category Master')">
+                    <a href="categories.php" class="submenu-link <?php echo ($active_page === 'master_category') ? 'active' : ''; ?>">
                         <span>Asset Category</span>
                     </a>
                 </li>
