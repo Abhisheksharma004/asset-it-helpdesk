@@ -12,7 +12,7 @@ if (!isset($active_page)) {
 
 // Check which dropdown groups should be open by default
 $is_master_open = in_array($active_page, ['master', 'master_category', 'master_department', 'master_location', 'master_vendor', 'master_employee', 'master_status']);
-$is_assets_open = in_array($active_page, ['hardware', 'assets_all', 'assets_laptops', 'assets_servers', 'assets_peripherals', 'assets_allocations']);
+$is_assets_open = in_array($active_page, ['assets', 'asset_management', 'asset_assignment', 'asset_transfer', 'asset_return', 'asset_repair', 'software', 'software_licenses', 'asset_barcode', 'hardware', 'assets_all']);
 $is_tickets_open = in_array($active_page, ['tickets', 'tickets_all', 'tickets_open', 'tickets_progress', 'tickets_resolved']);
 $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_sla', 'reports_warranty']);
 ?>
@@ -108,7 +108,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                         <line x1="12" y1="17" x2="12" y2="21"></line>
                     </svg>
                 </span>
-                <span class="nav-text">Hardware Assets</span>
+                <span class="nav-text">Assets</span>
                 <span class="dropdown-arrow">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -117,45 +117,42 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
             </a>
             <ul class="submenu">
                 <li>
-                    <a href="#assets-all" class="submenu-link <?php echo in_array($active_page, ['hardware', 'assets_all']) ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'All Hardware Assets')">
-                        <span>All Hardware</span>
+                    <a href="#asset-management" class="submenu-link <?php echo in_array($active_page, ['assets', 'asset_management', 'assets_all']) ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Management')">
+                        <span>Asset Management</span>
                         <span class="submenu-badge">842</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#assets-laptops" class="submenu-link <?php echo ($active_page === 'assets_laptops') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Laptops & Desktops')">
-                        <span>Laptops & Desktops</span>
+                    <a href="#asset-assignment" class="submenu-link <?php echo ($active_page === 'asset_assignment') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Assignment')">
+                        <span>Asset Assignment</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#assets-servers" class="submenu-link <?php echo ($active_page === 'assets_servers') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Servers & Switches')">
-                        <span>Servers & Network</span>
+                    <a href="#asset-transfer" class="submenu-link <?php echo ($active_page === 'asset_transfer') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Transfer')">
+                        <span>Asset Transfer</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#assets-peripherals" class="submenu-link <?php echo ($active_page === 'assets_peripherals') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Peripherals & Printers')">
-                        <span>Printers & Displays</span>
+                    <a href="#asset-return" class="submenu-link <?php echo ($active_page === 'asset_return') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Return')">
+                        <span>Asset Return</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#assets-allocations" class="submenu-link <?php echo ($active_page === 'assets_allocations') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Allocation Log')">
-                        <span>Asset Allocations</span>
+                    <a href="#asset-repair" class="submenu-link <?php echo ($active_page === 'asset_repair') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Repair')">
+                        <span>Asset Repair</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#software-licenses" class="submenu-link <?php echo in_array($active_page, ['software', 'software_licenses']) ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Software & Licenses')">
+                        <span>Software Licenses</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#asset-barcode" class="submenu-link <?php echo ($active_page === 'asset_barcode') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Label & Barcode Management')">
+                        <span>Asset Label & Barcode</span>
                     </a>
                 </li>
             </ul>
-        </li>
-
-        <!-- Software & Licenses (Single Item) -->
-        <li class="nav-item">
-            <a href="#software" class="nav-link <?php echo ($active_page === 'software') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Software & Licenses')">
-                <span class="nav-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="16 18 22 12 16 6"></polyline>
-                        <polyline points="8 6 2 12 8 18"></polyline>
-                    </svg>
-                </span>
-                <span class="nav-text">Software & Licenses</span>
-            </a>
         </li>
 
         <!-- Inventory Stock (Single Item) -->
