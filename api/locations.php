@@ -1,15 +1,16 @@
 <?php
 /**
- * Asset Categories API
+ * Locations / Branch Master API
  * Asset Management & IT Service Desk Portal
  * 
  * Supports:
- * - GET: Fetch all categories (optional search, status filter)
+ * - GET: Fetch all locations (optional search, status filter)
  * - POST:
- *     - action = 'create': Add category (name, description, status)
- *     - action = 'edit': Update category (id, name, description, status)
- *     - action = 'delete': Delete category
+ *     - action = 'create': Add location (name, description, status)
+ *     - action = 'edit': Update location (id, name, description, status)
+ *     - action = 'delete': Delete location
  *     - action = 'toggle_status': Toggle Active / Inactive
+ *     - action = 'import': Batch CSV/JSON import with duplicate handling
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -28,46 +29,46 @@ if (empty($_SESSION['logged_in'])) {
 require_once __DIR__ . '/../config/db.php';
 
 // Auto-create table if not exists
-$tableSetupSql = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='asset_categories' AND xtype='U')
+$tableSetupSql = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='locations' AND xtype='U')
 BEGIN
-    CREATE TABLE asset_categories (
+    CREATE TABLE locations (
         id INT IDENTITY(1,1) PRIMARY KEY,
-        category_name NVARCHAR(100) NOT NULL,
+        location_name NVARCHAR(100) NOT NULL,
         description NVARCHAR(255) NULL,
         status NVARCHAR(20) NOT NULL DEFAULT 'Active',
         created_at DATETIME NOT NULL DEFAULT GETDATE(),
         updated_at DATETIME NOT NULL DEFAULT GETDATE()
     );
 
-    INSERT INTO asset_categories (category_name, description, status) VALUES
-    ('Laptops & Notebooks', 'Employee standard and performance laptops', 'Active'),
-    ('Desktop Workstations', 'Fixed desktop machines and workstations', 'Active'),
-    ('Servers & Storage', 'Rack and blade servers, NAS, SAN storage', 'Active'),
-    ('Network Equipment', 'Routers, manageable switches, access points, firewalls', 'Active'),
-    ('Printers & Scanners', 'Network printers, laser printers, multifunction scanners', 'Active'),
-    ('Monitors & Displays', 'External LED/LCD monitors, projectors, video walls', 'Active'),
-    ('Software Licenses', 'Enterprise OS, CAD, IDE, Office 365 licenses', 'Active'),
-    ('Peripherals & Accessories', 'Keyboards, mice, docks, headsets, webcams', 'Active'),
-    ('Mobile Devices', 'Corporate smartphones and tablets', 'Active');
+    INSERT INTO locations (location_name, description, status) VALUES
+    ('Corporate HQ - Mumbai', 'BKC Corporate Park, Tower 2, 8th & 9th Floor', 'Active'),
+    ('Tech Hub - Bangalore', 'Electronic City Phase 1, Silicon Valley Campus', 'Active'),
+    ('Branch Office - Delhi NCR', 'Cyber City DLF Phase 2, Building 10, Gurgaon', 'Active'),
+    ('Delivery Center - Hyderabad', 'HITEC City, Mindspace IT Park, 4th Floor', 'Active'),
+    ('Development Center - Pune', 'Hinjewadi Phase 2, Rajiv Gandhi Infotech Park', 'Active'),
+    ('Operations Center - Chennai', 'OMR IT Corridor, Tidel Park, 3rd Floor', 'Active'),
+    ('Regional Hub - Kolkata', 'Sector V, Salt Lake Electronics Complex', 'Active'),
+    ('Support Center - Ahmedabad', 'SG Highway, Titanium City Center', 'Active'),
+    ('Disaster Recovery Site - Jaipur', 'Sitapura Industrial Area, Tier III Data Facility', 'Active');
 END";
 sqlsrv_query($conn, $tableSetupSql);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Handle GET: Fetch categories
+// Handle GET: Fetch locations
 if ($method === 'GET') {
     $search = trim($_GET['search'] ?? '');
     $status = trim($_GET['status'] ?? '');
 
-    $sql = "SELECT id, category_name, description, status, 
+    $sql = "SELECT id, location_name, description, status, 
                    CONVERT(VARCHAR(10), created_at, 105) AS created_at,
                    CONVERT(VARCHAR(10), updated_at, 105) AS updated_at
-            FROM asset_categories 
+            FROM locations 
             WHERE 1=1";
     $params = [];
 
     if ($search !== '') {
-        $sql .= " AND (category_name LIKE ? OR description LIKE ?)";
+        $sql .= " AND (location_name LIKE ? OR description LIKE ?)";
         $searchWild = '%' . $search . '%';
         $params[] = $searchWild;
         $params[] = $searchWild;
@@ -87,9 +88,9 @@ if ($method === 'GET') {
         exit;
     }
 
-    $categories = [];
+    $locations = [];
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        $categories[] = $row;
+        $locations[] = $row;
     }
     sqlsrv_free_stmt($stmt);
 
@@ -104,7 +105,7 @@ if ($method === 'GET') {
         COUNT(*) AS total,
         SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active,
         SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) AS inactive
-        FROM asset_categories";
+        FROM locations";
     $statsStmt = sqlsrv_query($conn, $statsSql);
     if ($statsStmt !== false) {
         $sRow = sqlsrv_fetch_array($statsStmt, SQLSRV_FETCH_ASSOC);
@@ -120,13 +121,13 @@ if ($method === 'GET') {
 
     echo json_encode([
         'success' => true,
-        'data' => $categories,
+        'data' => $locations,
         'stats' => $stats
     ]);
     exit;
 }
 
-// Handle POST: Actions (create, edit, delete, toggle_status)
+// Handle POST: Actions (create, edit, delete, toggle_status, import)
 if ($method === 'POST') {
     $rawInput = file_get_contents('php://input');
     $data = json_decode($rawInput, true);
@@ -136,26 +137,35 @@ if ($method === 'POST') {
 
     $action = $data['action'] ?? 'create';
 
-    // 1. CREATE CATEGORY
+    // 1. CREATE LOCATION
     if ($action === 'create') {
-        $name        = trim($data['category_name'] ?? '');
+        $name        = trim($data['location_name'] ?? '');
         $description = trim($data['description'] ?? '');
         $status      = trim($data['status'] ?? 'Active');
 
         if (empty($name)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Category Name is required.']);
+            echo json_encode(['success' => false, 'message' => 'Location / Branch Name is required.']);
             exit;
         }
 
-        $insertSql = "INSERT INTO asset_categories (category_name, description, status, created_at, updated_at) 
+        // Duplicate name check
+        $checkSql = "SELECT id FROM locations WHERE LOWER(location_name) = LOWER(?)";
+        $checkStmt = sqlsrv_query($conn, $checkSql, [$name]);
+        if ($checkStmt && sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => "Location '{$name}' already exists."]);
+            exit;
+        }
+
+        $insertSql = "INSERT INTO locations (location_name, description, status, created_at, updated_at) 
                       VALUES (?, ?, ?, GETDATE(), GETDATE())";
         $insertParams = [$name, $description, $status];
         $insertStmt = sqlsrv_query($conn, $insertSql, $insertParams);
 
         if ($insertStmt === false) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to add category.', 'errors' => sqlsrv_errors()]);
+            echo json_encode(['success' => false, 'message' => 'Failed to add location.', 'errors' => sqlsrv_errors()]);
             exit;
         }
 
@@ -163,40 +173,49 @@ if ($method === 'POST') {
 
         echo json_encode([
             'success' => true,
-            'message' => 'Asset category added successfully.',
-            'category_id' => $newId
+            'message' => 'Branch / Location added successfully.',
+            'location_id' => $newId
         ]);
         exit;
     }
 
-    // 2. EDIT / UPDATE CATEGORY
+    // 2. EDIT / UPDATE LOCATION
     if ($action === 'edit' || $action === 'update') {
         $id          = (int)($data['id'] ?? 0);
-        $name        = trim($data['category_name'] ?? '');
+        $name        = trim($data['location_name'] ?? '');
         $description = trim($data['description'] ?? '');
         $status      = trim($data['status'] ?? 'Active');
 
         if ($id <= 0 || empty($name)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Valid Category ID and Name are required.']);
+            echo json_encode(['success' => false, 'message' => 'Valid Location ID and Name are required.']);
             exit;
         }
 
-        $updateSql = "UPDATE asset_categories 
-                      SET category_name = ?, description = ?, status = ?, updated_at = GETDATE() 
+        // Duplicate name check on other records
+        $checkSql = "SELECT id FROM locations WHERE LOWER(location_name) = LOWER(?) AND id != ?";
+        $checkStmt = sqlsrv_query($conn, $checkSql, [$name, $id]);
+        if ($checkStmt && sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => "Location '{$name}' already exists."]);
+            exit;
+        }
+
+        $updateSql = "UPDATE locations 
+                      SET location_name = ?, description = ?, status = ?, updated_at = GETDATE() 
                       WHERE id = ?";
         $updateParams = [$name, $description, $status, $id];
         $updateStmt = sqlsrv_query($conn, $updateSql, $updateParams);
 
         if ($updateStmt === false) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to update category.', 'errors' => sqlsrv_errors()]);
+            echo json_encode(['success' => false, 'message' => 'Failed to update location.', 'errors' => sqlsrv_errors()]);
             exit;
         }
 
         echo json_encode([
             'success' => true,
-            'message' => 'Category updated successfully.'
+            'message' => 'Branch / Location updated successfully.'
         ]);
         exit;
     }
@@ -206,11 +225,11 @@ if ($method === 'POST') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid Category ID.']);
+            echo json_encode(['success' => false, 'message' => 'Invalid Location ID.']);
             exit;
         }
 
-        $toggleSql = "UPDATE asset_categories 
+        $toggleSql = "UPDATE locations 
                       SET status = CASE WHEN status = 'Active' THEN 'Inactive' ELSE 'Active' END,
                           updated_at = GETDATE()
                       WHERE id = ?";
@@ -224,43 +243,43 @@ if ($method === 'POST') {
 
         echo json_encode([
             'success' => true,
-            'message' => 'Category status updated successfully.'
+            'message' => 'Location status updated successfully.'
         ]);
         exit;
     }
 
-    // 4. DELETE CATEGORY
+    // 4. DELETE LOCATION
     if ($action === 'delete') {
         $id = (int)($data['id'] ?? 0);
         if ($id <= 0) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid Category ID.']);
+            echo json_encode(['success' => false, 'message' => 'Invalid Location ID.']);
             exit;
         }
 
-        $deleteSql = "DELETE FROM asset_categories WHERE id = ?";
+        $deleteSql = "DELETE FROM locations WHERE id = ?";
         $deleteStmt = sqlsrv_query($conn, $deleteSql, [$id]);
 
         if ($deleteStmt === false) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to delete category.', 'errors' => sqlsrv_errors()]);
+            echo json_encode(['success' => false, 'message' => 'Failed to delete location.', 'errors' => sqlsrv_errors()]);
             exit;
         }
 
         echo json_encode([
             'success' => true,
-            'message' => 'Category deleted successfully.'
+            'message' => 'Branch / Location deleted successfully.'
         ]);
         exit;
     }
 
-    // 5. IMPORT CATEGORIES (CSV or JSON Batch)
+    // 5. IMPORT LOCATIONS (CSV / JSON Batch)
     if ($action === 'import') {
         $rows = [];
 
-        // Check if categories sent as JSON array
-        if (!empty($data['categories']) && is_array($data['categories'])) {
-            $rows = $data['categories'];
+        // Check if rows sent as JSON array
+        if (!empty($data['locations']) && is_array($data['locations'])) {
+            $rows = $data['locations'];
         } 
         // Or if uploaded via multipart file
         elseif (isset($_FILES['csv_file']) && is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
@@ -271,8 +290,8 @@ if ($method === 'POST') {
                 if ($header) {
                     foreach ($header as $idx => $colName) {
                         $c = strtolower(trim(str_replace([' ', '_', '-', '"'], '', $colName)));
-                        if (strpos($c, 'name') !== false || strpos($c, 'category') !== false) $headerMap['name'] = $idx;
-                        elseif (strpos($c, 'desc') !== false) $headerMap['desc'] = $idx;
+                        if (strpos($c, 'name') !== false || strpos($c, 'location') !== false || strpos($c, 'branch') !== false) $headerMap['name'] = $idx;
+                        elseif (strpos($c, 'desc') !== false || strpos($c, 'address') !== false || strpos($c, 'detail') !== false) $headerMap['desc'] = $idx;
                         elseif (strpos($c, 'stat') !== false) $headerMap['status'] = $idx;
                     }
                 }
@@ -283,7 +302,7 @@ if ($method === 'POST') {
                     $rowDesc = isset($headerMap['desc']) ? ($line[$headerMap['desc']] ?? '') : ($line[1] ?? '');
                     $rowStat = isset($headerMap['status']) ? ($line[$headerMap['status']] ?? '') : ($line[2] ?? '');
                     $rows[] = [
-                        'category_name' => trim($rowName),
+                        'location_name' => trim($rowName),
                         'description'   => trim($rowDesc),
                         'status'        => trim($rowStat)
                     ];
@@ -294,7 +313,7 @@ if ($method === 'POST') {
 
         if (empty($rows)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'No valid categories found to import.']);
+            echo json_encode(['success' => false, 'message' => 'No valid locations found to import.']);
             exit;
         }
 
@@ -303,7 +322,7 @@ if ($method === 'POST') {
         $duplicateHandling = $data['duplicate_handling'] ?? 'skip'; // 'skip' or 'update'
 
         foreach ($rows as $row) {
-            $name = trim($row['category_name'] ?? '');
+            $name = trim($row['location_name'] ?? '');
             if (empty($name)) {
                 $skipped++;
                 continue;
@@ -313,22 +332,22 @@ if ($method === 'POST') {
             $rawStatus = ucfirst(strtolower(trim($row['status'] ?? '')));
             $status = in_array($rawStatus, ['Active', 'Inactive']) ? $rawStatus : 'Active';
 
-            // Check if category name exists
-            $checkSql = "SELECT id FROM asset_categories WHERE LOWER(category_name) = LOWER(?)";
+            // Check if location name exists
+            $checkSql = "SELECT id FROM locations WHERE LOWER(location_name) = LOWER(?)";
             $checkStmt = sqlsrv_query($conn, $checkSql, [$name]);
             $existing = ($checkStmt && ($erow = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC))) ? $erow : null;
             if ($checkStmt) sqlsrv_free_stmt($checkStmt);
 
             if ($existing) {
                 if ($duplicateHandling === 'update') {
-                    $updateSql = "UPDATE asset_categories SET description = ?, status = ?, updated_at = GETDATE() WHERE id = ?";
+                    $updateSql = "UPDATE locations SET description = ?, status = ?, updated_at = GETDATE() WHERE id = ?";
                     sqlsrv_query($conn, $updateSql, [$desc, $status, $existing['id']]);
                     $imported++;
                 } else {
                     $skipped++;
                 }
             } else {
-                $insertSql = "INSERT INTO asset_categories (category_name, description, status, created_at, updated_at) VALUES (?, ?, ?, GETDATE(), GETDATE())";
+                $insertSql = "INSERT INTO locations (location_name, description, status, created_at, updated_at) VALUES (?, ?, ?, GETDATE(), GETDATE())";
                 $res = sqlsrv_query($conn, $insertSql, [$name, $desc, $status]);
                 if ($res !== false) {
                     $imported++;
@@ -340,7 +359,7 @@ if ($method === 'POST') {
 
         echo json_encode([
             'success' => true,
-            'message' => "Import complete: {$imported} categories processed successfully." . ($skipped > 0 ? " ({$skipped} duplicate/empty skipped)" : ""),
+            'message' => "Import complete: {$imported} locations processed successfully." . ($skipped > 0 ? " ({$skipped} duplicate/empty skipped)" : ""),
             'imported' => $imported,
             'skipped' => $skipped
         ]);

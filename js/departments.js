@@ -1,14 +1,14 @@
 /**
- * Asset Categories Management Script
- * Handles real-time search, filters, CRUD actions via API, and modal interactions
+ * Department Management Script
+ * Handles real-time search, filters, CRUD actions via API, and CSV Import/Export
  */
 
 document.addEventListener("DOMContentLoaded", function () {
-    let categoriesList = [];
+    let departmentsList = [];
 
     // DOM Elements
-    const categoriesTbody = document.getElementById("categoriesTbody");
-    const searchInput = document.getElementById("searchCategory");
+    const departmentsTbody = document.getElementById("departmentsTbody");
+    const searchInput = document.getElementById("searchDepartment");
     const filterStatus = document.getElementById("filterStatus");
     const resetFiltersBtn = document.getElementById("resetFiltersBtn");
     const refreshBtn = document.getElementById("refreshBtn");
@@ -19,39 +19,39 @@ document.addEventListener("DOMContentLoaded", function () {
     const statInactive = document.getElementById("statInactive");
 
     // Add Modal Elements
-    const addModal = document.getElementById("addCategoryModal");
+    const addModal = document.getElementById("addDepartmentModal");
     const openAddModalBtn = document.getElementById("openAddModalBtn");
     const closeAddModalBtn = document.getElementById("closeAddModalBtn");
     const cancelAddModalBtn = document.getElementById("cancelAddModalBtn");
-    const addCategoryForm = document.getElementById("addCategoryForm");
+    const addDepartmentForm = document.getElementById("addDepartmentForm");
     const addNameInput = document.getElementById("addName");
     const addStatusSelect = document.getElementById("addStatus");
     const addDescInput = document.getElementById("addDesc");
 
     // Edit Modal Elements
-    const editModal = document.getElementById("editCategoryModal");
+    const editModal = document.getElementById("editDepartmentModal");
     const closeEditModalBtn = document.getElementById("closeEditModalBtn");
     const cancelEditModalBtn = document.getElementById("cancelEditModalBtn");
-    const editCategoryForm = document.getElementById("editCategoryForm");
+    const editDepartmentForm = document.getElementById("editDepartmentForm");
     const editIdInput = document.getElementById("editId");
     const editNameInput = document.getElementById("editName");
     const editStatusSelect = document.getElementById("editStatus");
     const editDescInput = document.getElementById("editDesc");
 
     // Delete Modal Elements
-    const deleteModal = document.getElementById("deleteCategoryModal");
+    const deleteModal = document.getElementById("deleteDepartmentModal");
     const closeDeleteModalBtn = document.getElementById("closeDeleteModalBtn");
     const cancelDeleteModalBtn = document.getElementById("cancelDeleteModalBtn");
     const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-    const deleteCategoryNameSpan = document.getElementById("deleteCategoryName");
-    let categoryToDeleteId = null;
+    const deleteDepartmentNameSpan = document.getElementById("deleteDepartmentName");
+    let departmentToDeleteId = null;
 
     // Import Modal Elements
-    const importModal = document.getElementById("importCategoryModal");
+    const importModal = document.getElementById("importDepartmentModal");
     const openImportModalBtn = document.getElementById("openImportModalBtn");
     const closeImportModalBtn = document.getElementById("closeImportModalBtn");
     const cancelImportModalBtn = document.getElementById("cancelImportModalBtn");
-    const importCategoryForm = document.getElementById("importCategoryForm");
+    const importDepartmentForm = document.getElementById("importDepartmentForm");
     const csvDropzone = document.getElementById("csvDropzone");
     const csvFileInput = document.getElementById("csvFileInput");
     const filePreviewCard = document.getElementById("filePreviewCard");
@@ -63,8 +63,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const startImportBtn = document.getElementById("startImportBtn");
     let parsedImportRows = [];
 
-    // Load Categories on init
-    loadCategories();
+    // Load Departments on init
+    loadDepartments();
 
     // Search and Filter Events
     if (searchInput) {
@@ -83,9 +83,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (refreshBtn) {
         refreshBtn.addEventListener("click", function () {
             this.classList.add("spinning");
-            loadCategories(() => {
+            loadDepartments(() => {
                 this.classList.remove("spinning");
-                if (typeof showToast === "function") showToast("Categories refreshed", "info");
+                if (typeof showToast === "function") showToast("Departments refreshed", "info");
             });
         });
     }
@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Add Modal Listeners
     if (openAddModalBtn) {
         openAddModalBtn.addEventListener("click", function () {
-            addCategoryForm.reset();
+            addDepartmentForm.reset();
             openModal(addModal);
             setTimeout(() => addNameInput && addNameInput.focus(), 100);
         });
@@ -145,22 +145,22 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // 1. Fetch Categories
-    function loadCategories(callback) {
-        fetch("api/categories.php")
+    // 1. Fetch Departments
+    function loadDepartments(callback) {
+        fetch("api/departments.php")
             .then(res => res.json())
             .then(res => {
                 if (res.success) {
-                    categoriesList = res.data || [];
+                    departmentsList = res.data || [];
                     updateStats(res.stats);
                     filterAndRender();
                 } else {
-                    if (typeof showToast === "function") showToast(res.message || "Failed to load categories.", "error");
+                    if (typeof showToast === "function") showToast(res.message || "Failed to load departments.", "error");
                 }
                 if (callback) callback();
             })
             .catch(err => {
-                console.error("Categories fetch error:", err);
+                console.error("Departments fetch error:", err);
                 if (typeof showToast === "function") showToast("Unable to connect to database.", "error");
                 if (callback) callback();
             });
@@ -170,12 +170,12 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateStats(stats) {
         if (!stats) {
             stats = {
-                total: categoriesList.length,
-                active: categoriesList.filter(c => c.status === 'Active').length,
-                inactive: categoriesList.filter(c => c.status === 'Inactive').length
+                total: departmentsList.length,
+                active: departmentsList.filter(c => c.status === 'Active').length,
+                inactive: departmentsList.filter(c => c.status === 'Inactive').length
             };
         }
-        if (statTotal) statTotal.textContent = stats.total ?? categoriesList.length;
+        if (statTotal) statTotal.textContent = stats.total ?? departmentsList.length;
         if (statActive) statActive.textContent = stats.active ?? 0;
         if (statInactive) statInactive.textContent = stats.inactive ?? 0;
     }
@@ -185,9 +185,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const query = (searchInput ? searchInput.value : "").toLowerCase().trim();
         const statusVal = filterStatus ? filterStatus.value : "All";
 
-        const filtered = categoriesList.filter(item => {
+        const filtered = departmentsList.filter(item => {
             const matchesQuery = !query || 
-                (item.category_name && item.category_name.toLowerCase().includes(query)) ||
+                (item.department_name && item.department_name.toLowerCase().includes(query)) ||
                 (item.description && item.description.toLowerCase().includes(query));
 
             const matchesStatus = (statusVal === "All") || (item.status === statusVal);
@@ -200,10 +200,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Render HTML Table
     function renderTable(data) {
-        if (!categoriesTbody) return;
+        if (!departmentsTbody) return;
 
         if (data.length === 0) {
-            categoriesTbody.innerHTML = `
+            departmentsTbody.innerHTML = `
                 <tr>
                     <td colspan="5">
                         <div class="table-empty-state">
@@ -212,9 +212,9 @@ document.addEventListener("DOMContentLoaded", function () {
                                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                                 </svg>
                             </div>
-                            <div class="empty-title">No categories found</div>
-                            <div class="empty-desc">Try modifying your search or filter criteria, or add a new category.</div>
-                            <button class="btn-primary" onclick="document.getElementById('openAddModalBtn').click()">+ Add New Category</button>
+                            <div class="empty-title">No departments found</div>
+                            <div class="empty-desc">Try modifying your search or filter criteria, or add a new department.</div>
+                            <button class="btn-primary" onclick="document.getElementById('openAddModalBtn').click()">+ Add New Department</button>
                         </div>
                     </td>
                 </tr>
@@ -230,7 +230,7 @@ document.addEventListener("DOMContentLoaded", function () {
             html += `
                 <tr data-id="${item.id}">
                     <td>
-                        <span class="category-main-text">${escapeHtml(item.category_name)}</span>
+                        <span class="category-main-text">${escapeHtml(item.department_name)}</span>
                     </td>
                     <td style="color: var(--text-secondary); font-size: 13px;">
                         ${item.description ? escapeHtml(item.description) : '<span style="color:#94a3b8; font-style:italic;">No description provided</span>'}
@@ -246,19 +246,19 @@ document.addEventListener("DOMContentLoaded", function () {
                     </td>
                     <td>
                         <div class="table-actions">
-                            <button class="action-btn edit-cat-btn" title="Edit Category" data-id="${item.id}">
+                            <button class="action-btn edit-dept-btn" title="Edit Department" data-id="${item.id}">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                 </svg>
                             </button>
-                            <button class="action-btn toggle-btn toggle-cat-btn" title="${item.status === 'Active' ? 'Deactivate' : 'Activate'}" data-id="${item.id}">
+                            <button class="action-btn toggle-btn toggle-dept-btn" title="${item.status === 'Active' ? 'Deactivate' : 'Activate'}" data-id="${item.id}">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
                                     <line x1="12" y1="2" x2="12" y2="12"></line>
                                 </svg>
                             </button>
-                            <button class="action-btn delete-btn delete-cat-btn" title="Delete Category" data-id="${item.id}" data-name="${escapeHtml(item.category_name)}">
+                            <button class="action-btn delete-btn delete-dept-btn" title="Delete Department" data-id="${item.id}" data-name="${escapeHtml(item.department_name)}">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="3 6 5 6 21 6"></polyline>
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -270,7 +270,7 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
         });
 
-        categoriesTbody.innerHTML = html;
+        departmentsTbody.innerHTML = html;
 
         // Attach action handlers
         attachActionListeners();
@@ -278,16 +278,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function attachActionListeners() {
         // Edit button click
-        document.querySelectorAll(".edit-cat-btn").forEach(btn => {
+        document.querySelectorAll(".edit-dept-btn").forEach(btn => {
             btn.addEventListener("click", function () {
                 const id = parseInt(this.dataset.id);
-                const item = categoriesList.find(c => parseInt(c.id) === id);
+                const item = departmentsList.find(c => parseInt(c.id) === id);
                 if (!item) return;
 
                 editIdInput.value = item.id;
-                editNameInput.value = item.category_name;
-                editStatusSelect.value = item.status || "Active";
+                editNameInput.value = item.department_name;
                 editDescInput.value = item.description || "";
+                editStatusSelect.value = item.status || "Active";
 
                 openModal(editModal);
                 setTimeout(() => editNameInput.focus(), 100);
@@ -295,27 +295,27 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         // Toggle Status click
-        document.querySelectorAll(".toggle-cat-btn").forEach(btn => {
+        document.querySelectorAll(".toggle-dept-btn").forEach(btn => {
             btn.addEventListener("click", function () {
                 const id = parseInt(this.dataset.id);
-                toggleCategoryStatus(id);
+                toggleDepartmentStatus(id);
             });
         });
 
         // Delete button click
-        document.querySelectorAll(".delete-cat-btn").forEach(btn => {
+        document.querySelectorAll(".delete-dept-btn").forEach(btn => {
             btn.addEventListener("click", function () {
-                categoryToDeleteId = parseInt(this.dataset.id);
+                departmentToDeleteId = parseInt(this.dataset.id);
                 const name = this.dataset.name;
-                if (deleteCategoryNameSpan) deleteCategoryNameSpan.textContent = name;
+                if (deleteDepartmentNameSpan) deleteDepartmentNameSpan.textContent = name;
                 openModal(deleteModal);
             });
         });
     }
 
-    // 2. Submit New Category
-    if (addCategoryForm) {
-        addCategoryForm.addEventListener("submit", function (e) {
+    // 2. Submit New Department
+    if (addDepartmentForm) {
+        addDepartmentForm.addEventListener("submit", function (e) {
             e.preventDefault();
 
             const submitBtn = this.querySelector("button[type='submit']");
@@ -325,12 +325,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const payload = {
                 action: "create",
-                category_name: addNameInput.value.trim(),
-                status: addStatusSelect.value,
-                description: addDescInput.value.trim()
+                department_name: addNameInput.value.trim(),
+                description: addDescInput.value.trim(),
+                status: addStatusSelect.value
             };
 
-            fetch("api/categories.php", {
+            fetch("api/departments.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -342,11 +342,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 if (res.success) {
                     closeModal(addModal);
-                    addCategoryForm.reset();
-                    if (typeof showToast === "function") showToast("Category created successfully!", "success");
-                    loadCategories();
+                    addDepartmentForm.reset();
+                    if (typeof showToast === "function") showToast("Department created successfully!", "success");
+                    loadDepartments();
                 } else {
-                    if (typeof showToast === "function") showToast(res.message || "Failed to create category.", "error");
+                    if (typeof showToast === "function") showToast(res.message || "Failed to create department.", "error");
                 }
             })
             .catch(err => {
@@ -358,9 +358,9 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 3. Submit Edit Category
-    if (editCategoryForm) {
-        editCategoryForm.addEventListener("submit", function (e) {
+    // 3. Submit Edit Department
+    if (editDepartmentForm) {
+        editDepartmentForm.addEventListener("submit", function (e) {
             e.preventDefault();
 
             const submitBtn = this.querySelector("button[type='submit']");
@@ -371,12 +371,12 @@ document.addEventListener("DOMContentLoaded", function () {
             const payload = {
                 action: "edit",
                 id: editIdInput.value,
-                category_name: editNameInput.value.trim(),
-                status: editStatusSelect.value,
-                description: editDescInput.value.trim()
+                department_name: editNameInput.value.trim(),
+                description: editDescInput.value.trim(),
+                status: editStatusSelect.value
             };
 
-            fetch("api/categories.php", {
+            fetch("api/departments.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -388,10 +388,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 if (res.success) {
                     closeModal(editModal);
-                    if (typeof showToast === "function") showToast("Category updated successfully!", "success");
-                    loadCategories();
+                    if (typeof showToast === "function") showToast("Department updated successfully!", "success");
+                    loadDepartments();
                 } else {
-                    if (typeof showToast === "function") showToast(res.message || "Failed to update category.", "error");
+                    if (typeof showToast === "function") showToast(res.message || "Failed to update department.", "error");
                 }
             })
             .catch(err => {
@@ -404,8 +404,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // 4. Toggle Status Action
-    function toggleCategoryStatus(id) {
-        fetch("api/categories.php", {
+    function toggleDepartmentStatus(id) {
+        fetch("api/departments.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "toggle_status", id: id })
@@ -414,7 +414,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(res => {
             if (res.success) {
                 if (typeof showToast === "function") showToast(res.message || "Status updated", "success");
-                loadCategories();
+                loadDepartments();
             } else {
                 if (typeof showToast === "function") showToast(res.message || "Failed to update status", "error");
             }
@@ -428,33 +428,33 @@ document.addEventListener("DOMContentLoaded", function () {
     // 5. Confirm Delete Action
     if (confirmDeleteBtn) {
         confirmDeleteBtn.addEventListener("click", function () {
-            if (!categoryToDeleteId) return;
+            if (!departmentToDeleteId) return;
 
             this.disabled = true;
             this.textContent = "Deleting...";
 
-            fetch("api/categories.php", {
+            fetch("api/departments.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "delete", id: categoryToDeleteId })
+                body: JSON.stringify({ action: "delete", id: departmentToDeleteId })
             })
             .then(res => res.json())
             .then(res => {
                 this.disabled = false;
-                this.textContent = "Yes, Delete Category";
+                this.textContent = "Yes, Delete Department";
                 closeModal(deleteModal);
 
                 if (res.success) {
-                    if (typeof showToast === "function") showToast("Category deleted successfully!", "success");
-                    categoryToDeleteId = null;
-                    loadCategories();
+                    if (typeof showToast === "function") showToast("Department deleted successfully!", "success");
+                    departmentToDeleteId = null;
+                    loadDepartments();
                 } else {
-                    if (typeof showToast === "function") showToast(res.message || "Failed to delete category.", "error");
+                    if (typeof showToast === "function") showToast(res.message || "Failed to delete department.", "error");
                 }
             })
             .catch(err => {
                 this.disabled = false;
-                this.textContent = "Yes, Delete Category";
+                this.textContent = "Yes, Delete Department";
                 closeModal(deleteModal);
                 console.error(err);
                 if (typeof showToast === "function") showToast("Server connection error.", "error");
@@ -466,14 +466,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const exportCsvBtn = document.getElementById("exportCsvBtn");
     if (exportCsvBtn) {
         exportCsvBtn.addEventListener("click", function () {
-            if (categoriesList.length === 0) {
-                if (typeof showToast === "function") showToast("No categories to export", "info");
+            if (departmentsList.length === 0) {
+                if (typeof showToast === "function") showToast("No departments to export", "info");
                 return;
             }
 
-            let csv = "ID,Category Name,Description,Status,Created At\n";
-            categoriesList.forEach(c => {
-                const name = (c.category_name || "").replace(/"/g, '""');
+            let csv = "ID,Department Name,Description,Status,Created At\n";
+            departmentsList.forEach(c => {
+                const name = (c.department_name || "").replace(/"/g, '""');
                 const desc = (c.description || "").replace(/"/g, '""');
                 csv += `"${c.id}","${name}","${desc}","${c.status}","${formatDate(c.created_at)}"\n`;
             });
@@ -482,11 +482,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `asset_categories_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", `departments_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            if (typeof showToast === "function") showToast("Categories exported to CSV!", "success");
+            if (typeof showToast === "function") showToast("Departments exported to CSV!", "success");
         });
     }
 
@@ -494,18 +494,18 @@ document.addEventListener("DOMContentLoaded", function () {
     // Download Sample Template
     if (downloadSampleTemplateBtn) {
         downloadSampleTemplateBtn.addEventListener("click", function () {
-            const sampleCsv = "Category Name,Description,Status\n" +
-                "\"Laptops & Ultrabooks\",\"Corporate standard and developer laptops\",\"Active\"\n" +
-                "\"Desktop Workstations\",\"High performance graphics and coding workstations\",\"Active\"\n" +
-                "\"Printers & Scanners\",\"Office network multifunction laser printers\",\"Active\"\n" +
-                "\"Network Switches\",\"Manageable gigabit and fiber switches\",\"Active\"\n" +
-                "\"Mobile Devices\",\"Company smartphones and executive tablets\",\"Active\"\n";
+            const sampleCsv = "Department Name,Description,Status\n" +
+                "\"Information Technology (IT)\",\"Enterprise IT infrastructure and systems\",\"Active\"\n" +
+                "\"Human Resources (HR)\",\"Employee lifecycle and culture\",\"Active\"\n" +
+                "\"Finance & Accounts\",\"Financial planning, payroll and auditing\",\"Active\"\n" +
+                "\"Marketing & Communications\",\"Brand strategy and public relations\",\"Active\"\n" +
+                "\"Customer Support\",\"Helpdesk and service delivery\",\"Active\"\n";
 
             const blob = new Blob([sampleCsv], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", "sample_asset_categories_template.csv");
+            link.setAttribute("download", "sample_departments_template.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -557,7 +557,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (csvDropzone) csvDropzone.style.display = "block";
         if (startImportBtn) {
             startImportBtn.disabled = true;
-            startImportBtn.textContent = "Import Categories";
+            startImportBtn.textContent = "Import Departments";
         }
     }
 
@@ -573,7 +573,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const parsed = parseCsvText(content);
 
             if (parsed.length === 0) {
-                if (typeof showToast === "function") showToast("No valid category rows found in this file.", "warning");
+                if (typeof showToast === "function") showToast("No valid department rows found in this file.", "warning");
                 resetImportForm();
                 return;
             }
@@ -582,13 +582,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (previewFileName) previewFileName.textContent = file.name;
             const sizeKb = (file.size / 1024).toFixed(1);
-            if (previewFileMeta) previewFileMeta.textContent = `${sizeKb} KB • ${parsed.length} categories ready to import`;
+            if (previewFileMeta) previewFileMeta.textContent = `${sizeKb} KB • ${parsed.length} departments ready to import`;
 
             if (csvDropzone) csvDropzone.style.display = "none";
             if (filePreviewCard) filePreviewCard.style.display = "flex";
             if (startImportBtn) {
                 startImportBtn.disabled = false;
-                startImportBtn.textContent = `Import ${parsed.length} Categories`;
+                startImportBtn.textContent = `Import ${parsed.length} Departments`;
             }
         };
         reader.onerror = function () {
@@ -602,7 +602,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
         if (lines.length < 2) return [];
 
-        // Parse header
         const headerCols = parseCsvLine(lines[0]);
         let nameIdx = -1;
         let descIdx = -1;
@@ -610,12 +609,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         headerCols.forEach((col, idx) => {
             const c = col.toLowerCase().replace(/[^a-z]/g, "");
-            if (c.includes("name") || c.includes("category")) nameIdx = idx;
+            if (c.includes("name") || c.includes("dep")) nameIdx = idx;
             else if (c.includes("desc") || c.includes("detail") || c.includes("note")) descIdx = idx;
             else if (c.includes("stat")) statusIdx = idx;
         });
 
-        // Default fallbacks if header names don't match
         if (nameIdx === -1) nameIdx = 0;
         if (descIdx === -1 && headerCols.length > 1) descIdx = 1;
         if (statusIdx === -1 && headerCols.length > 2) statusIdx = 2;
@@ -633,7 +631,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!["active", "inactive"].includes(status.toLowerCase())) status = "Active";
 
             results.push({
-                category_name: name,
+                department_name: name,
                 description: desc,
                 status: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
             });
@@ -670,8 +668,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Submit Import Form
-    if (importCategoryForm) {
-        importCategoryForm.addEventListener("submit", function (e) {
+    if (importDepartmentForm) {
+        importDepartmentForm.addEventListener("submit", function (e) {
             e.preventDefault();
 
             if (parsedImportRows.length === 0) {
@@ -686,13 +684,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const duplicateHandling = duplicateHandlingSelect ? duplicateHandlingSelect.value : "skip";
 
-            fetch("api/categories.php", {
+            fetch("api/departments.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     action: "import",
                     duplicate_handling: duplicateHandling,
-                    categories: parsedImportRows
+                    departments: parsedImportRows
                 })
             })
             .then(res => res.json())
@@ -701,13 +699,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     closeModal(importModal);
                     resetImportForm();
                     if (typeof showToast === "function") {
-                        showToast(res.message || "Categories imported successfully!", "success");
+                        showToast(res.message || "Departments imported successfully!", "success");
                     }
-                    loadCategories();
+                    loadDepartments();
                 } else {
                     if (startImportBtn) {
                         startImportBtn.disabled = false;
-                        startImportBtn.textContent = `Import ${parsedImportRows.length} Categories`;
+                        startImportBtn.textContent = `Import ${parsedImportRows.length} Departments`;
                     }
                     if (typeof showToast === "function") {
                         showToast(res.message || "Import failed.", "error");
@@ -718,7 +716,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.error("Import error:", err);
                 if (startImportBtn) {
                     startImportBtn.disabled = false;
-                    startImportBtn.textContent = `Import ${parsedImportRows.length} Categories`;
+                    startImportBtn.textContent = `Import ${parsedImportRows.length} Departments`;
                 }
                 if (typeof showToast === "function") showToast("Server error during import.", "error");
             });

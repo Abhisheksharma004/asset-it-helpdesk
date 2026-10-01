@@ -71,12 +71,12 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                     </a>
                 </li>
                 <li>
-                    <a href="#master-department" class="submenu-link <?php echo ($active_page === 'master_department') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Department Master')">
+                    <a href="departments.php" class="submenu-link <?php echo ($active_page === 'master_department') ? 'active' : ''; ?>">
                         <span>Department</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#master-location" class="submenu-link <?php echo ($active_page === 'master_location') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Location / Branch Master')">
+                    <a href="locations.php" class="submenu-link <?php echo ($active_page === 'master_location') ? 'active' : ''; ?>">
                         <span>Branch / Location</span>
                     </a>
                 </li>

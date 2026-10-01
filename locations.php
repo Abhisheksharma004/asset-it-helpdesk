@@ -1,5 +1,5 @@
 <?php
-// Asset Management & IT Service Desk Portal - Asset Category Master Page
+// Asset Management & IT Service Desk Portal - Branch & Location Master Page
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -10,34 +10,34 @@ if (empty($_SESSION['logged_in'])) {
     exit;
 }
 
-$page_title = "Asset Category Master - VIROS IT Portal";
-$active_page = "master_category";
+$page_title = "Branch & Location Master - VIROS IT Portal";
+$active_page = "master_location";
 $extra_css = ['css/categories.css'];
-$extra_js  = ['js/categories.js'];
+$extra_js  = ['js/locations.js'];
 
-// Include database & ensure table is ready
+// Include database
 require_once __DIR__ . '/config/db.php';
 
-// Initial server-side query for immediate rendering
-$initialCategories = [];
+// Initial server-side query for immediate fast rendering
+$initialLocations = [];
 $stats = ['total' => 0, 'active' => 0, 'inactive' => 0];
 
-$catQuery = "SELECT id, category_name, description, status, 
+$locQuery = "SELECT id, location_name, description, status, 
                     CONVERT(VARCHAR(10), created_at, 105) AS created_date
-             FROM asset_categories 
+             FROM locations 
              ORDER BY id DESC";
-$catStmt = sqlsrv_query($conn, $catQuery);
-if ($catStmt !== false) {
-    while ($row = sqlsrv_fetch_array($catStmt, SQLSRV_FETCH_ASSOC)) {
-        $initialCategories[] = $row;
+$locStmt = sqlsrv_query($conn, $locQuery);
+if ($locStmt !== false) {
+    while ($row = sqlsrv_fetch_array($locStmt, SQLSRV_FETCH_ASSOC)) {
+        $initialLocations[] = $row;
         if (($row['status'] ?? '') === 'Active') {
             $stats['active']++;
         } else {
             $stats['inactive']++;
         }
     }
-    $stats['total'] = count($initialCategories);
-    sqlsrv_free_stmt($catStmt);
+    $stats['total'] = count($initialLocations);
+    sqlsrv_free_stmt($locStmt);
 }
 
 // Include Modular Layout Components
@@ -46,7 +46,7 @@ include 'includes/sidebar.php';
 include 'includes/topbar.php';
 ?>
 
-<!-- Asset Category Page Content -->
+<!-- Branch & Location Page Content -->
 <main class="dashboard-content">
 
     <!-- Breadcrumb & Header Bar -->
@@ -57,21 +57,20 @@ include 'includes/topbar.php';
                 <span>/</span>
                 <span>Master</span>
                 <span>/</span>
-                <span>Asset Category</span>
+                <span>Branch & Location</span>
             </div>
             <h1>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--cyan-primary);">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                    <line x1="12" y1="11" x2="12" y2="17"></line>
-                    <line x1="9" y1="14" x2="15" y2="14"></line>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
                 </svg>
-                Asset Categories
+                Branch & Location Master
             </h1>
-            <p>Manage hardware, software licenses, network gear, and peripheral classifications.</p>
+            <p>Configure corporate offices, regional delivery centers, campuses, and warehouse facilities.</p>
         </div>
 
         <div class="page-header-actions">
-            <button class="btn-secondary" id="refreshBtn" title="Reload Categories">
+            <button class="btn-secondary" id="refreshBtn" title="Reload Locations">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="23 4 23 10 17 10"></polyline>
                     <polyline points="1 20 1 14 7 14"></polyline>
@@ -79,7 +78,7 @@ include 'includes/topbar.php';
                 </svg>
                 Refresh
             </button>
-            <button class="btn-secondary" id="exportCsvBtn" title="Export categories to CSV">
+            <button class="btn-secondary" id="exportCsvBtn" title="Export locations to CSV">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
@@ -87,7 +86,7 @@ include 'includes/topbar.php';
                 </svg>
                 Export CSV
             </button>
-            <button class="btn-secondary" id="openImportModalBtn" title="Import categories from CSV file">
+            <button class="btn-secondary" id="openImportModalBtn" title="Import locations from CSV file">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="17 8 12 3 7 8"></polyline>
@@ -100,31 +99,29 @@ include 'includes/topbar.php';
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                Add Category
+                Add Location
             </button>
         </div>
     </div>
 
-    <!-- Category KPI Stat Cards Grid -->
+    <!-- Location KPI Stat Cards Grid -->
     <div class="cat-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
         <div class="cat-stat-card">
             <div class="cat-stat-info">
-                <div class="stat-lbl">Total Categories</div>
+                <div class="stat-lbl">Total Locations</div>
                 <div class="stat-val" id="statTotal"><?php echo $stats['total']; ?></div>
             </div>
             <div class="cat-stat-icon cyan">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
                 </svg>
             </div>
         </div>
 
         <div class="cat-stat-card">
             <div class="cat-stat-info">
-                <div class="stat-lbl">Active Categories</div>
+                <div class="stat-lbl">Active Locations</div>
                 <div class="stat-val" id="statActive"><?php echo $stats['active']; ?></div>
             </div>
             <div class="cat-stat-icon green">
@@ -137,7 +134,7 @@ include 'includes/topbar.php';
 
         <div class="cat-stat-card">
             <div class="cat-stat-info">
-                <div class="stat-lbl">Inactive Categories</div>
+                <div class="stat-lbl">Inactive Locations</div>
                 <div class="stat-val" id="statInactive"><?php echo $stats['inactive']; ?></div>
             </div>
             <div class="cat-stat-icon navy">
@@ -158,7 +155,7 @@ include 'includes/topbar.php';
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <input type="text" id="searchCategory" placeholder="Search categories by name or description...">
+                <input type="text" id="searchLocation" placeholder="Search branch or address...">
             </div>
 
             <!-- Status Filter -->
@@ -172,74 +169,75 @@ include 'includes/topbar.php';
         </div>
     </div>
 
-    <!-- Categories Data Table Card -->
+    <!-- Locations Data Table Card -->
     <div class="content-card">
         <div class="card-header">
-            <h2>All Asset Categories</h2>
+            <h2>All Branches & Locations</h2>
         </div>
 
         <div class="table-responsive">
-            <table class="custom-table" id="categoriesTable">
+            <table class="custom-table" id="locationsTable">
                 <thead>
                     <tr>
-                        <th style="min-width: 260px;">Category Name</th>
-                        <th>Description</th>
+                        <th style="min-width: 260px;">Branch / Location Name</th>
+                        <th>Address / Facility Notes</th>
                         <th style="width: 120px;">Status</th>
                         <th style="width: 130px;">Created Date</th>
                         <th style="width: 120px; text-align: center;">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="categoriesTbody">
-                    <?php if (empty($initialCategories)): ?>
+                <tbody id="locationsTbody">
+                    <?php if (empty($initialLocations)): ?>
                         <tr>
                             <td colspan="5">
                                 <div class="table-empty-state">
                                     <div class="empty-icon">
                                         <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
-                                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
                                         </svg>
                                     </div>
-                                    <div class="empty-title">No categories found</div>
-                                    <div class="empty-desc">Get started by creating your first asset category.</div>
-                                    <button class="btn-primary" onclick="document.getElementById('openAddModalBtn').click()">+ Add New Category</button>
+                                    <div class="empty-title">No locations found</div>
+                                    <div class="empty-desc">Get started by creating your first branch or office location.</div>
+                                    <button class="btn-primary" onclick="document.getElementById('openAddModalBtn').click()">+ Add New Location</button>
                                 </div>
                             </td>
                         </tr>
                     <?php else: ?>
-                        <?php foreach ($initialCategories as $cat): 
-                            $statusClass = ($cat['status'] === 'Active') ? 'status-active' : 'status-inactive';
+                        <?php foreach ($initialLocations as $loc): 
+                            $statusClass = ($loc['status'] === 'Active') ? 'status-active' : 'status-inactive';
                         ?>
-                            <tr data-id="<?php echo $cat['id']; ?>">
+                            <tr data-id="<?php echo $loc['id']; ?>">
                                 <td>
-                                    <span class="category-main-text"><?php echo htmlspecialchars($cat['category_name']); ?></span>
+                                    <span class="category-main-text"><?php echo htmlspecialchars($loc['location_name']); ?></span>
                                 </td>
                                 <td style="color: var(--text-secondary); font-size: 13px;">
-                                    <?php echo !empty($cat['description']) ? htmlspecialchars($cat['description']) : '<span style="color:#94a3b8; font-style:italic;">No description provided</span>'; ?>
+                                    <?php echo !empty($loc['description']) ? htmlspecialchars($loc['description']) : '<span style="color:#94a3b8; font-style:italic;">No address/details provided</span>'; ?>
                                 </td>
                                 <td>
                                     <span class="status-pill <?php echo $statusClass; ?>">
                                         <span class="status-dot"></span>
-                                        <?php echo htmlspecialchars($cat['status']); ?>
+                                        <?php echo htmlspecialchars($loc['status']); ?>
                                     </span>
                                 </td>
                                 <td style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">
-                                    <?php echo htmlspecialchars($cat['created_date'] ?? '—'); ?>
+                                    <?php echo htmlspecialchars($loc['created_date'] ?? '—'); ?>
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <button class="action-btn edit-cat-btn" title="Edit Category" data-id="<?php echo $cat['id']; ?>">
+                                        <button class="action-btn edit-loc-btn" title="Edit Location" data-id="<?php echo $loc['id']; ?>">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                             </svg>
                                         </button>
-                                        <button class="action-btn toggle-btn toggle-cat-btn" title="<?php echo ($cat['status'] === 'Active') ? 'Deactivate' : 'Activate'; ?>" data-id="<?php echo $cat['id']; ?>">
+                                        <button class="action-btn toggle-btn toggle-loc-btn" title="<?php echo ($loc['status'] === 'Active') ? 'Deactivate' : 'Activate'; ?>" data-id="<?php echo $loc['id']; ?>">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
                                                 <line x1="12" y1="2" x2="12" y2="12"></line>
                                             </svg>
                                         </button>
-                                        <button class="action-btn delete-btn delete-cat-btn" title="Delete Category" data-id="<?php echo $cat['id']; ?>" data-name="<?php echo htmlspecialchars($cat['category_name']); ?>">
+                                        <button class="action-btn delete-btn delete-loc-btn" title="Delete Location" data-id="<?php echo $loc['id']; ?>" data-name="<?php echo htmlspecialchars($loc['location_name']); ?>">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <polyline points="3 6 5 6 21 6"></polyline>
                                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -257,23 +255,23 @@ include 'includes/topbar.php';
 
 </main>
 
-<!-- ==================== ADD CATEGORY MODAL ==================== -->
-<div class="modal-overlay" id="addCategoryModal">
+<!-- ==================== ADD LOCATION MODAL ==================== -->
+<div class="modal-overlay" id="addLocationModal">
     <div class="modal-box">
         <div class="modal-header">
-            <h3>Add New Asset Category</h3>
+            <h3>Add New Branch / Location</h3>
             <button class="modal-close-btn" id="closeAddModalBtn">&times;</button>
         </div>
-        <form id="addCategoryForm">
+        <form id="addLocationForm">
             <div class="modal-body">
                 <div class="modal-form-group">
-                    <label for="addName">Category Name *</label>
-                    <input type="text" id="addName" placeholder="e.g. Laptops & Ultrabooks" required>
+                    <label for="addName">Branch / Location Name *</label>
+                    <input type="text" id="addName" placeholder="e.g. Tech Hub - Bangalore" required>
                 </div>
 
                 <div class="modal-form-group">
-                    <label for="addDesc">Description / Scope</label>
-                    <textarea id="addDesc" rows="3" placeholder="Briefly describe what assets fall under this category..."></textarea>
+                    <label for="addDesc">Address / Facility Notes</label>
+                    <textarea id="addDesc" rows="3" placeholder="Enter physical premises address, floor, building details..."></textarea>
                 </div>
 
                 <div class="modal-form-group">
@@ -286,29 +284,29 @@ include 'includes/topbar.php';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelAddModalBtn">Cancel</button>
-                <button type="submit" class="btn-primary">Save Category</button>
+                <button type="submit" class="btn-primary">Save Location</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ==================== EDIT CATEGORY MODAL ==================== -->
-<div class="modal-overlay" id="editCategoryModal">
+<!-- ==================== EDIT LOCATION MODAL ==================== -->
+<div class="modal-overlay" id="editLocationModal">
     <div class="modal-box">
         <div class="modal-header">
-            <h3>Edit Asset Category</h3>
+            <h3>Edit Branch / Location</h3>
             <button class="modal-close-btn" id="closeEditModalBtn">&times;</button>
         </div>
-        <form id="editCategoryForm">
+        <form id="editLocationForm">
             <input type="hidden" id="editId">
             <div class="modal-body">
                 <div class="modal-form-group">
-                    <label for="editName">Category Name *</label>
+                    <label for="editName">Branch / Location Name *</label>
                     <input type="text" id="editName" required>
                 </div>
 
                 <div class="modal-form-group">
-                    <label for="editDesc">Description / Scope</label>
+                    <label for="editDesc">Address / Facility Notes</label>
                     <textarea id="editDesc" rows="3"></textarea>
                 </div>
 
@@ -322,14 +320,14 @@ include 'includes/topbar.php';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelEditModalBtn">Cancel</button>
-                <button type="submit" class="btn-primary">Update Category</button>
+                <button type="submit" class="btn-primary">Update Location</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
-<div class="modal-overlay" id="deleteCategoryModal">
+<div class="modal-overlay" id="deleteLocationModal">
     <div class="modal-box" style="max-width: 440px;">
         <div class="delete-modal-content">
             <div class="delete-modal-icon">
@@ -339,31 +337,31 @@ include 'includes/topbar.php';
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
             </div>
-            <h3 style="font-size: 17px; color: var(--navy-primary); margin-bottom: 8px;">Delete Asset Category?</h3>
+            <h3 style="font-size: 17px; color: var(--navy-primary); margin-bottom: 8px;">Delete Location?</h3>
             <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px;">
-                Are you sure you want to delete <strong id="deleteCategoryName" style="color: var(--text-primary);"></strong>? This action cannot be undone.
+                Are you sure you want to delete <strong id="deleteLocationName" style="color: var(--text-primary);"></strong>? This action cannot be undone.
             </p>
             <div style="display: flex; justify-content: center; gap: 12px;">
                 <button type="button" class="btn-secondary" id="cancelDeleteModalBtn">Cancel</button>
-                <button type="button" class="btn-danger" id="confirmDeleteBtn">Yes, Delete Category</button>
+                <button type="button" class="btn-danger" id="confirmDeleteBtn">Yes, Delete Location</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ==================== IMPORT CATEGORIES MODAL ==================== -->
-<div class="modal-overlay" id="importCategoryModal">
+<!-- ==================== IMPORT LOCATIONS MODAL ==================== -->
+<div class="modal-overlay" id="importLocationModal">
     <div class="modal-box" style="max-width: 520px;">
         <div class="modal-header">
-            <h3>Import Asset Categories</h3>
+            <h3>Import Locations & Branches</h3>
             <button class="modal-close-btn" id="closeImportModalBtn">&times;</button>
         </div>
-        <form id="importCategoryForm">
+        <form id="importLocationForm">
             <div class="modal-body">
                 <!-- Template Notice -->
                 <div class="import-template-box">
                     <div class="template-text">
-                        <strong>CSV Format:</strong> Ensure your file has columns for Category Name, Description, and Status.
+                        <strong>CSV Format:</strong> Ensure your file has columns for Location Name, Description, and Status.
                     </div>
                     <button type="button" class="btn-template-download" id="downloadSampleTemplateBtn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -399,7 +397,7 @@ include 'includes/topbar.php';
                         <div class="file-icon-badge">CSV</div>
                         <div>
                             <div class="file-name" id="previewFileName">filename.csv</div>
-                            <div class="file-meta" id="previewFileMeta">0 KB • 0 categories detected</div>
+                            <div class="file-meta" id="previewFileMeta">0 KB • 0 locations detected</div>
                         </div>
                     </div>
                     <button type="button" class="btn-remove-file" id="removeFileBtn" title="Remove file">&times;</button>
@@ -407,16 +405,16 @@ include 'includes/topbar.php';
 
                 <!-- Duplicate Option -->
                 <div class="modal-form-group">
-                    <label for="duplicateHandling">Duplicate Categories Handling</label>
+                    <label for="duplicateHandling">Duplicate Locations Handling</label>
                     <select id="duplicateHandling">
                         <option value="skip">Skip duplicates (keep existing)</option>
-                        <option value="update">Update existing categories</option>
+                        <option value="update">Update existing locations</option>
                     </select>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelImportModalBtn">Cancel</button>
-                <button type="submit" class="btn-primary" id="startImportBtn" disabled>Import Categories</button>
+                <button type="submit" class="btn-primary" id="startImportBtn" disabled>Import Locations</button>
             </div>
         </form>
     </div>
