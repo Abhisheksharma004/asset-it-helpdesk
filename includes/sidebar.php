@@ -86,7 +86,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                     </a>
                 </li>
                 <li>
-                    <a href="#master-employee" class="submenu-link <?php echo ($active_page === 'master_employee') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Employee Master')">
+                    <a href="employees.php" class="submenu-link <?php echo ($active_page === 'master_employee') ? 'active' : ''; ?>">
                         <span>Employee Master</span>
                     </a>
                 </li>
