@@ -114,7 +114,7 @@ include 'includes/topbar.php';
             <p>Manage workforce directory, department alignments, and asset recipient profiles.</p>
         </div>
 
-        <div class="header-actions">
+        <div class="page-header-actions">
             <!-- Refresh Table -->
             <button type="button" class="btn-secondary" id="refreshTableBtn" title="Reload list">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -262,13 +262,13 @@ include 'includes/topbar.php';
             <table class="custom-table" id="employeesTable">
                 <thead>
                     <tr>
-                        <th style="min-width: 230px;">Employee</th>
-                        <th style="min-width: 170px;">Role & Designation</th>
-                        <th style="min-width: 160px;">Department</th>
-                        <th style="min-width: 170px;">Branch / Location</th>
-                        <th style="min-width: 190px;">Contact Information</th>
-                        <th style="min-width: 130px;">Status & Joined</th>
-                        <th style="width: 130px; text-align: center;">Actions</th>
+                        <th style="min-width: 190px;">Employee</th>
+                        <th style="min-width: 140px;">Role & Designation</th>
+                        <th style="min-width: 130px;">Department</th>
+                        <th style="min-width: 130px;">Branch / Location</th>
+                        <th style="min-width: 160px;">Contact Information</th>
+                        <th style="min-width: 110px;">Status & Joined</th>
+                        <th style="width: 110px; text-align: center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="employeesTbody">
