@@ -15,6 +15,23 @@ $active_page = "accessories";
 $extra_css = ['css/categories.css', 'css/accessories.css'];
 $extra_js  = ['js/accessories.js'];
 
+// Include database to fetch dynamic accessory categories
+require_once __DIR__ . '/config/db.php';
+
+$dynamicCategories = [];
+if (isset($conn) && $conn !== false) {
+    $catQuery = "SELECT id, category_name FROM accessory_categories WHERE status = 'Active' ORDER BY category_name ASC";
+    $catStmt = sqlsrv_query($conn, $catQuery);
+    if ($catStmt !== false) {
+        while ($row = sqlsrv_fetch_array($catStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($row['category_name'])) {
+                $dynamicCategories[] = $row['category_name'];
+            }
+        }
+        sqlsrv_free_stmt($catStmt);
+    }
+}
+
 // Include Modular Layout Components
 include 'includes/header.php';
 include 'includes/sidebar.php';
@@ -142,14 +159,9 @@ include 'includes/topbar.php';
 
             <select class="filter-select" id="categoryFilter">
                 <option value="all">All Categories</option>
-                <option value="Keyboards & Mice">Keyboards & Mice</option>
-                <option value="Docks & Hubs">Docks & Hubs</option>
-                <option value="Headsets & Audio">Headsets & Audio</option>
-                <option value="Webcams & Video">Webcams & Video</option>
-                <option value="Chargers & Power Adapters">Chargers & Power Adapters</option>
-                <option value="Cables & Display Adapters">Cables & Display Adapters</option>
-                <option value="Security Tokens & Smart Keys">Security Tokens & Smart Keys</option>
-                <option value="Laptop Stands & Mounts">Laptop Stands & Mounts</option>
+                <?php foreach ($dynamicCategories as $catName): ?>
+                    <option value="<?php echo htmlspecialchars($catName); ?>"><?php echo htmlspecialchars($catName); ?></option>
+                <?php endforeach; ?>
             </select>
 
             <select class="filter-select" id="statusFilter">
@@ -207,14 +219,9 @@ include 'includes/topbar.php';
                     <label for="accCategory">Category *</label>
                     <select id="accCategory" required>
                         <option value="">Select Category</option>
-                        <option value="Keyboards & Mice">Keyboards & Mice</option>
-                        <option value="Docks & Hubs">Docks & Hubs</option>
-                        <option value="Headsets & Audio">Headsets & Audio</option>
-                        <option value="Webcams & Video">Webcams & Video</option>
-                        <option value="Chargers & Power Adapters">Chargers & Power Adapters</option>
-                        <option value="Cables & Display Adapters">Cables & Display Adapters</option>
-                        <option value="Security Tokens & Smart Keys">Security Tokens & Smart Keys</option>
-                        <option value="Laptop Stands & Mounts">Laptop Stands & Mounts</option>
+                        <?php foreach ($dynamicCategories as $catName): ?>
+                            <option value="<?php echo htmlspecialchars($catName); ?>"><?php echo htmlspecialchars($catName); ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 

@@ -63,6 +63,46 @@
         renderTable();
         updateStats();
         bindEvents();
+        fetchDynamicCategories();
+    }
+
+    // Fetch and populate dynamic categories from Master API
+    function fetchDynamicCategories(selectedVal) {
+        fetch('api/accessory_categories.php?status=Active')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.categories)) {
+                    const accCategorySelect = document.getElementById('accCategory');
+                    const categoryFilterSelect = document.getElementById('categoryFilter');
+
+                    if (accCategorySelect) {
+                        const currentVal = (selectedVal !== undefined) ? selectedVal : accCategorySelect.value;
+                        let optsHtml = '<option value="">Select Category</option>';
+                        data.categories.forEach(cat => {
+                            const name = cat.category_name;
+                            const isSel = (name === currentVal) ? 'selected' : '';
+                            optsHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
+                        });
+                        accCategorySelect.innerHTML = optsHtml;
+                        if (currentVal) accCategorySelect.value = currentVal;
+                    }
+
+                    if (categoryFilterSelect) {
+                        const curFilter = categoryFilterSelect.value;
+                        let filterHtml = '<option value="all">All Categories</option>';
+                        data.categories.forEach(cat => {
+                            const name = cat.category_name;
+                            const isSel = (name === curFilter) ? 'selected' : '';
+                            filterHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
+                        });
+                        categoryFilterSelect.innerHTML = filterHtml;
+                        if (curFilter) categoryFilterSelect.value = curFilter;
+                    }
+                }
+            })
+            .catch(err => {
+                console.warn('Could not refresh dynamic categories:', err);
+            });
     }
 
     function bindEvents() {
@@ -107,6 +147,7 @@
                 document.getElementById('modalTitle').textContent = 'Add New Accessory';
                 document.getElementById('editAccId').value = '';
                 accessoryForm.reset();
+                fetchDynamicCategories('');
                 openModal(accessoryModal);
             });
         }
@@ -376,6 +417,7 @@
         document.getElementById('accMinStock').value = item.minStock;
         document.getElementById('accLocation').value = item.location;
 
+        fetchDynamicCategories(item.category);
         openModal(accessoryModal);
     }
 
