@@ -200,15 +200,14 @@ include 'includes/topbar.php';
 
 </main>
 
-<!-- ==================== ADD / EDIT ACCESSORY MODAL ==================== -->
-<div class="modal-overlay" id="accessoryModal">
+<!-- ==================== ADD ACCESSORY MODAL ==================== -->
+<div class="modal-overlay" id="addAccessoryModal">
     <div class="modal-box" style="max-width: 540px;">
         <div class="modal-header">
-            <h3 id="modalTitle">Add New Accessory</h3>
-            <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+            <h3>Add New Accessory</h3>
+            <button class="modal-close-btn" id="closeAddModalBtn">&times;</button>
         </div>
-        <form id="accessoryForm">
-            <input type="hidden" id="editAccId" value="">
+        <form id="addAccessoryForm">
             <div class="modal-body">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                     <div class="modal-form-group">
@@ -259,10 +258,99 @@ include 'includes/topbar.php';
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="cancelModalBtn">Cancel</button>
-                <button type="submit" class="btn-primary" id="saveModalBtn">Save Accessory</button>
+                <button type="button" class="btn-secondary" id="cancelAddModalBtn">Cancel</button>
+                <button type="submit" class="btn-primary" id="saveAccBtn">Save Accessory</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ==================== EDIT ACCESSORY MODAL ==================== -->
+<div class="modal-overlay" id="editAccessoryModal">
+    <div class="modal-box" style="max-width: 540px;">
+        <div class="modal-header">
+            <h3>Edit Accessory</h3>
+            <button class="modal-close-btn" id="closeEditModalBtn">&times;</button>
+        </div>
+        <form id="editAccessoryForm">
+            <input type="hidden" id="editAccId" value="">
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="modal-form-group">
+                        <label for="editAccCategory">Accessory Category *</label>
+                        <select id="editAccCategory" required>
+                            <option value="">Select Accessory Category</option>
+                            <?php foreach ($dynamicCategories as $catName): ?>
+                                <option value="<?php echo htmlspecialchars($catName); ?>"><?php echo htmlspecialchars($catName); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="editAccSku">Accessory SKU Tag <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Read Only)</span></label>
+                        <input type="text" id="editAccSku" readonly style="background-color: #f8fafc; cursor: not-allowed; font-family: monospace; font-weight: 600; color: var(--cyan-primary);">
+                    </div>
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="editAccName">Accessory Name *</label>
+                    <input type="text" id="editAccName" placeholder="e.g. Logitech MX Master 3S Wireless Mouse" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="modal-form-group">
+                        <label for="editAccBrand">Brand / Manufacturer *</label>
+                        <input type="text" id="editAccBrand" placeholder="e.g. Logitech" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="editAccModel">Model Variant</label>
+                        <input type="text" id="editAccModel" placeholder="e.g. MX Master 3S">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="modal-form-group">
+                        <label for="editAccQty">Total Quantity *</label>
+                        <input type="number" id="editAccQty" min="1" value="10" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="editAccMinStock">Min Stock Alert Level</label>
+                        <input type="number" id="editAccMinStock" min="1" value="5">
+                    </div>
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="editAccLocation">Depot / Storage Location</label>
+                    <input type="text" id="editAccLocation" placeholder="e.g. HQ - New York Depot (Shelf A-02)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelEditModalBtn">Cancel</button>
+                <button type="submit" class="btn-primary" id="updateAccBtn">Update Accessory</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
+<div class="modal-overlay" id="deleteAccessoryModal">
+    <div class="modal-box" style="max-width: 440px;">
+        <div class="delete-modal-content">
+            <div class="delete-modal-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <h3 style="font-size: 17px; color: var(--navy-primary); margin-bottom: 8px;">Delete Accessory?</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px;">
+                Are you sure you want to delete <strong id="deleteAccessoryName" style="color: var(--text-primary);"></strong>? This action cannot be undone.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" class="btn-secondary" id="cancelDeleteModalBtn">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmDeleteBtn">Yes, Delete Accessory</button>
+            </div>
+        </div>
     </div>
 </div>
 

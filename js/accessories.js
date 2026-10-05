@@ -47,12 +47,28 @@
     const statLowStock = document.getElementById('statLowStock');
 
     // Modals
-    const accessoryModal = document.getElementById('accessoryModal');
+    const addAccessoryModal = document.getElementById('addAccessoryModal');
+    const editAccessoryModal = document.getElementById('editAccessoryModal');
+    const deleteAccessoryModal = document.getElementById('deleteAccessoryModal');
     const issueModal = document.getElementById('issueModal');
+
     const openAddModalBtn = document.getElementById('openAddModalBtn');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const cancelModalBtn = document.getElementById('cancelModalBtn');
-    const accessoryForm = document.getElementById('accessoryForm');
+    const closeAddModalBtn = document.getElementById('closeAddModalBtn');
+    const cancelAddModalBtn = document.getElementById('cancelAddModalBtn');
+    const addAccessoryForm = document.getElementById('addAccessoryForm');
+    const saveAccBtn = document.getElementById('saveAccBtn');
+
+    const closeEditModalBtn = document.getElementById('closeEditModalBtn');
+    const cancelEditModalBtn = document.getElementById('cancelEditModalBtn');
+    const editAccessoryForm = document.getElementById('editAccessoryForm');
+    const updateAccBtn = document.getElementById('updateAccBtn');
+
+    const closeDeleteModalBtn = document.getElementById('closeDeleteModalBtn');
+    const cancelDeleteModalBtn = document.getElementById('cancelDeleteModalBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const deleteAccessoryName = document.getElementById('deleteAccessoryName');
+    let accessoryToDeleteId = null;
+
     const closeIssueModalBtn = document.getElementById('closeIssueModalBtn');
     const cancelIssueBtn = document.getElementById('cancelIssueBtn');
     const issueForm = document.getElementById('issueForm');
@@ -106,19 +122,29 @@
             .then(data => {
                 if (data.success && Array.isArray(data.categories)) {
                     const accCategorySelect = document.getElementById('accCategory');
+                    const editAccCategorySelect = document.getElementById('editAccCategory');
                     const categoryFilterSelect = document.getElementById('categoryFilter');
 
-                    if (accCategorySelect) {
-                        const currentVal = (selectedVal !== undefined) ? selectedVal : accCategorySelect.value;
-                        let optsHtml = '<option value="">Select Accessory Category</option>';
+                    const populate = (sel, defText, cur) => {
+                        if (!sel) return;
+                        let optsHtml = `<option value="">${defText}</option>`;
                         data.categories.forEach(cat => {
                             const name = cat.category_name;
-                            const isSel = (name === currentVal) ? 'selected' : '';
+                            const isSel = (name === cur) ? 'selected' : '';
                             optsHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
                         });
-                        accCategorySelect.innerHTML = optsHtml;
-                        if (currentVal) accCategorySelect.value = currentVal;
-                        if (window.SearchableSelect) window.SearchableSelect.sync(accCategorySelect);
+                        sel.innerHTML = optsHtml;
+                        if (cur) sel.value = cur;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(sel);
+                    };
+
+                    if (accCategorySelect) {
+                        populate(accCategorySelect, 'Select Accessory Category', accCategorySelect.value);
+                    }
+
+                    if (editAccCategorySelect) {
+                        const curEdit = (selectedVal !== undefined) ? selectedVal : editAccCategorySelect.value;
+                        populate(editAccCategorySelect, 'Select Accessory Category', curEdit);
                     }
 
                     if (categoryFilterSelect) {
@@ -183,21 +209,38 @@
         // Add Modal
         if (openAddModalBtn) {
             openAddModalBtn.addEventListener('click', function () {
-                document.getElementById('modalTitle').textContent = 'Add New Accessory';
-                document.getElementById('editAccId').value = '';
-                accessoryForm.reset();
+                if (addAccessoryForm) addAccessoryForm.reset();
                 const skuInput = document.getElementById('accSku');
                 if (skuInput) skuInput.value = generateNextAccessorySku();
                 fetchDynamicCategories('');
-                openModal(accessoryModal);
+                if (window.SearchableSelect) {
+                    window.SearchableSelect.sync(document.getElementById('accCategory'));
+                }
+                openModal(addAccessoryModal);
             });
         }
 
-        if (closeModalBtn) closeModalBtn.addEventListener('click', () => closeModal(accessoryModal));
-        if (cancelModalBtn) cancelModalBtn.addEventListener('click', () => closeModal(accessoryModal));
+        if (closeAddModalBtn) closeAddModalBtn.addEventListener('click', () => closeModal(addAccessoryModal));
+        if (cancelAddModalBtn) cancelAddModalBtn.addEventListener('click', () => closeModal(addAccessoryModal));
 
-        if (accessoryForm) {
-            accessoryForm.addEventListener('submit', handleSaveAccessory);
+        if (addAccessoryForm) {
+            addAccessoryForm.addEventListener('submit', handleAddAccessory);
+        }
+
+        // Edit Modal
+        if (closeEditModalBtn) closeEditModalBtn.addEventListener('click', () => closeModal(editAccessoryModal));
+        if (cancelEditModalBtn) cancelEditModalBtn.addEventListener('click', () => closeModal(editAccessoryModal));
+
+        if (editAccessoryForm) {
+            editAccessoryForm.addEventListener('submit', handleUpdateAccessory);
+        }
+
+        // Delete Modal
+        if (closeDeleteModalBtn) closeDeleteModalBtn.addEventListener('click', () => closeModal(deleteAccessoryModal));
+        if (cancelDeleteModalBtn) cancelDeleteModalBtn.addEventListener('click', () => closeModal(deleteAccessoryModal));
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
         }
 
         // Issue Modal
@@ -216,12 +259,14 @@
         // Close on Escape or click outside
         window.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                closeModal(accessoryModal);
+                closeModal(addAccessoryModal);
+                closeModal(editAccessoryModal);
+                closeModal(deleteAccessoryModal);
                 closeModal(issueModal);
             }
         });
 
-        [accessoryModal, issueModal].forEach(modal => {
+        [addAccessoryModal, editAccessoryModal, deleteAccessoryModal, issueModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) closeModal(modal);
@@ -353,10 +398,9 @@
         if (statLowStock) statLowStock.textContent = lowStockCount;
     }
 
-    // Save Accessory (Add / Edit)
-    function handleSaveAccessory(e) {
+    // Add New Accessory
+    function handleAddAccessory(e) {
         e.preventDefault();
-        const editId = document.getElementById('editAccId').value;
         const name = document.getElementById('accName').value.trim();
         const category = document.getElementById('accCategory').value;
         const brand = document.getElementById('accBrand').value.trim();
@@ -365,45 +409,85 @@
         const minStock = parseInt(document.getElementById('accMinStock').value, 10) || 5;
         const location = document.getElementById('accLocation').value.trim();
 
-        if (editId) {
-            // Update existing
-            const item = accessories.find(a => a.id === parseInt(editId, 10));
-            if (item) {
-                item.name = name;
-                item.category = category;
-                item.brand = brand;
-                item.model = model;
-                const diff = qty - item.totalQty;
-                item.totalQty = qty;
-                item.inStock = Math.max(0, item.inStock + diff);
-                item.minStock = minStock;
-                item.location = location;
-                showNotification(`Updated accessory "${name}".`, 'success');
-            }
-        } else {
-            // Create new
-            const newId = accessories.length > 0 ? Math.max(...accessories.map(a => a.id)) + 1 : 1;
-            const skuInput = document.getElementById('accSku');
-            const newSku = (skuInput && skuInput.value.trim()) ? skuInput.value.trim() : generateNextAccessorySku();
-            accessories.unshift({
-                id: newId,
-                sku: newSku,
-                name: name,
-                category: category,
-                brand: brand,
-                model: model,
-                totalQty: qty,
-                inStock: qty,
-                deployed: 0,
-                minStock: minStock,
-                location: location || 'HQ - New York Depot'
-            });
-            showNotification(`Added new accessory "${name}" (${newSku}).`, 'success');
+        if (saveAccBtn) {
+            saveAccBtn.disabled = true;
+            saveAccBtn.textContent = 'Saving...';
         }
 
-        closeModal(accessoryModal);
+        const newId = accessories.length > 0 ? Math.max(...accessories.map(a => a.id)) + 1 : 1;
+        const skuInput = document.getElementById('accSku');
+        const newSku = (skuInput && skuInput.value.trim()) ? skuInput.value.trim() : generateNextAccessorySku();
+
+        accessories.unshift({
+            id: newId,
+            sku: newSku,
+            name: name,
+            category: category,
+            brand: brand,
+            model: model,
+            totalQty: qty,
+            inStock: qty,
+            deployed: 0,
+            minStock: minStock,
+            location: location || 'HQ - New York Depot'
+        });
+
+        if (saveAccBtn) {
+            saveAccBtn.disabled = false;
+            saveAccBtn.textContent = 'Save Accessory';
+        }
+
+        closeModal(addAccessoryModal);
         updateStats();
         renderTable();
+        showNotification(`Added new accessory "${name}" (${newSku}).`, 'success');
+    }
+
+    // Update Accessory
+    function handleUpdateAccessory(e) {
+        e.preventDefault();
+        const editId = document.getElementById('editAccId').value;
+        const name = document.getElementById('editAccName').value.trim();
+        const category = document.getElementById('editAccCategory').value;
+        const brand = document.getElementById('editAccBrand').value.trim();
+        const model = document.getElementById('editAccModel').value.trim();
+        const qty = parseInt(document.getElementById('editAccQty').value, 10) || 1;
+        const minStock = parseInt(document.getElementById('editAccMinStock').value, 10) || 5;
+        const location = document.getElementById('editAccLocation').value.trim();
+
+        if (updateAccBtn) {
+            updateAccBtn.disabled = true;
+            updateAccBtn.textContent = 'Updating...';
+        }
+
+        const item = accessories.find(a => a.id === parseInt(editId, 10));
+        if (item) {
+            item.name = name;
+            item.category = category;
+            item.brand = brand;
+            item.model = model;
+            const diff = qty - item.totalQty;
+            item.totalQty = qty;
+            item.inStock = Math.max(0, item.inStock + diff);
+            item.minStock = minStock;
+            item.location = location;
+
+            if (updateAccBtn) {
+                updateAccBtn.disabled = false;
+                updateAccBtn.textContent = 'Update Accessory';
+            }
+
+            closeModal(editAccessoryModal);
+            updateStats();
+            renderTable();
+            showNotification(`Updated accessory "${name}".`, 'success');
+        } else {
+            if (updateAccBtn) {
+                updateAccBtn.disabled = false;
+                updateAccBtn.textContent = 'Update Accessory';
+            }
+            showNotification('Failed to find accessory to update.', 'error');
+        }
     }
 
     // Issue (Check-Out)
@@ -451,38 +535,70 @@
         showNotification(`Issued ${qty} unit(s) of ${item.name} to ${employee}.`, 'success');
     }
 
-    // Edit Item
+    // Edit Item Modal - Opens dedicated Edit modal
     function openEditModal(id) {
         const item = accessories.find(a => a.id === id);
         if (!item) return;
 
-        document.getElementById('modalTitle').textContent = 'Edit Accessory';
         document.getElementById('editAccId').value = item.id;
-        const skuInput = document.getElementById('accSku');
+        const skuInput = document.getElementById('editAccSku');
         if (skuInput) skuInput.value = item.sku || '';
-        document.getElementById('accName').value = item.name;
-        document.getElementById('accCategory').value = item.category;
-        document.getElementById('accBrand').value = item.brand;
-        document.getElementById('accModel').value = item.model;
-        document.getElementById('accQty').value = item.totalQty;
-        document.getElementById('accMinStock').value = item.minStock;
-        document.getElementById('accLocation').value = item.location;
+        document.getElementById('editAccName').value = item.name;
+        document.getElementById('editAccBrand').value = item.brand;
+        document.getElementById('editAccModel').value = item.model;
+        document.getElementById('editAccQty').value = item.totalQty;
+        document.getElementById('editAccMinStock').value = item.minStock;
+        document.getElementById('editAccLocation').value = item.location;
+
+        const catSelect = document.getElementById('editAccCategory');
+        if (catSelect) {
+            catSelect.value = item.category;
+        }
 
         fetchDynamicCategories(item.category);
-        openModal(accessoryModal);
+        if (window.SearchableSelect && catSelect) {
+            window.SearchableSelect.sync(catSelect);
+        }
+
+        openModal(editAccessoryModal);
     }
 
-    // Delete Item
-    function deleteItem(id) {
+    // Delete Item Modal - Opens confirmation modal (same as master pages)
+    function openDeleteModal(id) {
         const item = accessories.find(a => a.id === id);
         if (!item) return;
 
-        if (confirm(`Are you sure you want to remove "${item.name}" from accessories?`)) {
-            accessories = accessories.filter(a => a.id !== id);
-            updateStats();
-            renderTable();
-            showNotification(`Accessory "${item.name}" deleted.`, 'info');
+        accessoryToDeleteId = item.id;
+        if (deleteAccessoryName) {
+            deleteAccessoryName.textContent = `"${item.name}" (${item.sku})`;
         }
+        openModal(deleteAccessoryModal);
+    }
+
+    // Confirm Delete Action
+    function handleConfirmDelete() {
+        if (!accessoryToDeleteId) return;
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.textContent = 'Deleting...';
+        }
+
+        const item = accessories.find(a => a.id === accessoryToDeleteId);
+        const itemName = item ? item.name : 'Accessory';
+
+        accessories = accessories.filter(a => a.id !== accessoryToDeleteId);
+        accessoryToDeleteId = null;
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.textContent = 'Yes, Delete Accessory';
+        }
+
+        closeModal(deleteAccessoryModal);
+        updateStats();
+        renderTable();
+        showNotification(`Accessory "${itemName}" deleted successfully.`, 'info');
     }
 
     // Export CSV
@@ -543,7 +659,7 @@
     window.accMgr = {
         openIssue: openIssueModal,
         openEdit: openEditModal,
-        deleteItem: deleteItem
+        deleteItem: openDeleteModal
     };
 
     // Auto-init

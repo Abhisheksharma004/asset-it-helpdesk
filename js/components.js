@@ -1,26 +1,15 @@
 /**
- * Parts & Components Management Script (Single-Item Asset Tracking)
+ * Parts & Components Management Script (Database Synced with MSSQL)
  * VIROS IT Asset & Service Desk Portal
  */
 
 (function () {
     'use strict';
 
-    // Sample IT Parts & Components Dataset (Individual Serialized Units)
-    let components = [
-        { id: 1, sku: "PRT1026001", serial: "CRU-DDR4-88491", name: "Crucial 16GB DDR4 3200MHz SO-DIMM", category: "RAM & Memory Modules", brand: "Crucial", model: "CT16G4SFD832A", specs: "16GB DDR4 3200MHz CL22 1.2V 260-Pin", status: "Installed", installedAsset: "AST-2026-001 (Dell Latitude 5420)", location: "Installed in Slot 2" },
-        { id: 2, sku: "PRT1026002", serial: "CRU-DDR4-88492", name: "Crucial 16GB DDR4 3200MHz SO-DIMM", category: "RAM & Memory Modules", brand: "Crucial", model: "CT16G4SFD832A", specs: "16GB DDR4 3200MHz CL22 1.2V 260-Pin", status: "Available", installedAsset: "", location: "Depot Rack 1 (Drawer A-01)" },
-        { id: 3, sku: "PRT1026003", serial: "KNG-DDR5-10293", name: "Kingston Fury Beast 32GB DDR5 5600MHz", category: "RAM & Memory Modules", brand: "Kingston", model: "KF556C40BBK2-32", specs: "32GB (2x16GB) DDR5 5600MHz Desktop", status: "Available", installedAsset: "", location: "Depot Rack 1 (Drawer A-03)" },
-        { id: 4, sku: "PRT1026004", serial: "SAM-NVME-99102", name: "Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2", category: "Solid State Drives (SSD)", brand: "Samsung", model: "MZ-V8P1T0B/AM", specs: "1TB M.2 NVMe PCIe Gen4 (7000MB/s Read)", status: "Installed", installedAsset: "AST-2026-003 (MacBook Pro 16 M1)", location: "Installed as Primary Drive" },
-        { id: 5, sku: "PRT1026005", serial: "SAM-NVME-99103", name: "Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2", category: "Solid State Drives (SSD)", brand: "Samsung", model: "MZ-V8P1T0B/AM", specs: "1TB M.2 NVMe PCIe Gen4 (7000MB/s Read)", status: "Available", installedAsset: "", location: "Depot Rack 2 (Drawer B-01)" },
-        { id: 6, sku: "PRT1026006", serial: "CRU-SATA-44129", name: "Crucial MX500 500GB 2.5-Inch SATA SSD", category: "Solid State Drives (SSD)", brand: "Crucial", model: "CT500MX500SSD1", specs: "500GB SATA 6Gb/s 2.5-Inch 7mm Internal", status: "Installed", installedAsset: "AST-2026-004 (HP EliteDesk 800 G6)", location: "Installed in SATA Bay 1" },
-        { id: 7, sku: "PRT1026007", serial: "SEA-NAS-77218", name: "Seagate IronWolf 4TB NAS Hard Drive", category: "Hard Disk Drives (HDD)", brand: "Seagate", model: "ST4000VN006", specs: "4TB 5400RPM SATA 6Gb/s 256MB Cache", status: "Installed", installedAsset: "AST-2026-005 (Dell PowerEdge R740)", location: "Server Bay 03" },
-        { id: 8, sku: "PRT1026008", serial: "NV-RTX-55102", name: "NVIDIA RTX A2000 12GB Workstation GPU", category: "Graphics & GPU Cards", brand: "NVIDIA / PNY", model: "VCNRTXA2000-12GB", specs: "12GB GDDR6 Low Profile PCIe 4.0 x16", status: "Installed", installedAsset: "AST-2026-006 (Custom AI Workstation)", location: "PCIe Slot 1" },
-        { id: 9, sku: "PRT1026009", serial: "INT-I7-33910", name: "Intel Core i7-13700 Desktop Processor", category: "Processors & CPUs", brand: "Intel", model: "BX8071513700", specs: "16 Cores (8P+8E) up to 5.2GHz LGA1700", status: "Installed", installedAsset: "AST-2026-006 (Custom AI Workstation)", location: "Socket LGA1700" },
-        { id: 10, sku: "PRT1026010", serial: "DEL-BAT-22019", name: "Dell 58Wh 4-Cell Laptop Replacement Battery", category: "Laptop Batteries", brand: "Dell OEM", model: "68Wh H5CKD", specs: "15.2V 58Wh Li-ion for Latitude 5420/5430", status: "Available", installedAsset: "", location: "Battery Safe Cabinet (Shelf 2)" },
-        { id: 11, sku: "PRT1026011", serial: "COR-750-66014", name: "Corsair RM750x 750W Fully Modular PSU", category: "Power Supply Units (PSU)", brand: "Corsair", model: "CP-9020199-NA", specs: "750 Watt 80 Plus Gold Fully Modular", status: "Under Repair", installedAsset: "", location: "Repair Bench (Ticket #IT-884)" },
-        { id: 12, sku: "PRT1026012", serial: "INT-NIC-12004", name: "Intel X550-T2 Dual Port 10GbE Network Card", category: "Network Interface Cards (NIC)", brand: "Intel", model: "X550T2BLK", specs: "Dual-Port RJ45 10GbE PCIe 3.0 x4", status: "Available", installedAsset: "", location: "Depot Rack 4 (Drawer N-01)" }
-    ];
+    // Components dataset loaded from server or initialized
+    let components = (typeof window !== 'undefined' && Array.isArray(window.INITIAL_COMPONENTS))
+        ? window.INITIAL_COMPONENTS
+        : [];
 
     // Filter states
     let searchTerm = '';
@@ -41,14 +30,28 @@
     const statRepair = document.getElementById('statRepair');
 
     // Modals
-    const componentModal = document.getElementById('componentModal');
+    const addModal = document.getElementById('addComponentModal');
+    const editModal = document.getElementById('editComponentModal');
+    const deleteModal = document.getElementById('deleteComponentModal');
     const installModal = document.getElementById('installModal');
     const importModal = document.getElementById('importModal');
 
     const openAddModalBtn = document.getElementById('openAddModalBtn');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const cancelModalBtn = document.getElementById('cancelModalBtn');
-    const componentForm = document.getElementById('componentForm');
+    const closeAddModalBtn = document.getElementById('closeAddModalBtn');
+    const cancelAddModalBtn = document.getElementById('cancelAddModalBtn');
+    const addComponentForm = document.getElementById('addComponentForm');
+    const saveCompBtn = document.getElementById('saveCompBtn');
+
+    const closeEditModalBtn = document.getElementById('closeEditModalBtn');
+    const cancelEditModalBtn = document.getElementById('cancelEditModalBtn');
+    const editComponentForm = document.getElementById('editComponentForm');
+    const updateCompBtn = document.getElementById('updateCompBtn');
+
+    const closeDeleteModalBtn = document.getElementById('closeDeleteModalBtn');
+    const cancelDeleteModalBtn = document.getElementById('cancelDeleteModalBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const deleteComponentName = document.getElementById('deleteComponentName');
+    let componentToDeleteId = null;
 
     const closeInstallModalBtn = document.getElementById('closeInstallModalBtn');
     const cancelInstallBtn = document.getElementById('cancelInstallBtn');
@@ -70,6 +73,16 @@
     const exportCompBtn = document.getElementById('exportCompBtn');
 
     let stagedImportData = [];
+
+    // Helper: Construct API URL with preview query if present
+    function getApiUrl(params = {}) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('preview')) {
+            params.preview = 1;
+        }
+        const qs = new URLSearchParams(params).toString();
+        return 'api/components.php' + (qs ? '?' + qs : '');
+    }
 
     // Generate Part / SKU Tag in format PRT + MMYY + 3DIGITSERIAL (e.g. PRT1026001)
     function generateNextPartSku(offset = 0) {
@@ -106,32 +119,64 @@
 
     // Initialize
     function init() {
-        renderTable();
-        updateStats();
+        if (components.length === 0) {
+            loadComponents();
+        } else {
+            renderTable();
+            updateStats();
+        }
         bindEvents();
         fetchDynamicCategories();
     }
 
+    // Load components and stats from database via API
+    function loadComponents(callback) {
+        fetch(getApiUrl())
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.components)) {
+                    components = data.components;
+                    renderTable();
+                    if (data.stats) updateStats(data.stats);
+                    if (typeof callback === 'function') callback();
+                }
+            })
+            .catch(err => {
+                console.warn('Could not fetch components from database:', err);
+                if (typeof callback === 'function') callback();
+            });
+    }
+
     // Fetch dynamic categories from component_categories table API
     function fetchDynamicCategories(selectedVal) {
-        fetch('api/component_categories.php?status=Active')
+        fetch('api/component_categories.php?status=Active' + (window.location.search.includes('preview=1') ? '&preview=1' : ''))
             .then(res => res.json())
             .then(data => {
                 if (data.success && Array.isArray(data.categories)) {
                     const compCategorySelect = document.getElementById('compCategory');
+                    const editCompCategorySelect = document.getElementById('editCompCategory');
                     const categoryFilterSelect = document.getElementById('categoryFilter');
 
-                    if (compCategorySelect) {
-                        const currentVal = (selectedVal !== undefined) ? selectedVal : compCategorySelect.value;
-                        let optsHtml = '<option value="">Select Part / Component Category</option>';
+                    const populate = (sel, defText, cur) => {
+                        if (!sel) return;
+                        let optsHtml = `<option value="">${defText}</option>`;
                         data.categories.forEach(cat => {
                             const name = cat.category_name;
-                            const isSel = (name === currentVal) ? 'selected' : '';
+                            const isSel = (name === cur) ? 'selected' : '';
                             optsHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
                         });
-                        compCategorySelect.innerHTML = optsHtml;
-                        if (currentVal) compCategorySelect.value = currentVal;
-                        if (window.SearchableSelect) window.SearchableSelect.sync(compCategorySelect);
+                        sel.innerHTML = optsHtml;
+                        if (cur) sel.value = cur;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(sel);
+                    };
+
+                    if (compCategorySelect) {
+                        populate(compCategorySelect, 'Select Part / Component Category', compCategorySelect.value);
+                    }
+
+                    if (editCompCategorySelect) {
+                        const curEdit = (selectedVal !== undefined) ? selectedVal : editCompCategorySelect.value;
+                        populate(editCompCategorySelect, 'Select Part / Component Category', curEdit);
                     }
 
                     if (categoryFilterSelect) {
@@ -196,26 +241,53 @@
         // Add Modal
         if (openAddModalBtn) {
             openAddModalBtn.addEventListener('click', function () {
-                document.getElementById('modalTitle').textContent = 'Add New Component / Part';
-                document.getElementById('editCompId').value = '';
-                componentForm.reset();
-                document.getElementById('compStatus').value = 'Available';
+                if (addComponentForm) addComponentForm.reset();
+                const statusEl = document.getElementById('compStatus');
+                if (statusEl) statusEl.value = 'Available';
+
                 const skuInput = document.getElementById('compSku');
                 if (skuInput) skuInput.value = generateNextPartSku();
+
+                // Fetch real guaranteed unique next SKU from server
+                fetch(getApiUrl({ action: 'get_next_sku' }))
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success && res.next_sku && skuInput) {
+                            skuInput.value = res.next_sku;
+                        }
+                    })
+                    .catch(() => {});
+
+                fetchDynamicCategories();
                 if (window.SearchableSelect) {
                     window.SearchableSelect.sync(document.getElementById('compCategory'));
                     window.SearchableSelect.sync(document.getElementById('compStatus'));
                 }
-                fetchDynamicCategories('');
-                openModal(componentModal);
+                openModal(addModal);
             });
         }
 
-        if (closeModalBtn) closeModalBtn.addEventListener('click', () => closeModal(componentModal));
-        if (cancelModalBtn) cancelModalBtn.addEventListener('click', () => closeModal(componentModal));
+        if (closeAddModalBtn) closeAddModalBtn.addEventListener('click', () => closeModal(addModal));
+        if (cancelAddModalBtn) cancelAddModalBtn.addEventListener('click', () => closeModal(addModal));
 
-        if (componentForm) {
-            componentForm.addEventListener('submit', handleSaveComponent);
+        if (addComponentForm) {
+            addComponentForm.addEventListener('submit', handleCreateComponent);
+        }
+
+        // Edit Modal
+        if (closeEditModalBtn) closeEditModalBtn.addEventListener('click', () => closeModal(editModal));
+        if (cancelEditModalBtn) cancelEditModalBtn.addEventListener('click', () => closeModal(editModal));
+
+        if (editComponentForm) {
+            editComponentForm.addEventListener('submit', handleUpdateComponent);
+        }
+
+        // Delete Modal
+        if (closeDeleteModalBtn) closeDeleteModalBtn.addEventListener('click', () => closeModal(deleteModal));
+        if (cancelDeleteModalBtn) cancelDeleteModalBtn.addEventListener('click', () => closeModal(deleteModal));
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
         }
 
         // Install Modal
@@ -287,13 +359,15 @@
         // Close on Escape or click outside
         window.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                closeModal(componentModal);
+                closeModal(addModal);
+                closeModal(editModal);
+                closeModal(deleteModal);
                 closeModal(installModal);
                 closeModal(importModal);
             }
         });
 
-        [componentModal, installModal, importModal].forEach(modal => {
+        [addModal, editModal, deleteModal, installModal, importModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) closeModal(modal);
@@ -387,6 +461,7 @@
             }
 
             const tr = document.createElement('tr');
+            tr.setAttribute('data-id', item.id);
             tr.innerHTML = `
                 <td style="white-space: nowrap;">
                     <span class="asset-tag-badge" title="Part SKU Tag">${escapeHtml(item.sku)}</span>
@@ -427,7 +502,15 @@
     }
 
     // Update Stats
-    function updateStats() {
+    function updateStats(serverStats) {
+        if (serverStats) {
+            if (statTotalItems) statTotalItems.textContent = serverStats.total ?? components.length;
+            if (statAvailable) statAvailable.textContent = serverStats.available ?? 0;
+            if (statInstalled) statInstalled.textContent = serverStats.installed ?? 0;
+            if (statRepair) statRepair.textContent = serverStats.repair ?? 0;
+            return;
+        }
+
         let totalItems = components.length;
         let availableCount = 0;
         let installedCount = 0;
@@ -445,10 +528,9 @@
         if (statRepair) statRepair.textContent = repairCount;
     }
 
-    // Save Component (Add / Edit) - Single Item
-    function handleSaveComponent(e) {
+    // Create Component - Saves directly to Database
+    function handleCreateComponent(e) {
         e.preventDefault();
-        const editId = document.getElementById('editCompId').value;
         const name = document.getElementById('compName').value.trim();
         const category = document.getElementById('compCategory').value;
         const brand = document.getElementById('compBrand').value.trim();
@@ -457,48 +539,114 @@
         const status = document.getElementById('compStatus').value;
         const specs = document.getElementById('compSpecs').value.trim();
         const location = document.getElementById('compLocation').value.trim();
+        const skuInput = document.getElementById('compSku');
+        const sku = (skuInput && skuInput.value.trim()) ? skuInput.value.trim() : generateNextPartSku();
 
-        if (editId) {
-            // Update existing
-            const item = components.find(c => c.id === parseInt(editId, 10));
-            if (item) {
-                item.name = name;
-                item.category = category;
-                item.brand = brand;
-                item.model = model;
-                item.serial = serial;
-                item.status = status;
-                if (status === 'Available') {
-                    item.installedAsset = '';
-                }
-                item.specs = specs;
-                item.location = location;
-                showNotification(`Updated component "${name}".`, 'success');
-            }
-        } else {
-            // Create new single item
-            const newId = components.length > 0 ? Math.max(...components.map(c => c.id)) + 1 : 1;
-            const skuInput = document.getElementById('compSku');
-            const newSku = (skuInput && skuInput.value.trim()) ? skuInput.value.trim() : generateNextPartSku();
-            components.unshift({
-                id: newId,
-                sku: newSku,
-                serial: serial,
-                name: name,
-                category: category,
-                brand: brand,
-                model: model,
-                specs: specs,
-                status: status,
-                installedAsset: '',
-                location: location || 'Depot Shelf'
-            });
-            showNotification(`Added new component "${name}" (${newSku}).`, 'success');
+        if (saveCompBtn) {
+            saveCompBtn.disabled = true;
+            saveCompBtn.textContent = 'Saving...';
         }
 
-        closeModal(componentModal);
-        updateStats();
-        renderTable();
+        const payload = {
+            action: 'create',
+            sku: sku,
+            name: name,
+            category: category,
+            brand: brand,
+            model: model,
+            serial: serial,
+            status: status,
+            specs: specs,
+            location: location
+        };
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (saveCompBtn) {
+                saveCompBtn.disabled = false;
+                saveCompBtn.textContent = 'Save Component';
+            }
+            if (data.success) {
+                showNotification(data.message || `Added component "${name}".`, 'success');
+                closeModal(addModal);
+                loadComponents();
+            } else {
+                showNotification(data.message || 'Failed to save component.', 'error');
+            }
+        })
+        .catch(err => {
+            if (saveCompBtn) {
+                saveCompBtn.disabled = false;
+                saveCompBtn.textContent = 'Save Component';
+            }
+            showNotification('Server error while saving component.', 'error');
+            console.error(err);
+        });
+    }
+
+    // Update Component - Saves edits directly to Database
+    function handleUpdateComponent(e) {
+        e.preventDefault();
+        const id = parseInt(document.getElementById('editCompId').value, 10);
+        const name = document.getElementById('editCompName').value.trim();
+        const category = document.getElementById('editCompCategory').value;
+        const brand = document.getElementById('editCompBrand').value.trim();
+        const model = document.getElementById('editCompModel').value.trim();
+        const serial = document.getElementById('editCompSerial').value.trim();
+        const status = document.getElementById('editCompStatus').value;
+        const specs = document.getElementById('editCompSpecs').value.trim();
+        const location = document.getElementById('editCompLocation').value.trim();
+
+        if (updateCompBtn) {
+            updateCompBtn.disabled = true;
+            updateCompBtn.textContent = 'Updating...';
+        }
+
+        const payload = {
+            action: 'edit',
+            id: id,
+            name: name,
+            category: category,
+            brand: brand,
+            model: model,
+            serial: serial,
+            status: status,
+            specs: specs,
+            location: location
+        };
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (updateCompBtn) {
+                updateCompBtn.disabled = false;
+                updateCompBtn.textContent = 'Update Component';
+            }
+            if (data.success) {
+                showNotification(data.message || `Updated component "${name}".`, 'success');
+                closeModal(editModal);
+                loadComponents();
+            } else {
+                showNotification(data.message || 'Failed to update component.', 'error');
+            }
+        })
+        .catch(err => {
+            if (updateCompBtn) {
+                updateCompBtn.disabled = false;
+                updateCompBtn.textContent = 'Update Component';
+            }
+            showNotification('Server error while updating component.', 'error');
+            console.error(err);
+        });
     }
 
     // Install / Allocate to Asset
@@ -523,19 +671,35 @@
     function handleConfirmInstall(e) {
         e.preventDefault();
         const id = parseInt(document.getElementById('installCompId').value, 10);
-        const item = components.find(c => c.id === id);
-        if (!item) return;
-
         const targetAsset = document.getElementById('installTargetAsset').value;
         const technician = document.getElementById('installedBy').value;
+        const installDate = document.getElementById('installDate').value;
 
-        item.status = 'Installed';
-        item.installedAsset = targetAsset;
-
-        closeModal(installModal);
-        updateStats();
-        renderTable();
-        showNotification(`Component ${item.name} (${item.serial}) installed into ${targetAsset}.`, 'success');
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'install',
+                id: id,
+                target_asset: targetAsset,
+                technician: technician,
+                install_date: installDate
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                closeModal(installModal);
+                showNotification(data.message || `Component installed into ${targetAsset}.`, 'success');
+                loadComponents();
+            } else {
+                showNotification(data.message || 'Failed to install component.', 'error');
+            }
+        })
+        .catch(err => {
+            showNotification('Server error while installing component.', 'error');
+            console.error(err);
+        });
     }
 
     // Detach from Asset
@@ -543,53 +707,116 @@
         const item = components.find(c => c.id === id);
         if (!item) return;
 
-        if (confirm(`Are you sure you want to detach "${item.name}" from ${item.installedAsset || 'asset'} and return it to available stock?`)) {
-            item.status = 'Available';
-            item.installedAsset = '';
-            item.location = 'Returned to Depot Shelf';
-            updateStats();
-            renderTable();
-            showNotification(`Component "${item.name}" returned to available stock.`, 'info');
+        if (!confirm(`Are you sure you want to detach "${item.name}" from ${item.installedAsset || 'asset'} and return it to available stock?`)) {
+            return;
         }
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'detach',
+                id: id
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message || `Component "${item.name}" returned to available stock.`, 'info');
+                loadComponents();
+            } else {
+                showNotification(data.message || 'Failed to detach component.', 'error');
+            }
+        })
+        .catch(err => {
+            showNotification('Server error while detaching component.', 'error');
+            console.error(err);
+        });
     }
 
-    // Edit Item
+    // Edit Item Modal - Populates and opens dedicated Edit modal
     function openEditModal(id) {
         const item = components.find(c => c.id === id);
         if (!item) return;
 
-        document.getElementById('modalTitle').textContent = 'Edit Component / Part';
         document.getElementById('editCompId').value = item.id;
-        const skuInput = document.getElementById('compSku');
+        const skuInput = document.getElementById('editCompSku');
         if (skuInput) skuInput.value = item.sku || '';
-        document.getElementById('compName').value = item.name;
-        document.getElementById('compCategory').value = item.category;
-        document.getElementById('compBrand').value = item.brand;
-        document.getElementById('compModel').value = item.model || '';
-        document.getElementById('compSerial').value = item.serial || '';
-        document.getElementById('compStatus').value = item.status;
-        document.getElementById('compSpecs').value = item.specs || '';
-        document.getElementById('compLocation').value = item.location || '';
+        document.getElementById('editCompName').value = item.name || '';
+        document.getElementById('editCompBrand').value = item.brand || '';
+        document.getElementById('editCompModel').value = item.model || '';
+        document.getElementById('editCompSerial').value = item.serial || '';
+        document.getElementById('editCompStatus').value = item.status || 'Available';
+        document.getElementById('editCompSpecs').value = item.specs || '';
+        document.getElementById('editCompLocation').value = item.location || '';
+
+        const catSelect = document.getElementById('editCompCategory');
+        if (catSelect) {
+            catSelect.value = item.category || '';
+        }
 
         fetchDynamicCategories(item.category);
+
         if (window.SearchableSelect) {
-            window.SearchableSelect.sync(document.getElementById('compCategory'));
-            window.SearchableSelect.sync(document.getElementById('compStatus'));
+            if (catSelect) window.SearchableSelect.sync(catSelect);
+            window.SearchableSelect.sync(document.getElementById('editCompStatus'));
         }
-        openModal(componentModal);
+
+        openModal(editModal);
     }
 
-    // Delete Item
-    function deleteItem(id) {
+    // Delete Item Modal - Opens confirmation modal (same as master pages)
+    function openDeleteModal(id) {
         const item = components.find(c => c.id === id);
         if (!item) return;
 
-        if (confirm(`Are you sure you want to remove "${item.name}" (${item.serial}) from parts inventory?`)) {
-            components = components.filter(c => c.id !== id);
-            updateStats();
-            renderTable();
-            showNotification(`Component "${item.name}" deleted.`, 'info');
+        componentToDeleteId = item.id;
+        if (deleteComponentName) {
+            deleteComponentName.textContent = `"${item.name}" (${item.sku})`;
         }
+        openModal(deleteModal);
+    }
+
+    // Handle Confirm Delete - Deletes permanently from Database
+    function handleConfirmDelete() {
+        if (!componentToDeleteId) return;
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.textContent = 'Deleting...';
+        }
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'delete',
+                id: componentToDeleteId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = 'Yes, Delete Component';
+            }
+            if (data.success) {
+                showNotification(data.message || 'Component removed from database successfully.', 'success');
+                closeModal(deleteModal);
+                componentToDeleteId = null;
+                loadComponents();
+            } else {
+                showNotification(data.message || 'Failed to delete component.', 'error');
+            }
+        })
+        .catch(err => {
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = 'Yes, Delete Component';
+            }
+            showNotification('Server error while deleting component.', 'error');
+            console.error(err);
+        });
     }
 
     // Export CSV
@@ -711,9 +938,13 @@
         if (csvFileInput) csvFileInput.value = '';
         if (filePreviewCard) filePreviewCard.style.display = 'none';
         if (csvDropzone) csvDropzone.style.display = 'block';
-        if (startImportBtn) startImportBtn.disabled = true;
+        if (startImportBtn) {
+            startImportBtn.disabled = true;
+            startImportBtn.textContent = 'Import Components';
+        }
     }
 
+    // Execute Import - Saves bulk rows into Database via API
     function handleExecuteImport(e) {
         e.preventDefault();
         if (stagedImportData.length === 0) {
@@ -721,30 +952,41 @@
             return;
         }
 
-        let addedCount = 0;
-        stagedImportData.forEach(item => {
-            const newId = components.length > 0 ? Math.max(...components.map(c => c.id)) + 1 : 1;
-            const newSku = generateNextPartSku(addedCount);
-            components.unshift({
-                id: newId,
-                sku: newSku,
-                serial: item.serial,
-                name: item.name,
-                category: item.category,
-                brand: item.brand,
-                model: item.model,
-                specs: item.specs,
-                status: item.status || 'Available',
-                installedAsset: '',
-                location: item.location
-            });
-            addedCount++;
-        });
+        if (startImportBtn) {
+            startImportBtn.disabled = true;
+            startImportBtn.textContent = 'Importing to Database...';
+        }
 
-        closeModal(importModal);
-        updateStats();
-        renderTable();
-        showNotification(`Successfully imported ${addedCount} individual components from CSV!`, 'success');
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'import',
+                rows: stagedImportData
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (startImportBtn) {
+                startImportBtn.disabled = false;
+                startImportBtn.textContent = 'Import Components';
+            }
+            if (data.success) {
+                closeModal(importModal);
+                showNotification(data.message || `Successfully imported ${data.imported || stagedImportData.length} components into database!`, 'success');
+                loadComponents();
+            } else {
+                showNotification(data.message || 'Import failed.', 'error');
+            }
+        })
+        .catch(err => {
+            if (startImportBtn) {
+                startImportBtn.disabled = false;
+                startImportBtn.textContent = 'Import Components';
+            }
+            showNotification('Server error during import.', 'error');
+            console.error(err);
+        });
     }
 
     // Helpers
@@ -782,7 +1024,8 @@
         openInstall: openInstallModal,
         detachItem: detachItem,
         openEdit: openEditModal,
-        deleteItem: deleteItem
+        deleteItem: openDeleteModal,
+        reload: loadComponents
     };
 
     // Auto-init
