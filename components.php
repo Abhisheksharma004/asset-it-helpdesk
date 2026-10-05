@@ -19,6 +19,7 @@ $extra_js  = ['js/components.js'];
 require_once __DIR__ . '/config/db.php';
 
 $dynamicCategories = [];
+$branchLocations = [];
 if (isset($conn) && $conn !== false) {
     $catQuery = "SELECT id, category_name FROM component_categories WHERE status = 'Active' ORDER BY category_name ASC";
     $catStmt = sqlsrv_query($conn, $catQuery);
@@ -29,6 +30,17 @@ if (isset($conn) && $conn !== false) {
             }
         }
         sqlsrv_free_stmt($catStmt);
+    }
+
+    $locQuery = "SELECT id, location_name FROM locations WHERE status = 'Active' ORDER BY location_name ASC";
+    $locStmt = sqlsrv_query($conn, $locQuery);
+    if ($locStmt !== false) {
+        while ($row = sqlsrv_fetch_array($locStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($row['location_name'])) {
+                $branchLocations[] = $row['location_name'];
+            }
+        }
+        sqlsrv_free_stmt($locStmt);
     }
 }
 
@@ -47,12 +59,26 @@ if (empty($dynamicCategories)) {
     ];
 }
 
+if (empty($branchLocations)) {
+    $branchLocations = [
+        'Corporate HQ - Mumbai',
+        'Tech Hub - Bangalore',
+        'Branch Office - Delhi NCR',
+        'Delivery Center - Hyderabad',
+        'Development Center - Pune',
+        'Operations Center - Chennai',
+        'Regional Hub - Kolkata',
+        'Support Center - Ahmedabad',
+        'Disaster Recovery Site - Jaipur'
+    ];
+}
+
 // Fetch initial components from database for real-data rendering
 $initialComponents = [];
 $stats = ['total' => 0, 'available' => 0, 'installed' => 0, 'repair' => 0];
 
 if (isset($conn) && $conn !== false) {
-    $compQuery = "SELECT id, sku, serial, name, category, brand, model, specs, status, installed_asset, location,
+    $compQuery = "SELECT id, sku, serial, name, category, brand, model, specs, status, installed_asset, location, branch_location,
                          CONVERT(VARCHAR(10), created_at, 105) AS created_date
                   FROM components 
                   ORDER BY id DESC";
@@ -60,18 +86,19 @@ if (isset($conn) && $conn !== false) {
     if ($compStmt !== false) {
         while ($row = sqlsrv_fetch_array($compStmt, SQLSRV_FETCH_ASSOC)) {
             $initialComponents[] = [
-                'id'             => intval($row['id']),
-                'sku'            => $row['sku'],
-                'serial'         => $row['serial'],
-                'name'           => $row['name'],
-                'category'       => $row['category'],
-                'brand'          => $row['brand'],
-                'model'          => $row['model'] ?? '',
-                'specs'          => $row['specs'] ?? '',
-                'status'         => $row['status'],
-                'installedAsset' => $row['installed_asset'] ?? '',
-                'location'       => $row['location'] ?? '',
-                'created_date'   => $row['created_date'] ?? ''
+                'id'              => intval($row['id']),
+                'sku'             => $row['sku'],
+                'serial'          => $row['serial'],
+                'name'            => $row['name'],
+                'category'        => $row['category'],
+                'branch_location' => $row['branch_location'] ?? '',
+                'brand'           => $row['brand'],
+                'model'           => $row['model'] ?? '',
+                'specs'           => $row['specs'] ?? '',
+                'status'          => $row['status'],
+                'installedAsset'  => $row['installed_asset'] ?? '',
+                'location'        => $row['location'] ?? '',
+                'created_date'    => $row['created_date'] ?? ''
             ];
             $st = $row['status'] ?? '';
             if ($st === 'Available') {
@@ -225,6 +252,13 @@ include 'includes/topbar.php';
                 <input type="text" id="searchInput" placeholder="Search parts by name, serial no, brand, part SKU, specs...">
             </div>
 
+            <select class="filter-select" id="branchFilter">
+                <option value="all">All Branch Locations</option>
+                <?php foreach ($branchLocations as $branch): ?>
+                    <option value="<?php echo htmlspecialchars($branch); ?>"><?php echo htmlspecialchars($branch); ?></option>
+                <?php endforeach; ?>
+            </select>
+
             <select class="filter-select" id="categoryFilter">
                 <option value="all">All Part / Component Categories</option>
                 <?php foreach ($dynamicCategories as $catName): ?>
@@ -306,7 +340,12 @@ include 'includes/topbar.php';
                                         <span class="asset-name-title" onclick="window.compMgr.openEdit(<?php echo $item['id']; ?>)"><?php echo htmlspecialchars($item['name']); ?></span>
                                         <span class="asset-spec-sub">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                            <?php echo htmlspecialchars($item['location'] ?: 'Depot Shelf'); ?>
+                                            <?php 
+                                            $locParts = [];
+                                            if (!empty($item['branch_location'])) $locParts[] = $item['branch_location'];
+                                            if (!empty($item['location'])) $locParts[] = $item['location'];
+                                            echo htmlspecialchars(!empty($locParts) ? implode(' • ', $locParts) : 'Depot Shelf'); 
+                                            ?>
                                         </span>
                                     </div>
                                 </td>
@@ -366,10 +405,17 @@ include 'includes/topbar.php';
                         </select>
                     </div>
                     <div class="modal-form-group">
-                        <label for="compSku">Part / SKU Tag <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Auto Generated)</span></label>
-                        <input type="text" id="compSku" readonly style="background-color: #f8fafc; cursor: not-allowed; font-family: monospace; font-weight: 600; color: var(--cyan-primary);">
+                        <label for="compBranch">Select Branch Location *</label>
+                        <select id="compBranch" required>
+                            <option value="">Select Branch Location</option>
+                            <?php foreach ($branchLocations as $branch): ?>
+                                <option value="<?php echo htmlspecialchars($branch); ?>"><?php echo htmlspecialchars($branch); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
+
+                <input type="hidden" id="compSku" value="">
 
                 <div class="modal-form-group">
                     <label for="compName">Component / Part Name *</label>
@@ -442,10 +488,17 @@ include 'includes/topbar.php';
                         </select>
                     </div>
                     <div class="modal-form-group">
-                        <label for="editCompSku">Part / SKU Tag <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Read Only)</span></label>
-                        <input type="text" id="editCompSku" readonly style="background-color: #f8fafc; cursor: not-allowed; font-family: monospace; font-weight: 600; color: var(--cyan-primary);">
+                        <label for="editCompBranch">Select Branch Location *</label>
+                        <select id="editCompBranch" required>
+                            <option value="">Select Branch Location</option>
+                            <?php foreach ($branchLocations as $branch): ?>
+                                <option value="<?php echo htmlspecialchars($branch); ?>"><?php echo htmlspecialchars($branch); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
+
+                <input type="hidden" id="editCompSku" value="">
 
                 <div class="modal-form-group">
                     <label for="editCompName">Component / Part Name *</label>
@@ -670,6 +723,7 @@ include 'includes/topbar.php';
 
 <script>
     window.INITIAL_COMPONENTS = <?php echo json_encode($initialComponents, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    window.BRANCH_LOCATIONS = <?php echo json_encode($branchLocations, JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 </script>
 
 <?php

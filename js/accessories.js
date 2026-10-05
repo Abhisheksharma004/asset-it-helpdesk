@@ -1,41 +1,26 @@
 /**
- * Simple Accessories Management Script
+ * Accessories Management Script (Database Synced with MSSQL)
  * VIROS IT Asset & Service Desk Portal
  */
 
 (function () {
     'use strict';
 
-    // Sample Accessories Dataset
-    let accessories = [
-        { id: 1, sku: "ASO1026001", name: "Logitech MX Master 3S Wireless Mouse", category: "Keyboards & Mice", brand: "Logitech", model: "MX Master 3S", totalQty: 120, inStock: 34, deployed: 86, minStock: 15, location: "HQ - New York Depot (Shelf A-02)" },
-        { id: 2, sku: "ASO1026002", name: "Dell Pro Wireless Keyboard & Mouse KM5221W", category: "Keyboards & Mice", brand: "Dell", model: "KM5221W", totalQty: 250, inStock: 58, deployed: 192, minStock: 25, location: "HQ - New York Depot (Shelf A-05)" },
-        { id: 3, sku: "ASO1026003", name: "Apple Magic Keyboard with Touch ID", category: "Keyboards & Mice", brand: "Apple", model: "Numeric Keypad", totalQty: 60, inStock: 8, deployed: 52, minStock: 10, location: "Austin Hub Depot (Shelf B-01)" },
-        { id: 4, sku: "ASO1026004", name: "Dell Thunderbolt 4 Dock WD22TB4", category: "Docks & Hubs", brand: "Dell", model: "WD22TB4 180W", totalQty: 85, inStock: 19, deployed: 66, minStock: 10, location: "HQ - New York Depot (Shelf C-01)" },
-        { id: 5, sku: "ASO1026005", name: "Anker 575 USB-C Docking Station (13-in-1)", category: "Docks & Hubs", brand: "Anker", model: "Triple Display 85W", totalQty: 45, inStock: 3, deployed: 42, minStock: 8, location: "Austin Hub Depot (Shelf C-03)" },
-        { id: 6, sku: "ASO1026006", name: "CalDigit TS4 Thunderbolt 4 Dock (18 Ports)", category: "Docks & Hubs", brand: "CalDigit", model: "TS4-US 98W", totalQty: 25, inStock: 0, deployed: 25, minStock: 5, location: "London Office Store (Shelf D-01)" },
-        { id: 7, sku: "ASO1026007", name: "Jabra Evolve2 65 UC Wireless Headset", category: "Headsets & Audio", brand: "Jabra", model: "HSC110W Dual ANC", totalQty: 110, inStock: 22, deployed: 88, minStock: 15, location: "Bangalore DC Depot (Shelf H-01)" },
-        { id: 8, sku: "ASO1026008", name: "Poly Voyager Focus 2 UC Headset", category: "Headsets & Audio", brand: "Poly", model: "Focus 2 Bluetooth", totalQty: 50, inStock: 14, deployed: 36, minStock: 10, location: "Austin Hub Depot (Shelf H-02)" },
-        { id: 9, sku: "ASO1026009", name: "Sony WH-1000XM5 ANC Headphones", category: "Headsets & Audio", brand: "Sony", model: "WH-1000XM5 Black", totalQty: 30, inStock: 2, deployed: 28, minStock: 6, location: "HQ - New York Depot (Shelf H-04)" },
-        { id: 10, sku: "ASO1026010", name: "Logitech Brio 4K Ultra HD Webcam", category: "Webcams & Video", brand: "Logitech", model: "Brio 4K HDR", totalQty: 95, inStock: 28, deployed: 67, minStock: 12, location: "HQ - New York Depot (Shelf V-01)" },
-        { id: 11, sku: "ASO1026011", name: "Anker PowerConf C300 HD Webcam", category: "Webcams & Video", brand: "Anker", model: "C300 1080p 60fps", totalQty: 75, inStock: 21, deployed: 54, minStock: 10, location: "Bangalore DC Depot (Shelf V-02)" },
-        { id: 12, sku: "ASO1026012", name: "Apple 96W USB-C Power Adapter", category: "Chargers & Power Adapters", brand: "Apple", model: "96W GaN Fast Charger", totalQty: 80, inStock: 16, deployed: 64, minStock: 12, location: "Austin Hub Depot (Shelf P-01)" },
-        { id: 13, sku: "ASO1026013", name: "Lenovo 65W USB-C GaN Travel Charger", category: "Chargers & Power Adapters", brand: "Lenovo", model: "ThinkPad 65W AC", totalQty: 140, inStock: 35, deployed: 105, minStock: 20, location: "HQ - New York Depot (Shelf P-03)" },
-        { id: 14, sku: "ASO1026014", name: "Dell 130W USB-C Slim AC Adapter", category: "Chargers & Power Adapters", brand: "Dell", model: "HA130PM170", totalQty: 90, inStock: 0, deployed: 90, minStock: 10, location: "HQ - New York Depot (Shelf P-04)" },
-        { id: 15, sku: "ASO1026015", name: "Belkin USB-C to 4K HDMI Adapter", category: "Cables & Display Adapters", brand: "Belkin", model: "AVC002btBK 4K@60Hz", totalQty: 150, inStock: 44, deployed: 106, minStock: 20, location: "London Office Store (Shelf C-02)" },
-        { id: 16, sku: "ASO1026016", name: "Anker USB-C to Lightning Braided Cable (6ft)", category: "Cables & Display Adapters", brand: "Anker", model: "PowerLine III MFi", totalQty: 80, inStock: 0, deployed: 80, minStock: 15, location: "Bangalore DC Depot (Shelf C-05)" },
-        { id: 17, sku: "ASO1026017", name: "YubiKey 5 NFC Hardware Security Key", category: "Security Tokens & Smart Keys", brand: "Yubico", model: "Y-501 FIDO2", totalQty: 120, inStock: 27, deployed: 93, minStock: 15, location: "HQ - New York Depot (Safe Vault 1)" },
-        { id: 18, sku: "ASO1026018", name: "Rain Design mStand Aluminum Laptop Stand", category: "Laptop Stands & Mounts", brand: "Rain Design", model: "mStand 10032", totalQty: 75, inStock: 19, deployed: 56, minStock: 10, location: "Austin Hub Depot (Shelf S-01)" }
-    ];
+    // Accessories dataset loaded from server or initialized
+    let accessories = (typeof window !== 'undefined' && Array.isArray(window.INITIAL_ACCESSORIES))
+        ? window.INITIAL_ACCESSORIES
+        : [];
 
     // Filter states
     let searchTerm = '';
+    let selectedBranch = 'all';
     let selectedCategory = 'all';
     let selectedStatus = 'all';
 
     // DOM Elements
     const tbody = document.getElementById('accessoriesTbody');
     const searchInput = document.getElementById('searchInput');
+    const branchFilter = document.getElementById('branchFilter');
     const categoryFilter = document.getElementById('categoryFilter');
     const statusFilter = document.getElementById('statusFilter');
     const resetFilterBtn = document.getElementById('resetFilterBtn');
@@ -74,6 +59,16 @@
     const issueForm = document.getElementById('issueForm');
     const exportAccBtn = document.getElementById('exportAccBtn');
 
+    // Helper: Construct API URL with preview query if present
+    function getApiUrl(params = {}) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('preview')) {
+            params.preview = 1;
+        }
+        const qs = new URLSearchParams(params).toString();
+        return 'api/accessories.php' + (qs ? '?' + qs : '');
+    }
+
     // Generate Accessory SKU Tag in format ASO + MMYY + 3DIGITSERIAL (e.g. ASO1026001)
     function generateNextAccessorySku(offset = 0) {
         const now = new Date();
@@ -109,15 +104,38 @@
 
     // Initialize
     function init() {
-        renderTable();
-        updateStats();
+        if (accessories.length === 0) {
+            loadAccessories();
+        } else {
+            renderTable();
+            updateStats();
+        }
         bindEvents();
         fetchDynamicCategories();
+        fetchDynamicBranches();
+    }
+
+    // Load accessories and stats from database via API
+    function loadAccessories(callback) {
+        fetch(getApiUrl())
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.accessories)) {
+                    accessories = data.accessories;
+                    renderTable();
+                    if (data.stats) updateStats(data.stats);
+                    if (typeof callback === 'function') callback();
+                }
+            })
+            .catch(err => {
+                console.warn('Could not fetch accessories from database:', err);
+                if (typeof callback === 'function') callback();
+            });
     }
 
     // Fetch and populate dynamic categories from Master API
     function fetchDynamicCategories(selectedVal) {
-        fetch('api/accessory_categories.php?status=Active')
+        fetch('api/accessory_categories.php?status=Active' + (window.location.search.includes('preview=1') ? '&preview=1' : ''))
             .then(res => res.json())
             .then(data => {
                 if (data.success && Array.isArray(data.categories)) {
@@ -166,11 +184,66 @@
             });
     }
 
+    // Fetch and populate active branch locations from Locations Master API
+    function fetchDynamicBranches(selectedVal) {
+        fetch('api/locations.php?status=Active' + (window.location.search.includes('preview=1') ? '&preview=1' : ''))
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.locations)) {
+                    const accBranch = document.getElementById('accBranch');
+                    const editAccBranch = document.getElementById('editAccBranch');
+
+                    const populate = (sel, defText, cur) => {
+                        if (!sel) return;
+                        let optsHtml = `<option value="">${defText}</option>`;
+                        data.locations.forEach(loc => {
+                            const name = loc.location_name;
+                            const isSel = (name === cur) ? 'selected' : '';
+                            optsHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
+                        });
+                        sel.innerHTML = optsHtml;
+                        if (cur) sel.value = cur;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(sel);
+                    };
+
+                    if (accBranch) {
+                        populate(accBranch, 'Select Branch Location', accBranch.value);
+                    }
+                    if (editAccBranch) {
+                        const curEdit = (selectedVal !== undefined) ? selectedVal : editAccBranch.value;
+                        populate(editAccBranch, 'Select Branch Location', curEdit);
+                    }
+                    if (branchFilter) {
+                        const curFilter = branchFilter.value;
+                        let filterHtml = '<option value="all">All Branch Locations</option>';
+                        data.locations.forEach(loc => {
+                            const name = loc.location_name;
+                            const isSel = (name === curFilter) ? 'selected' : '';
+                            filterHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
+                        });
+                        branchFilter.innerHTML = filterHtml;
+                        if (curFilter) branchFilter.value = curFilter;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(branchFilter);
+                    }
+                }
+            })
+            .catch(err => {
+                console.warn('Could not refresh branch locations:', err);
+            });
+    }
+
     function bindEvents() {
         // Search & Filters
         if (searchInput) {
             searchInput.addEventListener('input', function (e) {
                 searchTerm = e.target.value.toLowerCase().trim();
+                renderTable();
+            });
+        }
+
+        if (branchFilter) {
+            branchFilter.addEventListener('change', function (e) {
+                selectedBranch = e.target.value;
                 renderTable();
             });
         }
@@ -192,12 +265,15 @@
         if (resetFilterBtn) {
             resetFilterBtn.addEventListener('click', function () {
                 searchTerm = '';
+                selectedBranch = 'all';
                 selectedCategory = 'all';
                 selectedStatus = 'all';
                 if (searchInput) searchInput.value = '';
+                if (branchFilter) branchFilter.value = 'all';
                 if (categoryFilter) categoryFilter.value = 'all';
                 if (statusFilter) statusFilter.value = 'all';
                 if (window.SearchableSelect) {
+                    if (branchFilter) window.SearchableSelect.sync(branchFilter);
                     if (categoryFilter) window.SearchableSelect.sync(categoryFilter);
                     if (statusFilter) window.SearchableSelect.sync(statusFilter);
                 }
@@ -212,9 +288,22 @@
                 if (addAccessoryForm) addAccessoryForm.reset();
                 const skuInput = document.getElementById('accSku');
                 if (skuInput) skuInput.value = generateNextAccessorySku();
+
+                // Fetch real guaranteed unique next SKU from server
+                fetch(getApiUrl({ action: 'get_next_sku' }))
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success && res.next_sku && skuInput) {
+                            skuInput.value = res.next_sku;
+                        }
+                    })
+                    .catch(() => {});
+
                 fetchDynamicCategories('');
+                fetchDynamicBranches('');
                 if (window.SearchableSelect) {
                     window.SearchableSelect.sync(document.getElementById('accCategory'));
+                    window.SearchableSelect.sync(document.getElementById('accBranch'));
                 }
                 openModal(addAccessoryModal);
             });
@@ -278,6 +367,9 @@
     // Filter Logic
     function getFilteredList() {
         return accessories.filter(item => {
+            // Branch Location
+            if (selectedBranch !== 'all' && (item.branch_location || '') !== selectedBranch) return false;
+
             // Category
             if (selectedCategory !== 'all' && item.category !== selectedCategory) return false;
 
@@ -287,7 +379,7 @@
 
             // Search
             if (searchTerm) {
-                const combined = `${item.sku} ${item.name} ${item.brand} ${item.model} ${item.category}`.toLowerCase();
+                const combined = `${item.sku} ${item.name} ${item.brand} ${item.model || ''} ${item.category} ${item.branch_location || ''} ${item.location || ''}`.toLowerCase();
                 if (!combined.includes(searchTerm)) return false;
             }
 
@@ -296,8 +388,10 @@
     }
 
     function getItemStatus(item) {
-        if (item.inStock === 0) return 'Out of Stock';
-        if (item.inStock <= item.minStock) return 'Low Stock';
+        const inStock = parseInt(item.inStock || 0, 10);
+        const minStock = parseInt(item.minStock || 0, 10);
+        if (inStock === 0) return 'Out of Stock';
+        if (inStock <= minStock) return 'Low Stock';
         return 'In Stock';
     }
 
@@ -333,6 +427,11 @@
                 statusBadge = `<span class="asset-status-badge status-retired" style="background:#fef2f2; color:#b91c1c;"><span class="dot" style="background:#ef4444;"></span>Out of Stock</span>`;
             }
 
+            const locParts = [];
+            if (item.branch_location) locParts.push(escapeHtml(item.branch_location));
+            if (item.location) locParts.push(escapeHtml(item.location));
+            const locText = locParts.length > 0 ? locParts.join(' • ') : 'Depot';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="white-space: nowrap;">
@@ -343,7 +442,7 @@
                         <span class="asset-name-title" onclick="window.accMgr.openEdit(${item.id})">${escapeHtml(item.name)}</span>
                         <span class="asset-spec-sub">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                            ${escapeHtml(item.location || 'Depot')}
+                            ${locText}
                         </span>
                     </div>
                 </td>
@@ -378,16 +477,28 @@
     }
 
     // Update Stats
-    function updateStats() {
+    function updateStats(serverStats) {
+        if (serverStats) {
+            if (statTotalItems) statTotalItems.textContent = serverStats.total ?? accessories.length;
+            if (statInStock) statInStock.textContent = (serverStats.in_stock ?? 0).toLocaleString('en-IN');
+            if (statDeployed) statDeployed.textContent = (serverStats.deployed ?? 0).toLocaleString('en-IN');
+            if (statLowStock) statLowStock.textContent = serverStats.low_stock ?? 0;
+            return;
+        }
+
         let totalItems = accessories.length;
         let inStockTotal = 0;
         let deployedTotal = 0;
         let lowStockCount = 0;
 
         accessories.forEach(item => {
-            inStockTotal += item.inStock;
-            deployedTotal += item.deployed;
-            if (item.inStock > 0 && item.inStock <= item.minStock) {
+            const inStock = parseInt(item.inStock || 0, 10);
+            const deployed = parseInt(item.deployed || 0, 10);
+            const minStock = parseInt(item.minStock || 0, 10);
+
+            inStockTotal += inStock;
+            deployedTotal += deployed;
+            if (inStock > 0 && inStock <= minStock) {
                 lowStockCount++;
             }
         });
@@ -398,57 +509,74 @@
         if (statLowStock) statLowStock.textContent = lowStockCount;
     }
 
-    // Add New Accessory
+    // Add New Accessory - Saves directly to Database
     function handleAddAccessory(e) {
         e.preventDefault();
         const name = document.getElementById('accName').value.trim();
         const category = document.getElementById('accCategory').value;
+        const branchLocation = document.getElementById('accBranch') ? document.getElementById('accBranch').value : '';
         const brand = document.getElementById('accBrand').value.trim();
         const model = document.getElementById('accModel').value.trim();
         const qty = parseInt(document.getElementById('accQty').value, 10) || 1;
         const minStock = parseInt(document.getElementById('accMinStock').value, 10) || 5;
         const location = document.getElementById('accLocation').value.trim();
+        const skuInput = document.getElementById('accSku');
+        const sku = (skuInput && skuInput.value.trim()) ? skuInput.value.trim() : generateNextAccessorySku();
 
         if (saveAccBtn) {
             saveAccBtn.disabled = true;
             saveAccBtn.textContent = 'Saving...';
         }
 
-        const newId = accessories.length > 0 ? Math.max(...accessories.map(a => a.id)) + 1 : 1;
-        const skuInput = document.getElementById('accSku');
-        const newSku = (skuInput && skuInput.value.trim()) ? skuInput.value.trim() : generateNextAccessorySku();
-
-        accessories.unshift({
-            id: newId,
-            sku: newSku,
+        const payload = {
+            action: 'create',
+            sku: sku,
             name: name,
             category: category,
+            branch_location: branchLocation,
             brand: brand,
             model: model,
             totalQty: qty,
-            inStock: qty,
-            deployed: 0,
             minStock: minStock,
             location: location || 'HQ - New York Depot'
+        };
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (saveAccBtn) {
+                saveAccBtn.disabled = false;
+                saveAccBtn.textContent = 'Save Accessory';
+            }
+            if (data.success) {
+                showNotification(data.message || `Added new accessory "${name}".`, 'success');
+                closeModal(addAccessoryModal);
+                loadAccessories();
+            } else {
+                showNotification(data.message || 'Failed to save accessory.', 'error');
+            }
+        })
+        .catch(err => {
+            if (saveAccBtn) {
+                saveAccBtn.disabled = false;
+                saveAccBtn.textContent = 'Save Accessory';
+            }
+            showNotification('Server error while saving accessory.', 'error');
+            console.error(err);
         });
-
-        if (saveAccBtn) {
-            saveAccBtn.disabled = false;
-            saveAccBtn.textContent = 'Save Accessory';
-        }
-
-        closeModal(addAccessoryModal);
-        updateStats();
-        renderTable();
-        showNotification(`Added new accessory "${name}" (${newSku}).`, 'success');
     }
 
-    // Update Accessory
+    // Update Accessory - Saves edits directly to Database
     function handleUpdateAccessory(e) {
         e.preventDefault();
-        const editId = document.getElementById('editAccId').value;
+        const editId = parseInt(document.getElementById('editAccId').value, 10);
         const name = document.getElementById('editAccName').value.trim();
         const category = document.getElementById('editAccCategory').value;
+        const branchLocation = document.getElementById('editAccBranch') ? document.getElementById('editAccBranch').value : '';
         const brand = document.getElementById('editAccBrand').value.trim();
         const model = document.getElementById('editAccModel').value.trim();
         const qty = parseInt(document.getElementById('editAccQty').value, 10) || 1;
@@ -460,34 +588,46 @@
             updateAccBtn.textContent = 'Updating...';
         }
 
-        const item = accessories.find(a => a.id === parseInt(editId, 10));
-        if (item) {
-            item.name = name;
-            item.category = category;
-            item.brand = brand;
-            item.model = model;
-            const diff = qty - item.totalQty;
-            item.totalQty = qty;
-            item.inStock = Math.max(0, item.inStock + diff);
-            item.minStock = minStock;
-            item.location = location;
+        const payload = {
+            action: 'edit',
+            id: editId,
+            name: name,
+            category: category,
+            branch_location: branchLocation,
+            brand: brand,
+            model: model,
+            totalQty: qty,
+            minStock: minStock,
+            location: location
+        };
 
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
             if (updateAccBtn) {
                 updateAccBtn.disabled = false;
                 updateAccBtn.textContent = 'Update Accessory';
             }
-
-            closeModal(editAccessoryModal);
-            updateStats();
-            renderTable();
-            showNotification(`Updated accessory "${name}".`, 'success');
-        } else {
+            if (data.success) {
+                showNotification(data.message || `Updated accessory "${name}".`, 'success');
+                closeModal(editAccessoryModal);
+                loadAccessories();
+            } else {
+                showNotification(data.message || 'Failed to update accessory.', 'error');
+            }
+        })
+        .catch(err => {
             if (updateAccBtn) {
                 updateAccBtn.disabled = false;
                 updateAccBtn.textContent = 'Update Accessory';
             }
-            showNotification('Failed to find accessory to update.', 'error');
-        }
+            showNotification('Server error while updating accessory.', 'error');
+            console.error(err);
+        });
     }
 
     // Issue (Check-Out)
@@ -499,7 +639,7 @@
         }
 
         document.getElementById('issueAccId').value = item.id;
-        document.getElementById('issueAccName').textContent = `${item.name} (${item.brand} ${item.model})`;
+        document.getElementById('issueAccName').textContent = `${item.name} (${item.brand} ${item.model || ''})`;
         document.getElementById('issueAvailableStock').textContent = item.inStock;
 
         const qtyInput = document.getElementById('issueQty');
@@ -526,13 +666,32 @@
             return;
         }
 
-        item.inStock -= qty;
-        item.deployed += qty;
+        const payload = {
+            action: 'issue',
+            id: id,
+            qty: qty,
+            employee: employee
+        };
 
-        closeModal(issueModal);
-        updateStats();
-        renderTable();
-        showNotification(`Issued ${qty} unit(s) of ${item.name} to ${employee}.`, 'success');
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message || `Issued ${qty} unit(s) of ${item.name} to ${employee}.`, 'success');
+                closeModal(issueModal);
+                loadAccessories();
+            } else {
+                showNotification(data.message || 'Failed to issue accessory.', 'error');
+            }
+        })
+        .catch(err => {
+            showNotification('Server error while issuing accessory.', 'error');
+            console.error(err);
+        });
     }
 
     // Edit Item Modal - Opens dedicated Edit modal
@@ -545,19 +704,27 @@
         if (skuInput) skuInput.value = item.sku || '';
         document.getElementById('editAccName').value = item.name;
         document.getElementById('editAccBrand').value = item.brand;
-        document.getElementById('editAccModel').value = item.model;
+        document.getElementById('editAccModel').value = item.model || '';
         document.getElementById('editAccQty').value = item.totalQty;
         document.getElementById('editAccMinStock').value = item.minStock;
-        document.getElementById('editAccLocation').value = item.location;
+        document.getElementById('editAccLocation').value = item.location || '';
 
         const catSelect = document.getElementById('editAccCategory');
         if (catSelect) {
             catSelect.value = item.category;
         }
 
+        const branchSelect = document.getElementById('editAccBranch');
+        if (branchSelect) {
+            branchSelect.value = item.branch_location || '';
+        }
+
         fetchDynamicCategories(item.category);
-        if (window.SearchableSelect && catSelect) {
-            window.SearchableSelect.sync(catSelect);
+        fetchDynamicBranches(item.branch_location || '');
+
+        if (window.SearchableSelect) {
+            if (catSelect) window.SearchableSelect.sync(catSelect);
+            if (branchSelect) window.SearchableSelect.sync(branchSelect);
         }
 
         openModal(editAccessoryModal);
@@ -575,7 +742,7 @@
         openModal(deleteAccessoryModal);
     }
 
-    // Confirm Delete Action
+    // Confirm Delete Action - Persists directly to Database
     function handleConfirmDelete() {
         if (!accessoryToDeleteId) return;
 
@@ -584,21 +751,37 @@
             confirmDeleteBtn.textContent = 'Deleting...';
         }
 
-        const item = accessories.find(a => a.id === accessoryToDeleteId);
-        const itemName = item ? item.name : 'Accessory';
-
-        accessories = accessories.filter(a => a.id !== accessoryToDeleteId);
-        accessoryToDeleteId = null;
-
-        if (confirmDeleteBtn) {
-            confirmDeleteBtn.disabled = false;
-            confirmDeleteBtn.textContent = 'Yes, Delete Accessory';
-        }
-
-        closeModal(deleteAccessoryModal);
-        updateStats();
-        renderTable();
-        showNotification(`Accessory "${itemName}" deleted successfully.`, 'info');
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'delete',
+                id: accessoryToDeleteId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = 'Yes, Delete Accessory';
+            }
+            if (data.success) {
+                showNotification(data.message || 'Accessory deleted successfully.', 'info');
+                closeModal(deleteAccessoryModal);
+                accessoryToDeleteId = null;
+                loadAccessories();
+            } else {
+                showNotification(data.message || 'Failed to delete accessory.', 'error');
+            }
+        })
+        .catch(err => {
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = 'Yes, Delete Accessory';
+            }
+            showNotification('Server error while deleting accessory.', 'error');
+            console.error(err);
+        });
     }
 
     // Export CSV
@@ -609,9 +792,9 @@
             return;
         }
 
-        let csv = 'SKU,Name,Category,Brand,Model,TotalQty,InStock,Deployed,Status,Location\n';
+        let csv = 'SKU,Name,Category,Branch Location,Brand,Model,TotalQty,InStock,Deployed,Status,Storage Location\n';
         list.forEach(a => {
-            csv += `"${a.sku}","${a.name.replace(/"/g, '""')}","${a.category}","${a.brand}","${a.model}",${a.totalQty},${a.inStock},${a.deployed},"${getItemStatus(a)}","${a.location}"\n`;
+            csv += `"${a.sku}","${a.name.replace(/"/g, '""')}","${a.category}","${(a.branch_location || '').replace(/"/g, '""')}","${a.brand}","${(a.model || '').replace(/"/g, '""')}",${a.totalQty},${a.inStock},${a.deployed},"${getItemStatus(a)}","${(a.location || '').replace(/"/g, '""')}"\n`;
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -659,7 +842,8 @@
     window.accMgr = {
         openIssue: openIssueModal,
         openEdit: openEditModal,
-        deleteItem: openDeleteModal
+        deleteItem: openDeleteModal,
+        reload: loadAccessories
     };
 
     // Auto-init

@@ -129,19 +129,16 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                 <li>
                     <a href="assets.php" class="submenu-link <?php echo in_array($active_page, ['assets', 'asset_management', 'assets_all']) ? 'active' : ''; ?>">
                         <span>Asset Management</span>
-                        <span class="submenu-badge">842</span>
                     </a>
                 </li>
                 <li>
                     <a href="<?php echo file_exists(__DIR__ . '/../accessories.php') ? 'accessories.php' : '#accessories-management'; ?>" class="submenu-link <?php echo in_array($active_page, ['accessories', 'accessories_management']) ? 'active' : ''; ?>" <?php echo !file_exists(__DIR__ . '/../accessories.php') ? 'onclick="handleMenuClick(event, \'Accessories Management\')"' : ''; ?>>
                         <span>Accessories Management</span>
-                        <span class="submenu-badge">338</span>
                     </a>
                 </li>
                 <li>
                     <a href="components.php" class="submenu-link <?php echo in_array($active_page, ['components', 'component_management']) ? 'active' : ''; ?>">
                         <span>Parts / Components</span>
-                        <span class="submenu-badge">412</span>
                     </a>
                 </li>
                 <li>
@@ -210,19 +207,16 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                 <li>
                     <a href="#tickets-all" class="submenu-link <?php echo in_array($active_page, ['tickets', 'tickets_all']) ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'All Tickets')">
                         <span>All Tickets</span>
-                        <span class="submenu-badge">48</span>
                     </a>
                 </li>
                 <li>
                     <a href="#tickets-open" class="submenu-link <?php echo ($active_page === 'tickets_open') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Open Tickets')">
                         <span>Open / Pending</span>
-                        <span class="submenu-badge" style="background: rgba(245,158,11,0.3);">12</span>
                     </a>
                 </li>
                 <li>
                     <a href="#tickets-progress" class="submenu-link <?php echo ($active_page === 'tickets_progress') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'In Progress Tickets')">
                         <span>In Progress</span>
-                        <span class="submenu-badge">24</span>
                     </a>
                 </li>
                 <li>

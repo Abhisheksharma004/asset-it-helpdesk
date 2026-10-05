@@ -39,6 +39,7 @@ BEGIN
         serial NVARCHAR(100) NOT NULL,
         name NVARCHAR(200) NOT NULL,
         category NVARCHAR(100) NOT NULL,
+        branch_location NVARCHAR(150) NULL,
         brand NVARCHAR(100) NOT NULL,
         model NVARCHAR(100) NULL,
         specs NVARCHAR(255) NULL,
@@ -49,23 +50,29 @@ BEGIN
         updated_at DATETIME NOT NULL DEFAULT GETDATE()
     );
 
-    INSERT INTO components (sku, serial, name, category, brand, model, specs, status, installed_asset, location) VALUES
-    ('PRT1026001', 'CRU-DDR4-88491', 'Crucial 16GB DDR4 3200MHz SO-DIMM', 'RAM & Memory Modules', 'Crucial', 'CT16G4SFD832A', '16GB DDR4 3200MHz CL22 1.2V 260-Pin', 'Installed', 'AST-2026-001 (Dell Latitude 5420)', 'Installed in Slot 2'),
-    ('PRT1026002', 'CRU-DDR4-88492', 'Crucial 16GB DDR4 3200MHz SO-DIMM', 'RAM & Memory Modules', 'Crucial', 'CT16G4SFD832A', '16GB DDR4 3200MHz CL22 1.2V 260-Pin', 'Available', '', 'Depot Rack 1 (Drawer A-01)'),
-    ('PRT1026003', 'KNG-DDR5-10293', 'Kingston Fury Beast 32GB DDR5 5600MHz', 'RAM & Memory Modules', 'Kingston', 'KF556C40BBK2-32', '32GB (2x16GB) DDR5 5600MHz Desktop', 'Available', '', 'Depot Rack 1 (Drawer A-03)'),
-    ('PRT1026004', 'SAM-NVME-99102', 'Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2', 'Solid State Drives (SSD)', 'Samsung', 'MZ-V8P1T0B/AM', '1TB M.2 NVMe PCIe Gen4 (7000MB/s Read)', 'Installed', 'AST-2026-003 (MacBook Pro 16 M1)', 'Installed as Primary Drive'),
-    ('PRT1026005', 'SAM-NVME-99103', 'Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2', 'Solid State Drives (SSD)', 'Samsung', 'MZ-V8P1T0B/AM', '1TB M.2 NVMe PCIe Gen4 (7000MB/s Read)', 'Available', '', 'Depot Rack 2 (Drawer B-01)'),
-    ('PRT1026006', 'CRU-SATA-44129', 'Crucial MX500 500GB 2.5-Inch SATA SSD', 'Solid State Drives (SSD)', 'Crucial', 'CT500MX500SSD1', '500GB SATA 6Gb/s 2.5-Inch 7mm Internal', 'Installed', 'AST-2026-004 (HP EliteDesk 800 G6)', 'Installed in SATA Bay 1'),
-    ('PRT1026007', 'SEA-NAS-77218', 'Seagate IronWolf 4TB NAS Hard Drive', 'Hard Disk Drives (HDD)', 'Seagate', 'ST4000VN006', '4TB 5400RPM SATA 6Gb/s 256MB Cache', 'Installed', 'AST-2026-005 (Dell PowerEdge R740)', 'Server Bay 03'),
-    ('PRT1026008', 'NV-RTX-55102', 'NVIDIA RTX A2000 12GB Workstation GPU', 'Graphics & GPU Cards', 'NVIDIA / PNY', 'VCNRTXA2000-12GB', '12GB GDDR6 Low Profile PCIe 4.0 x16', 'Installed', 'AST-2026-006 (Custom AI Workstation)', 'PCIe Slot 1'),
-    ('PRT1026009', 'INT-I7-33910', 'Intel Core i7-13700 Desktop Processor', 'Processors & CPUs', 'Intel', 'BX8071513700', '16 Cores (8P+8E) up to 5.2GHz LGA1700', 'Installed', 'AST-2026-006 (Custom AI Workstation)', 'Socket LGA1700'),
-    ('PRT1026010', 'DEL-BAT-22019', 'Dell 58Wh 4-Cell Laptop Replacement Battery', 'Laptop Batteries', 'Dell OEM', '68Wh H5CKD', '15.2V 58Wh Li-ion for Latitude 5420/5430', 'Available', '', 'Battery Safe Cabinet (Shelf 2)'),
-    ('PRT1026011', 'COR-750-66014', 'Corsair RM750x 750W Fully Modular PSU', 'Power Supply Units (PSU)', 'Corsair', 'CP-9020199-NA', '750 Watt 80 Plus Gold Fully Modular', 'Under Repair', '', 'Repair Bench (Ticket #IT-884)'),
-    ('PRT1026012', 'INT-NIC-12004', 'Intel X550-T2 Dual Port 10GbE Network Card', 'Network Interface Cards (NIC)', 'Intel', 'X550T2BLK', 'Dual-Port RJ45 10GbE PCIe 3.0 x4', 'Available', '', 'Depot Rack 4 (Drawer N-01)');
+    INSERT INTO components (sku, serial, name, category, branch_location, brand, model, specs, status, installed_asset, location) VALUES
+    ('PRT1026001', 'CRU-DDR4-88491', 'Crucial 16GB DDR4 3200MHz SO-DIMM', 'RAM & Memory Modules', 'Corporate HQ - Mumbai', 'Crucial', 'CT16G4SFD832A', '16GB DDR4 3200MHz CL22 1.2V 260-Pin', 'Installed', 'AST-2026-001 (Dell Latitude 5420)', 'Installed in Slot 2'),
+    ('PRT1026002', 'CRU-DDR4-88492', 'Crucial 16GB DDR4 3200MHz SO-DIMM', 'RAM & Memory Modules', 'Corporate HQ - Mumbai', 'Crucial', 'CT16G4SFD832A', '16GB DDR4 3200MHz CL22 1.2V 260-Pin', 'Available', '', 'Depot Rack 1 (Drawer A-01)'),
+    ('PRT1026003', 'KNG-DDR5-10293', 'Kingston Fury Beast 32GB DDR5 5600MHz', 'RAM & Memory Modules', 'Tech Hub - Bangalore', 'Kingston', 'KF556C40BBK2-32', '32GB (2x16GB) DDR5 5600MHz Desktop', 'Available', '', 'Depot Rack 1 (Drawer A-03)'),
+    ('PRT1026004', 'SAM-NVME-99102', 'Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2', 'Solid State Drives (SSD)', 'Corporate HQ - Mumbai', 'Samsung', 'MZ-V8P1T0B/AM', '1TB M.2 NVMe PCIe Gen4 (7000MB/s Read)', 'Installed', 'AST-2026-003 (MacBook Pro 16 M1)', 'Installed as Primary Drive'),
+    ('PRT1026005', 'SAM-NVME-99103', 'Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2', 'Solid State Drives (SSD)', 'Delivery Center - Hyderabad', 'Samsung', 'MZ-V8P1T0B/AM', '1TB M.2 NVMe PCIe Gen4 (7000MB/s Read)', 'Available', '', 'Depot Rack 2 (Drawer B-01)'),
+    ('PRT1026006', 'CRU-SATA-44129', 'Crucial MX500 500GB 2.5-Inch SATA SSD', 'Solid State Drives (SSD)', 'Branch Office - Delhi NCR', 'Crucial', 'CT500MX500SSD1', '500GB SATA 6Gb/s 2.5-Inch 7mm Internal', 'Installed', 'AST-2026-004 (HP EliteDesk 800 G6)', 'Installed in SATA Bay 1'),
+    ('PRT1026007', 'SEA-NAS-77218', 'Seagate IronWolf 4TB NAS Hard Drive', 'Hard Disk Drives (HDD)', 'Corporate HQ - Mumbai', 'Seagate', 'ST4000VN006', '4TB 5400RPM SATA 6Gb/s 256MB Cache', 'Installed', 'AST-2026-005 (Dell PowerEdge R740)', 'Server Bay 03'),
+    ('PRT1026008', 'NV-RTX-55102', 'NVIDIA RTX A2000 12GB Workstation GPU', 'Graphics & GPU Cards', 'Tech Hub - Bangalore', 'NVIDIA / PNY', 'VCNRTXA2000-12GB', '12GB GDDR6 Low Profile PCIe 4.0 x16', 'Installed', 'AST-2026-006 (Custom AI Workstation)', 'PCIe Slot 1'),
+    ('PRT1026009', 'INT-I7-33910', 'Intel Core i7-13700 Desktop Processor', 'Processors & CPUs', 'Corporate HQ - Mumbai', 'Intel', 'BX8071513700', '16 Cores (8P+8E) up to 5.2GHz LGA1700', 'Installed', 'AST-2026-006 (Custom AI Workstation)', 'Socket LGA1700'),
+    ('PRT1026010', 'DEL-BAT-22019', 'Dell 58Wh 4-Cell Laptop Replacement Battery', 'Laptop Batteries', 'Delivery Center - Hyderabad', 'Dell OEM', '68Wh H5CKD', '15.2V 58Wh Li-ion for Latitude 5420/5430', 'Available', '', 'Battery Safe Cabinet (Shelf 2)'),
+    ('PRT1026011', 'COR-750-66014', 'Corsair RM750x 750W Fully Modular PSU', 'Power Supply Units (PSU)', 'Tech Hub - Bangalore', 'Corsair', 'CP-9020199-NA', '750 Watt 80 Plus Gold Fully Modular', 'Under Repair', '', 'Repair Bench (Ticket #IT-884)'),
+    ('PRT1026012', 'INT-NIC-12004', 'Intel X550-T2 Dual Port 10GbE Network Card', 'Network Interface Cards (NIC)', 'Branch Office - Delhi NCR', 'Intel', 'X550T2BLK', 'Dual-Port RJ45 10GbE PCIe 3.0 x4', 'Available', '', 'Depot Rack 4 (Drawer N-01)');
 END";
 
 if ($conn !== false) {
     sqlsrv_query($conn, $tableSetupSql);
+    // Ensure column exists for existing tables
+    $alterSql = "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'components' AND COLUMN_NAME = 'branch_location')
+                 BEGIN
+                     ALTER TABLE components ADD branch_location NVARCHAR(150) NULL;
+                 END";
+    sqlsrv_query($conn, $alterSql);
 }
 
 /**
@@ -133,7 +140,7 @@ if ($method === 'GET') {
     }
 
     // Filtered records query
-    $sql = "SELECT id, sku, serial, name, category, brand, model, specs, status, 
+    $sql = "SELECT id, sku, serial, name, category, branch_location, brand, model, specs, status, 
                    installed_asset, location,
                    CONVERT(VARCHAR(10), created_at, 105) AS created_date
             FROM components 
@@ -141,9 +148,9 @@ if ($method === 'GET') {
     $params = [];
 
     if ($search !== '') {
-        $sql .= " AND (name LIKE ? OR sku LIKE ? OR serial LIKE ? OR brand LIKE ? OR model LIKE ? OR specs LIKE ? OR installed_asset LIKE ? OR location LIKE ?)";
+        $sql .= " AND (name LIKE ? OR sku LIKE ? OR serial LIKE ? OR brand LIKE ? OR model LIKE ? OR specs LIKE ? OR installed_asset LIKE ? OR location LIKE ? OR branch_location LIKE ?)";
         $searchWild = '%' . $search . '%';
-        for ($i = 0; $i < 8; $i++) {
+        for ($i = 0; $i < 9; $i++) {
             $params[] = $searchWild;
         }
     }
@@ -170,18 +177,19 @@ if ($method === 'GET') {
     $components = [];
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $components[] = [
-            'id'             => intval($row['id']),
-            'sku'            => $row['sku'],
-            'serial'         => $row['serial'],
-            'name'           => $row['name'],
-            'category'       => $row['category'],
-            'brand'          => $row['brand'],
-            'model'          => $row['model'] ?? '',
-            'specs'          => $row['specs'] ?? '',
-            'status'         => $row['status'],
-            'installedAsset' => $row['installed_asset'] ?? '',
-            'location'       => $row['location'] ?? '',
-            'created_date'   => $row['created_date'] ?? ''
+            'id'              => intval($row['id']),
+            'sku'             => $row['sku'],
+            'serial'          => $row['serial'],
+            'name'            => $row['name'],
+            'category'        => $row['category'],
+            'branch_location' => $row['branch_location'] ?? '',
+            'brand'           => $row['brand'],
+            'model'           => $row['model'] ?? '',
+            'specs'           => $row['specs'] ?? '',
+            'status'          => $row['status'],
+            'installedAsset'  => $row['installed_asset'] ?? '',
+            'location'        => $row['location'] ?? '',
+            'created_date'    => $row['created_date'] ?? ''
         ];
     }
     sqlsrv_free_stmt($stmt);
@@ -214,15 +222,20 @@ if ($method === 'POST') {
     }
 
     if ($action === 'create') {
-        $name     = trim($input['name'] ?? '');
-        $category = trim($input['category'] ?? '');
-        $brand    = trim($input['brand'] ?? '');
-        $model    = trim($input['model'] ?? '');
-        $serial   = trim($input['serial'] ?? '');
-        $status   = trim($input['status'] ?? 'Available');
-        $specs    = trim($input['specs'] ?? '');
-        $location = trim($input['location'] ?? 'Depot Shelf');
-        $sku      = trim($input['sku'] ?? '');
+        $name            = trim($input['name'] ?? '');
+        $category        = trim($input['category'] ?? '');
+        $branch_location = trim($input['branch_location'] ?? ($input['branch'] ?? ''));
+        $brand           = trim($input['brand'] ?? '');
+        $model           = trim($input['model'] ?? '');
+        $serial          = trim($input['serial'] ?? '');
+        $status          = trim($input['status'] ?? 'Available');
+        $specs           = trim($input['specs'] ?? '');
+        $location        = trim($input['location'] ?? 'Depot Shelf');
+        $sku             = trim($input['sku'] ?? '');
+
+        if ($branch_location === '') {
+            $branch_location = 'Corporate HQ - Mumbai';
+        }
 
         if ($name === '' || $category === '' || $brand === '' || $serial === '') {
             http_response_code(400);
@@ -243,10 +256,10 @@ if ($method === 'POST') {
             sqlsrv_free_stmt($chkStmt);
         }
 
-        $insSql = "INSERT INTO components (sku, serial, name, category, brand, model, specs, status, installed_asset, location, created_at, updated_at) 
+        $insSql = "INSERT INTO components (sku, serial, name, category, branch_location, brand, model, specs, status, installed_asset, location, created_at, updated_at) 
                    OUTPUT INSERTED.id 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, GETDATE(), GETDATE())";
-        $insParams = [$sku, $serial, $name, $category, $brand, $model, $specs, $status, $location];
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, GETDATE(), GETDATE())";
+        $insParams = [$sku, $serial, $name, $category, $branch_location, $brand, $model, $specs, $status, $location];
         $insStmt = sqlsrv_query($conn, $insSql, $insParams);
 
         if ($insStmt === false) {
@@ -271,15 +284,16 @@ if ($method === 'POST') {
     }
 
     if ($action === 'edit') {
-        $id       = intval($input['id'] ?? 0);
-        $name     = trim($input['name'] ?? '');
-        $category = trim($input['category'] ?? '');
-        $brand    = trim($input['brand'] ?? '');
-        $model    = trim($input['model'] ?? '');
-        $serial   = trim($input['serial'] ?? '');
-        $status   = trim($input['status'] ?? 'Available');
-        $specs    = trim($input['specs'] ?? '');
-        $location = trim($input['location'] ?? 'Depot Shelf');
+        $id              = intval($input['id'] ?? 0);
+        $name            = trim($input['name'] ?? '');
+        $category        = trim($input['category'] ?? '');
+        $branch_location = trim($input['branch_location'] ?? ($input['branch'] ?? ''));
+        $brand           = trim($input['brand'] ?? '');
+        $model           = trim($input['model'] ?? '');
+        $serial          = trim($input['serial'] ?? '');
+        $status          = trim($input['status'] ?? 'Available');
+        $specs           = trim($input['specs'] ?? '');
+        $location        = trim($input['location'] ?? 'Depot Shelf');
 
         if ($id <= 0 || $name === '' || $category === '' || $brand === '' || $serial === '') {
             http_response_code(400);
@@ -289,11 +303,11 @@ if ($method === 'POST') {
 
         // If status changed to Available, clear installed_asset
         $updSql = "UPDATE components 
-                   SET name = ?, category = ?, brand = ?, model = ?, serial = ?, status = ?, specs = ?, location = ?,
+                   SET name = ?, category = ?, branch_location = ?, brand = ?, model = ?, serial = ?, status = ?, specs = ?, location = ?,
                        installed_asset = CASE WHEN ? = 'Available' THEN '' ELSE installed_asset END,
                        updated_at = GETDATE()
                    WHERE id = ?";
-        $updParams = [$name, $category, $brand, $model, $serial, $status, $specs, $location, $status, $id];
+        $updParams = [$name, $category, $branch_location, $brand, $model, $serial, $status, $specs, $location, $status, $id];
         $updStmt = sqlsrv_query($conn, $updSql, $updParams);
 
         if ($updStmt === false) {

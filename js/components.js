@@ -13,12 +13,14 @@
 
     // Filter states
     let searchTerm = '';
+    let selectedBranch = 'all';
     let selectedCategory = 'all';
     let selectedStatus = 'all';
 
     // DOM Elements
     const tbody = document.getElementById('componentsTbody');
     const searchInput = document.getElementById('searchInput');
+    const branchFilter = document.getElementById('branchFilter');
     const categoryFilter = document.getElementById('categoryFilter');
     const statusFilter = document.getElementById('statusFilter');
     const resetFilterBtn = document.getElementById('resetFilterBtn');
@@ -135,6 +137,7 @@
         }
         bindEvents();
         fetchDynamicCategories();
+        fetchDynamicBranches();
     }
 
     // Load components and stats from database via API
@@ -206,11 +209,66 @@
             });
     }
 
+    // Fetch and populate active branch locations from Locations Master API
+    function fetchDynamicBranches(selectedVal) {
+        fetch('api/locations.php?status=Active' + (window.location.search.includes('preview=1') ? '&preview=1' : ''))
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.locations)) {
+                    const compBranch = document.getElementById('compBranch');
+                    const editCompBranch = document.getElementById('editCompBranch');
+
+                    const populate = (sel, defText, cur) => {
+                        if (!sel) return;
+                        let optsHtml = `<option value="">${defText}</option>`;
+                        data.locations.forEach(loc => {
+                            const name = loc.location_name;
+                            const isSel = (name === cur) ? 'selected' : '';
+                            optsHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
+                        });
+                        sel.innerHTML = optsHtml;
+                        if (cur) sel.value = cur;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(sel);
+                    };
+
+                    if (compBranch) {
+                        populate(compBranch, 'Select Branch Location', compBranch.value);
+                    }
+                    if (editCompBranch) {
+                        const curEdit = (selectedVal !== undefined) ? selectedVal : editCompBranch.value;
+                        populate(editCompBranch, 'Select Branch Location', curEdit);
+                    }
+                    if (branchFilter) {
+                        const curFilter = branchFilter.value;
+                        let filterHtml = '<option value="all">All Branch Locations</option>';
+                        data.locations.forEach(loc => {
+                            const name = loc.location_name;
+                            const isSel = (name === curFilter) ? 'selected' : '';
+                            filterHtml += `<option value="${escapeHtml(name)}" ${isSel}>${escapeHtml(name)}</option>`;
+                        });
+                        branchFilter.innerHTML = filterHtml;
+                        if (curFilter) branchFilter.value = curFilter;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(branchFilter);
+                    }
+                }
+            })
+            .catch(err => {
+                console.warn('Could not refresh branch locations:', err);
+            });
+    }
+
     function bindEvents() {
         // Search & Filters
         if (searchInput) {
             searchInput.addEventListener('input', function (e) {
                 searchTerm = e.target.value.toLowerCase().trim();
+                renderTable();
+            });
+        }
+
+        if (branchFilter) {
+            branchFilter.addEventListener('change', function (e) {
+                selectedBranch = e.target.value;
                 renderTable();
             });
         }
@@ -232,12 +290,15 @@
         if (resetFilterBtn) {
             resetFilterBtn.addEventListener('click', function () {
                 searchTerm = '';
+                selectedBranch = 'all';
                 selectedCategory = 'all';
                 selectedStatus = 'all';
                 if (searchInput) searchInput.value = '';
+                if (branchFilter) branchFilter.value = 'all';
                 if (categoryFilter) categoryFilter.value = 'all';
                 if (statusFilter) statusFilter.value = 'all';
                 if (window.SearchableSelect) {
+                    if (branchFilter) window.SearchableSelect.sync(branchFilter);
                     if (categoryFilter) window.SearchableSelect.sync(categoryFilter);
                     if (statusFilter) window.SearchableSelect.sync(statusFilter);
                 }
@@ -253,6 +314,9 @@
                 const statusEl = document.getElementById('compStatus');
                 if (statusEl) statusEl.value = 'Available';
 
+                const branchEl = document.getElementById('compBranch');
+                if (branchEl) branchEl.value = '';
+
                 const skuInput = document.getElementById('compSku');
                 if (skuInput) skuInput.value = generateNextPartSku();
 
@@ -267,8 +331,10 @@
                     .catch(() => {});
 
                 fetchDynamicCategories();
+                fetchDynamicBranches();
                 if (window.SearchableSelect) {
                     window.SearchableSelect.sync(document.getElementById('compCategory'));
+                    if (branchEl) window.SearchableSelect.sync(branchEl);
                     window.SearchableSelect.sync(document.getElementById('compStatus'));
                 }
                 openModal(addModal);
@@ -403,14 +469,16 @@
                 item.brand.toLowerCase().includes(searchTerm) ||
                 (item.model && item.model.toLowerCase().includes(searchTerm)) ||
                 (item.specs && item.specs.toLowerCase().includes(searchTerm)) ||
+                (item.branch_location && item.branch_location.toLowerCase().includes(searchTerm)) ||
                 (item.installedAsset && item.installedAsset.toLowerCase().includes(searchTerm)) ||
                 item.category.toLowerCase().includes(searchTerm)
             );
 
+            const matchesBranch = (selectedBranch === 'all') || ((item.branch_location || '') === selectedBranch);
             const matchesCategory = (selectedCategory === 'all') || (item.category === selectedCategory);
             const matchesStatus = (selectedStatus === 'all') || (item.status === selectedStatus);
 
-            return matchesSearch && matchesCategory && matchesStatus;
+            return matchesSearch && matchesBranch && matchesCategory && matchesStatus;
         });
     }
 
@@ -477,6 +545,11 @@
                 `;
             }
 
+            const locParts = [];
+            if (item.branch_location) locParts.push(escapeHtml(item.branch_location));
+            if (item.location) locParts.push(escapeHtml(item.location));
+            const locText = locParts.length > 0 ? locParts.join(' • ') : 'Depot Shelf';
+
             const tr = document.createElement('tr');
             tr.setAttribute('data-id', item.id);
             tr.innerHTML = `
@@ -491,7 +564,7 @@
                         <span class="asset-name-title" onclick="window.compMgr.openEdit(${item.id})">${escapeHtml(item.name)}</span>
                         <span class="asset-spec-sub">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                            ${escapeHtml(item.location || 'Depot Shelf')}
+                            ${locText}
                         </span>
                     </div>
                 </td>
@@ -550,6 +623,7 @@
         e.preventDefault();
         const name = document.getElementById('compName').value.trim();
         const category = document.getElementById('compCategory').value;
+        const branchLocation = document.getElementById('compBranch') ? document.getElementById('compBranch').value : '';
         const brand = document.getElementById('compBrand').value.trim();
         const model = document.getElementById('compModel').value.trim();
         const serial = document.getElementById('compSerial').value.trim();
@@ -569,6 +643,7 @@
             sku: sku,
             name: name,
             category: category,
+            branch_location: branchLocation,
             brand: brand,
             model: model,
             serial: serial,
@@ -612,6 +687,7 @@
         const id = parseInt(document.getElementById('editCompId').value, 10);
         const name = document.getElementById('editCompName').value.trim();
         const category = document.getElementById('editCompCategory').value;
+        const branchLocation = document.getElementById('editCompBranch') ? document.getElementById('editCompBranch').value : '';
         const brand = document.getElementById('editCompBrand').value.trim();
         const model = document.getElementById('editCompModel').value.trim();
         const serial = document.getElementById('editCompSerial').value.trim();
@@ -629,6 +705,7 @@
             id: id,
             name: name,
             category: category,
+            branch_location: branchLocation,
             brand: brand,
             model: model,
             serial: serial,
@@ -800,10 +877,17 @@
             catSelect.value = item.category || '';
         }
 
+        const branchSelect = document.getElementById('editCompBranch');
+        if (branchSelect) {
+            branchSelect.value = item.branch_location || '';
+        }
+
         fetchDynamicCategories(item.category);
+        fetchDynamicBranches(item.branch_location || '');
 
         if (window.SearchableSelect) {
             if (catSelect) window.SearchableSelect.sync(catSelect);
+            if (branchSelect) window.SearchableSelect.sync(branchSelect);
             window.SearchableSelect.sync(document.getElementById('editCompStatus'));
         }
 
@@ -872,9 +956,9 @@
             return;
         }
 
-        let csv = 'Part SKU,Serial Number,Component Name,Category,Brand,Part No,Specs,Installed Asset,Status,Location\n';
+        let csv = 'Part SKU,Serial Number,Component Name,Category,Branch Location,Brand,Part No,Specs,Installed Asset,Status,Location\n';
         list.forEach(c => {
-            csv += `"${c.sku}","${c.serial || ''}","${c.name.replace(/"/g, '""')}","${c.category}","${c.brand}","${c.model || ''}","${c.specs ? c.specs.replace(/"/g, '""') : ''}","${c.installedAsset || ''}","${c.status}","${c.location || ''}"\n`;
+            csv += `"${c.sku}","${c.serial || ''}","${c.name.replace(/"/g, '""')}","${c.category}","${(c.branch_location || '').replace(/"/g, '""')}","${c.brand}","${c.model || ''}","${c.specs ? c.specs.replace(/"/g, '""') : ''}","${c.installedAsset || ''}","${c.status}","${c.location || ''}"\n`;
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
