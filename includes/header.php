@@ -26,6 +26,7 @@ if (!isset($page_title)) {
     <!-- Core Stylesheets -->
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/toast.css">
+    <link rel="stylesheet" href="css/searchable-select.css">
     
     <?php if (isset($extra_css) && is_array($extra_css)): ?>
         <?php foreach ($extra_css as $css_file): ?>

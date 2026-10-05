@@ -85,6 +85,7 @@
                         });
                         accCategorySelect.innerHTML = optsHtml;
                         if (currentVal) accCategorySelect.value = currentVal;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(accCategorySelect);
                     }
 
                     if (categoryFilterSelect) {
@@ -97,6 +98,7 @@
                         });
                         categoryFilterSelect.innerHTML = filterHtml;
                         if (curFilter) categoryFilterSelect.value = curFilter;
+                        if (window.SearchableSelect) window.SearchableSelect.sync(categoryFilterSelect);
                     }
                 }
             })
@@ -136,6 +138,10 @@
                 if (searchInput) searchInput.value = '';
                 if (categoryFilter) categoryFilter.value = 'all';
                 if (statusFilter) statusFilter.value = 'all';
+                if (window.SearchableSelect) {
+                    if (categoryFilter) window.SearchableSelect.sync(categoryFilter);
+                    if (statusFilter) window.SearchableSelect.sync(statusFilter);
+                }
                 renderTable();
                 showNotification('Filters reset to default.', 'info');
             });

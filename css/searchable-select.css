@@ -1,0 +1,318 @@
+/**
+ * Searchable Select Component Styles
+ * VIROS IT Asset & Service Desk Portal
+ * Matches portal design system (cyan primary, clean borders, modern typography)
+ */
+
+/* Container wrapping the custom select */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* For toolbar filters or inline selects */
+.custom-select-wrapper.is-filter-select {
+    width: auto;
+    min-width: 160px;
+    max-width: 240px;
+    display: inline-block;
+}
+
+/* Visually hide original select, but keep in DOM for HTML5 validation & forms */
+.custom-select-wrapper select.searchable-select-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Trigger Button */
+.custom-select-trigger {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 6px);
+    padding: 9px 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--text-primary, #1e293b);
+    cursor: pointer;
+    text-align: left;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    user-select: none;
+}
+
+.custom-select-wrapper.is-filter-select .custom-select-trigger {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.custom-select-trigger:hover {
+    border-color: #cbd5e1;
+}
+
+.custom-select-trigger:focus,
+.custom-select-wrapper.is-open .custom-select-trigger {
+    border-color: var(--cyan-primary, #0093a7);
+    box-shadow: 0 0 0 3px rgba(0, 147, 167, 0.12);
+}
+
+.custom-select-wrapper.has-error .custom-select-trigger {
+    border-color: var(--danger, #ef4444) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+/* Selected Label & Placeholder */
+.custom-select-label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary, #1e293b);
+}
+
+.custom-select-label.is-placeholder {
+    color: var(--text-muted, #94a3b8);
+}
+
+/* Arrow Icon */
+.custom-select-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted, #64748b);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.custom-select-wrapper.is-open .custom-select-arrow {
+    transform: rotate(180deg);
+    color: var(--cyan-primary, #0093a7);
+}
+
+/* Dropdown Menu */
+.custom-select-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    min-width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+    z-index: 1060;
+    padding: 7px;
+    display: none;
+    box-sizing: border-box;
+}
+
+.custom-select-wrapper.is-open .custom-select-dropdown {
+    display: flex;
+    flex-direction: column;
+    animation: customSelectFadeIn 0.15s ease-out;
+}
+
+/* Dropup (when opening upwards) */
+.custom-select-wrapper.is-dropup .custom-select-dropdown {
+    top: auto;
+    bottom: calc(100% + 5px);
+}
+
+@keyframes customSelectFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Search Box at the top */
+.custom-select-search-box {
+    position: relative;
+    width: 100%;
+    margin-bottom: 6px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+}
+
+.custom-select-search-box .custom-select-search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted, #94a3b8);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    width: 14px;
+    height: 14px;
+}
+
+.custom-select-wrapper .custom-select-search-box input.custom-select-search-input,
+.modal-form-group .custom-select-wrapper input.custom-select-search-input,
+.custom-select-search-input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 8px 30px 8px 36px !important;
+    height: 36px !important;
+    line-height: normal !important;
+    border: 1px solid var(--border-color, #e2e8f0) !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-family: inherit !important;
+    color: var(--text-primary, #1e293b) !important;
+    background: #f8fafc !important;
+    outline: none !important;
+    transition: all 0.15s ease !important;
+}
+
+.custom-select-wrapper .custom-select-search-box input.custom-select-search-input:focus,
+.modal-form-group .custom-select-wrapper input.custom-select-search-input:focus,
+.custom-select-search-input:focus {
+    background: #ffffff !important;
+    border-color: var(--cyan-primary, #0093a7) !important;
+    box-shadow: 0 0 0 3px rgba(0, 147, 167, 0.12) !important;
+}
+
+.custom-select-search-box .custom-select-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--text-muted, #94a3b8);
+    padding: 2px 4px;
+    border-radius: 3px;
+    z-index: 2;
+}
+
+.custom-select-search-box .custom-select-search-clear:hover {
+    color: var(--text-primary, #1e293b);
+}
+
+/* Options Container */
+.custom-select-options {
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+/* Custom Scrollbar for Options */
+.custom-select-options::-webkit-scrollbar {
+    width: 5px;
+}
+.custom-select-options::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.custom-select-options::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.custom-select-options::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Option Row */
+.custom-select-option {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text-primary, #334155);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: background 0.12s ease, color 0.12s ease;
+    user-select: none;
+}
+
+.custom-select-option-text {
+    flex: 1;
+    word-break: break-word;
+    line-height: 1.35;
+}
+
+.custom-select-option:hover,
+.custom-select-option.is-highlighted {
+    background: #f0fdfa;
+    color: var(--cyan-primary, #0093a7);
+    font-weight: 500;
+}
+
+.custom-select-option.is-selected {
+    background: rgba(0, 147, 167, 0.08);
+    color: var(--cyan-primary, #0093a7);
+    font-weight: 600;
+}
+
+.custom-select-option.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: transparent !important;
+    color: var(--text-muted, #94a3b8) !important;
+}
+
+/* Checkmark Icon for Selected Option */
+.custom-select-check {
+    display: none;
+    color: var(--cyan-primary, #0093a7);
+    flex-shrink: 0;
+}
+
+.custom-select-option.is-selected .custom-select-check {
+    display: inline-flex;
+}
+
+/* Empty State / No Match */
+.custom-select-no-results {
+    padding: 14px 10px;
+    text-align: center;
+    color: var(--text-muted, #94a3b8);
+    font-size: 12.5px;
+    user-select: none;
+}
+
+/* Allow Modal Box to let custom select dropdown float without clipping */
+.modal-box {
+    overflow: visible !important;
+}
+
+.modal-header {
+    border-top-left-radius: var(--radius-md, 8px);
+    border-top-right-radius: var(--radius-md, 8px);
+}
+
+.modal-footer {
+    border-bottom-left-radius: var(--radius-md, 8px);
+    border-bottom-right-radius: var(--radius-md, 8px);
+}

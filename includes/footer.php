@@ -75,6 +75,7 @@
 <!-- Core Scripts -->
 <script src="js/toast.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/searchable-select.js"></script>
 
 <?php if (isset($extra_js) && is_array($extra_js)): ?>
     <?php foreach ($extra_js as $js_file): ?>
