@@ -12,7 +12,7 @@ if (empty($_SESSION['logged_in']) && !isset($_GET['preview'])) {
 
 $page_title = "Accessories Management - VIROS Portal";
 $active_page = "accessories";
-$extra_css = ['css/categories.css', 'css/accessories.css'];
+$extra_css = ['css/assets.css', 'css/categories.css', 'css/accessories.css', 'css/searchable-select.css'];
 $extra_js  = ['js/accessories.js'];
 
 // Include database to fetch dynamic accessory categories
@@ -158,7 +158,7 @@ include 'includes/topbar.php';
             </div>
 
             <select class="filter-select" id="categoryFilter">
-                <option value="all">All Categories</option>
+                <option value="all">All Accessory Categories</option>
                 <?php foreach ($dynamicCategories as $catName): ?>
                     <option value="<?php echo htmlspecialchars($catName); ?>"><?php echo htmlspecialchars($catName); ?></option>
                 <?php endforeach; ?>
@@ -175,20 +175,20 @@ include 'includes/topbar.php';
         </div>
     </div>
 
-    <!-- Simple Data Table -->
-    <div class="table-card">
-        <div class="table-responsive">
-            <table class="custom-table" id="accessoriesTable">
+    <!-- Table View Container (matching assets.php design) -->
+    <div class="asset-table-card">
+        <div class="asset-table-responsive">
+            <table class="asset-data-table" id="accessoriesTable">
                 <thead>
                     <tr>
-                        <th class="sku-cell" style="width: 140px; white-space: nowrap;">SKU</th>
-                        <th style="min-width: 230px;">Accessory Name</th>
-                        <th style="width: 160px;">Category</th>
-                        <th style="width: 160px;">Brand & Model</th>
+                        <th style="width: 140px; white-space: nowrap;">SKU Tag</th>
+                        <th style="min-width: 240px;">Accessory Name & Depot</th>
+                        <th style="width: 170px;">Accessory Category</th>
+                        <th style="width: 170px;">Brand & Model</th>
                         <th style="width: 110px; text-align: center;">In Stock</th>
                         <th style="width: 110px; text-align: center;">Deployed</th>
-                        <th style="width: 130px;">Status</th>
-                        <th style="width: 130px; text-align: center;">Actions</th>
+                        <th style="width: 140px;">Status</th>
+                        <th style="width: 120px; text-align: right; padding-right: 20px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="accessoriesTbody">
@@ -210,19 +210,25 @@ include 'includes/topbar.php';
         <form id="accessoryForm">
             <input type="hidden" id="editAccId" value="">
             <div class="modal-body">
-                <div class="modal-form-group">
-                    <label for="accName">Accessory Name *</label>
-                    <input type="text" id="accName" placeholder="e.g. Logitech MX Master 3S Wireless Mouse" required>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="modal-form-group">
+                        <label for="accCategory">Accessory Category *</label>
+                        <select id="accCategory" required>
+                            <option value="">Select Accessory Category</option>
+                            <?php foreach ($dynamicCategories as $catName): ?>
+                                <option value="<?php echo htmlspecialchars($catName); ?>"><?php echo htmlspecialchars($catName); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="accSku">Accessory SKU Tag <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Auto Generated)</span></label>
+                        <input type="text" id="accSku" readonly style="background-color: #f8fafc; cursor: not-allowed; font-family: monospace; font-weight: 600; color: var(--cyan-primary);">
+                    </div>
                 </div>
 
                 <div class="modal-form-group">
-                    <label for="accCategory">Category *</label>
-                    <select id="accCategory" required>
-                        <option value="">Select Category</option>
-                        <?php foreach ($dynamicCategories as $catName): ?>
-                            <option value="<?php echo htmlspecialchars($catName); ?>"><?php echo htmlspecialchars($catName); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label for="accName">Accessory Name *</label>
+                    <input type="text" id="accName" placeholder="e.g. Logitech MX Master 3S Wireless Mouse" required>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">

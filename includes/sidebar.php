@@ -12,7 +12,7 @@ if (!isset($active_page)) {
 
 // Check which dropdown groups should be open by default
 $is_master_open = in_array($active_page, ['master', 'master_category', 'master_accessory_category', 'master_component_category', 'master_department', 'master_location', 'master_vendor', 'master_employee', 'master_status']);
-$is_assets_open = in_array($active_page, ['assets', 'asset_management', 'accessories', 'accessories_management', 'asset_assignment', 'asset_transfer', 'asset_return', 'asset_repair', 'software', 'software_licenses', 'asset_barcode', 'hardware', 'assets_all']);
+$is_assets_open = in_array($active_page, ['assets', 'asset_management', 'accessories', 'accessories_management', 'components', 'component_management', 'asset_assignment', 'asset_transfer', 'asset_return', 'asset_repair', 'software', 'software_licenses', 'asset_barcode', 'hardware', 'assets_all']);
 $is_tickets_open = in_array($active_page, ['tickets', 'tickets_all', 'tickets_open', 'tickets_progress', 'tickets_resolved']);
 $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_sla', 'reports_warranty']);
 ?>
@@ -136,6 +136,12 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                     <a href="<?php echo file_exists(__DIR__ . '/../accessories.php') ? 'accessories.php' : '#accessories-management'; ?>" class="submenu-link <?php echo in_array($active_page, ['accessories', 'accessories_management']) ? 'active' : ''; ?>" <?php echo !file_exists(__DIR__ . '/../accessories.php') ? 'onclick="handleMenuClick(event, \'Accessories Management\')"' : ''; ?>>
                         <span>Accessories Management</span>
                         <span class="submenu-badge">338</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="components.php" class="submenu-link <?php echo in_array($active_page, ['components', 'component_management']) ? 'active' : ''; ?>">
+                        <span>Parts / Components</span>
+                        <span class="submenu-badge">412</span>
                     </a>
                 </li>
                 <li>
