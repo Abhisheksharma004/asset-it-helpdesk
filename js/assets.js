@@ -1,0 +1,1870 @@
+/**
+ * Asset Management Page Interactive Script
+ * VIROS IT Asset & Service Desk Portal
+ */
+
+document.addEventListener('DOMContentLoaded', function () {
+    // =========================================================================
+    // 1. Initial Mock Asset Data Store
+    // =========================================================================
+    const initialAssets = [
+        {
+            id: 1,
+            tag: 'AST2024001',
+            name: 'MacBook Pro 16" M3 Max',
+            category: 'Laptops',
+            brand: 'Apple',
+            model: 'MacBookPro18,1 (2023)',
+            serial: 'C02G40PZMD6T',
+            status: 'In Use',
+            condition: 'Excellent',
+            assignedTo: {
+                name: 'Sarah Jenkins',
+                empCode: 'EMP-1002',
+                email: 'sarah.jenkins@viros.com',
+                department: 'Software Engineering',
+                role: 'Staff Engineer',
+                assignedDate: '15 Jan 2024'
+            },
+            department: 'Software Engineering',
+            location: 'HQ - New York',
+            specs: {
+                processor: 'Apple M3 Max (16-core)',
+                ram: '36 GB Unified',
+                storage: '1 TB NVMe SSD',
+                os: 'macOS Sonoma 14.5',
+                macAddress: 'F0:18:98:4C:AA:32',
+                ipAddress: '10.20.104.42'
+            },
+            financials: {
+                vendor: 'Apple Business Direct',
+                poNumber: 'PO-2024-8901',
+                purchaseDate: '2024-01-08',
+                cost: 289900.00,
+                warrantyExpiry: '2027-01-08'
+            },
+            history: [
+                { date: '15 Jan 2024', title: 'Assigned to Sarah Jenkins', desc: 'Handed over during engineering tech refresh cycle.' },
+                { date: '10 Jan 2024', title: 'Asset Tagged & Configured', desc: 'MDM enrolled via Jamf Pro, Jamf Connect & CrowdStrike installed.' },
+                { date: '08 Jan 2024', title: 'Procured & Received', desc: 'Received from Apple Direct under PO-2024-8901.' }
+            ],
+            tickets: [
+                { id: 'TKT-1082', title: 'External display resolution issue on dual 4K monitors', status: 'Resolved', date: '22 Feb 2024' }
+            ]
+        },
+        {
+            id: 2,
+            tag: 'AST2024002',
+            name: 'Dell XPS 15 9530',
+            category: 'Laptops',
+            brand: 'Dell',
+            model: 'XPS 15 (2023 Edition)',
+            serial: 'DELL-984210-X',
+            status: 'In Use',
+            condition: 'Excellent',
+            assignedTo: {
+                name: 'Marcus Vance',
+                empCode: 'EMP-1045',
+                email: 'marcus.v@viros.com',
+                department: 'IT Infrastructure',
+                role: 'Senior DevOps Architect',
+                assignedDate: '02 Feb 2024'
+            },
+            department: 'IT Infrastructure',
+            location: 'Austin Hub',
+            specs: {
+                processor: 'Intel Core i9-13900H (14-Core)',
+                ram: '32 GB DDR5 4800MHz',
+                storage: '1 TB M.2 PCIe Gen4 NVMe',
+                os: 'Ubuntu 24.04 LTS / Win 11 Pro Dual',
+                macAddress: '3C:52:82:1D:90:E5',
+                ipAddress: '10.30.22.18'
+            },
+            financials: {
+                vendor: 'Dell Enterprise Solutions',
+                poNumber: 'PO-2024-7721',
+                purchaseDate: '2024-01-18',
+                cost: 219900.00,
+                warrantyExpiry: '2027-01-18'
+            },
+            history: [
+                { date: '02 Feb 2024', title: 'Issued to Marcus Vance', desc: 'DevOps setup with Linux kernel headers and Docker.' },
+                { date: '20 Jan 2024', title: 'Initial Asset Staging', desc: 'Configured BIOS password, BitLocker, secure boot.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 3,
+            tag: 'AST2024003',
+            name: 'Dell PowerEdge R750 Server',
+            category: 'Servers',
+            brand: 'Dell',
+            model: 'PowerEdge R750 2U Rack',
+            serial: 'PE-750-SRV-09',
+            status: 'In Use',
+            condition: 'Excellent',
+            assignedTo: null,
+            department: 'IT Infrastructure',
+            location: 'Singapore DC',
+            specs: {
+                processor: '2x Intel Xeon Gold 6338 (64-threads)',
+                ram: '128 GB ECC DDR4 RDIMM',
+                storage: '4x 1.92TB NVMe PCIe Gen4 in RAID 10',
+                os: 'VMware ESXi 8.0 Update 2',
+                macAddress: '00:1E:67:D8:1A:F0',
+                ipAddress: '172.16.10.15'
+            },
+            financials: {
+                vendor: 'Dell Global Infrastructure',
+                poNumber: 'PO-2023-4100',
+                purchaseDate: '2023-11-12',
+                cost: 950000.00,
+                warrantyExpiry: '2028-11-12'
+            },
+            history: [
+                { date: '15 Dec 2023', title: 'Deployed in Singapore Rack 04B', desc: 'Integrated into primary hypervisor cluster.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 4,
+            tag: 'AST2024004',
+            name: 'Lenovo ThinkPad X1 Carbon Gen 11',
+            category: 'Laptops',
+            brand: 'Lenovo',
+            model: 'ThinkPad X1 Carbon Gen 11',
+            serial: 'PF-39X1-LNV',
+            status: 'Available',
+            condition: 'Brand New',
+            assignedTo: null,
+            department: 'IT Infrastructure',
+            location: 'HQ - New York',
+            specs: {
+                processor: 'Intel Core i7-1365U vPro',
+                ram: '16 GB LPDDR5',
+                storage: '512 GB NVMe Opal2',
+                os: 'Windows 11 Pro Enterprise',
+                macAddress: 'E8:80:88:51:7A:B4',
+                ipAddress: 'DHCP Reserved'
+            },
+            financials: {
+                vendor: 'Insight Direct IT',
+                poNumber: 'PO-2024-9122',
+                purchaseDate: '2024-02-10',
+                cost: 149900.00,
+                warrantyExpiry: '2027-02-10'
+            },
+            history: [
+                { date: '12 Feb 2024', title: 'Unboxed & Enrolled', desc: 'Stored in IT Depot Secure Cage Room 3.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 5,
+            tag: 'AST2024005',
+            name: 'Cisco Catalyst 9300 48-Port PoE+',
+            category: 'Networking',
+            brand: 'Cisco',
+            model: 'C9300-48P-A',
+            serial: 'FOC2408W0AB',
+            status: 'In Use',
+            condition: 'Good',
+            assignedTo: null,
+            department: 'IT Infrastructure',
+            location: 'London Office',
+            specs: {
+                processor: 'Cisco UADP 2.0 ASIC',
+                ram: '16 GB Flash / 8 GB DRAM',
+                storage: 'Internal Flash Memory',
+                os: 'Cisco IOS XE 17.9',
+                macAddress: '70:69:79:B0:12:00',
+                ipAddress: '10.50.1.2'
+            },
+            financials: {
+                vendor: 'CDW UK',
+                poNumber: 'PO-2023-1109',
+                purchaseDate: '2023-05-14',
+                cost: 410000.00,
+                warrantyExpiry: '2026-05-14'
+            },
+            history: [
+                { date: '20 May 2023', title: 'Installed in IDF-London-2', desc: 'Serves London Floor 2 workstations and APs.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 6,
+            tag: 'AST2024006',
+            name: 'Apple iMac 24" M3',
+            category: 'Desktops',
+            brand: 'Apple',
+            model: 'iMac 24 (4.5K Retina Display)',
+            serial: 'C02K98LLM3',
+            status: 'In Use',
+            condition: 'Excellent',
+            assignedTo: {
+                name: 'Elena Rostova',
+                empCode: 'EMP-1108',
+                email: 'elena.rostova@viros.com',
+                department: 'Design & Creative',
+                role: 'Lead UI/UX Designer',
+                assignedDate: '01 Mar 2024'
+            },
+            department: 'Design & Creative',
+            location: 'HQ - New York',
+            specs: {
+                processor: 'Apple M3 (8-core CPU / 10-core GPU)',
+                ram: '24 GB Unified Memory',
+                storage: '512 GB SSD',
+                os: 'macOS Sonoma 14.4',
+                macAddress: 'F4:D4:88:9C:11:78',
+                ipAddress: '10.20.106.88'
+            },
+            financials: {
+                vendor: 'Apple Business Direct',
+                poNumber: 'PO-2024-9400',
+                purchaseDate: '2024-02-25',
+                cost: 179900.00,
+                warrantyExpiry: '2027-02-25'
+            },
+            history: [
+                { date: '01 Mar 2024', title: 'Assigned to Elena Rostova', desc: 'Design workstation with Adobe CC & Figma.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 7,
+            tag: 'AST2024007',
+            name: 'Dell UltraSharp 32" 4K USB-C Hub Monitor',
+            category: 'Monitors',
+            brand: 'Dell',
+            model: 'U3223QE PremierColor',
+            serial: 'CN-0M9Y87-74261',
+            status: 'In Use',
+            condition: 'Good',
+            assignedTo: {
+                name: 'Sarah Jenkins',
+                empCode: 'EMP-1002',
+                email: 'sarah.jenkins@viros.com',
+                department: 'Software Engineering',
+                role: 'Staff Engineer',
+                assignedDate: '15 Jan 2024'
+            },
+            department: 'Software Engineering',
+            location: 'HQ - New York',
+            specs: {
+                processor: 'IPS Black Display Engine',
+                ram: 'N/A',
+                storage: 'Integrated 90W USB-C PD Hub',
+                os: 'Firmware vM2T102',
+                macAddress: 'Ethernet Pass-thru 3C:52:82:11:00',
+                ipAddress: 'Bridged via Thunderbolt'
+            },
+            financials: {
+                vendor: 'Dell Enterprise Solutions',
+                poNumber: 'PO-2024-8902',
+                purchaseDate: '2024-01-08',
+                cost: 69900.00,
+                warrantyExpiry: '2027-01-08'
+            },
+            history: [
+                { date: '15 Jan 2024', title: 'Desk Docking Station Pair', desc: 'Paired with AST2024001.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 8,
+            tag: 'AST2024008',
+            name: 'HP EliteBook 840 G10',
+            category: 'Laptops',
+            brand: 'HP',
+            model: 'EliteBook 840 G10',
+            serial: '5CG3290ABC',
+            status: 'Under Maintenance',
+            condition: 'Fair',
+            assignedTo: {
+                name: 'David Chen',
+                empCode: 'EMP-1033',
+                email: 'david.chen@viros.com',
+                department: 'Finance',
+                role: 'Finance Director',
+                assignedDate: '14 Oct 2023'
+            },
+            department: 'Finance',
+            location: 'Austin Hub',
+            specs: {
+                processor: 'Intel Core i7-1365U',
+                ram: '16 GB DDR5',
+                storage: '512 GB SSD',
+                os: 'Windows 11 Enterprise',
+                macAddress: 'B8:85:84:10:98:C3',
+                ipAddress: '10.30.22.44'
+            },
+            financials: {
+                vendor: 'HP Direct',
+                poNumber: 'PO-2023-3881',
+                purchaseDate: '2023-10-01',
+                cost: 139900.00,
+                warrantyExpiry: '2026-10-01'
+            },
+            history: [
+                { date: '28 Sep 2024', title: 'Submitted to IT Depot', desc: 'Screen flicker & USB-C port physical loose pin.' },
+                { date: '14 Oct 2023', title: 'Assigned to David Chen', desc: 'Standard executive deployment.' }
+            ],
+            tickets: [
+                { id: 'TKT-1440', title: 'Display flickers when lid is adjusted >90 degrees', status: 'In Progress', date: '28 Sep 2024' }
+            ]
+        },
+        {
+            id: 9,
+            tag: 'AST2024009',
+            name: 'Apple iPad Pro 12.9" M2 Cellular',
+            category: 'Tablets & Mobile',
+            brand: 'Apple',
+            model: 'iPad Pro 12.9 6th Gen (Wi-Fi + 5G)',
+            serial: 'DMPF7829Q921',
+            status: 'In Use',
+            condition: 'Excellent',
+            assignedTo: {
+                name: 'Rachel Adams',
+                empCode: 'EMP-1008',
+                email: 'rachel.a@viros.com',
+                department: 'Executive Management',
+                role: 'VP Operations',
+                assignedDate: '20 Jan 2024'
+            },
+            department: 'Executive Management',
+            location: 'HQ - New York',
+            specs: {
+                processor: 'Apple M2 (8-core CPU)',
+                ram: '16 GB RAM',
+                storage: '256 GB Liquid Retina XDR',
+                os: 'iPadOS 17.5',
+                macAddress: 'DC:A9:04:77:23:FE',
+                ipAddress: '10.20.108.92'
+            },
+            financials: {
+                vendor: 'Apple Business Direct',
+                poNumber: 'PO-2024-8995',
+                purchaseDate: '2024-01-12',
+                cost: 114900.00,
+                warrantyExpiry: '2025-10-25' // Expiring soon (<30 days mock)
+            },
+            history: [
+                { date: '20 Jan 2024', title: 'Executive Mobilization Package', desc: 'Issued with Apple Pencil 2 & Magic Keyboard.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 10,
+            tag: 'AST2024010',
+            name: 'Lenovo ThinkPad T14 Gen 4',
+            category: 'Laptops',
+            brand: 'Lenovo',
+            model: 'ThinkPad T14 Gen 4 AMD',
+            serial: 'PF-478K20-LNV',
+            status: 'Available',
+            condition: 'Good',
+            assignedTo: null,
+            department: 'IT Infrastructure',
+            location: 'Austin Hub',
+            specs: {
+                processor: 'AMD Ryzen 7 PRO 7840U',
+                ram: '32 GB LPDDR5x',
+                storage: '1 TB NVMe SSD',
+                os: 'Windows 11 Pro Enterprise',
+                macAddress: '48:2A:E3:42:19:6F',
+                ipAddress: 'DHCP Pool'
+            },
+            financials: {
+                vendor: 'Insight Direct IT',
+                poNumber: 'PO-2023-6620',
+                purchaseDate: '2023-08-15',
+                cost: 124900.00,
+                warrantyExpiry: '2026-08-15'
+            },
+            history: [
+                { date: '05 Sep 2024', title: 'Returned by Contractor', desc: 'Checked in, sanitized, reimaged and placed in ready stock.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 11,
+            tag: 'AST2024011',
+            name: 'Zebra ZT411 Industrial Label Printer',
+            category: 'Printers',
+            brand: 'Zebra Technologies',
+            model: 'ZT411 Thermal Transfer 300dpi',
+            serial: 'ZEB-99214-IND',
+            status: 'In Use',
+            condition: 'Good',
+            assignedTo: null,
+            department: 'Operations',
+            location: 'London Office',
+            specs: {
+                processor: 'ARM Cortex A9 800MHz',
+                ram: '512 MB RAM / 2 GB Flash',
+                storage: 'Onboard Flash storage',
+                os: 'Link-OS v6.8',
+                macAddress: '00:07:4D:99:A2:30',
+                ipAddress: '10.50.4.19'
+            },
+            financials: {
+                vendor: 'BarcodesInc UK',
+                poNumber: 'PO-2023-2940',
+                purchaseDate: '2023-04-10',
+                cost: 175000.00,
+                warrantyExpiry: '2026-04-10'
+            },
+            history: [
+                { date: '18 Apr 2023', title: 'Asset Tagging Station Configured', desc: 'Primary printer for IT asset QR labels.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 12,
+            tag: 'AST2024012',
+            name: 'Fortinet FortiGate 100F Firewall',
+            category: 'Networking',
+            brand: 'Fortinet',
+            model: 'FG-100F Next-Gen Security Gateway',
+            serial: 'FG100FTK23-908',
+            status: 'In Use',
+            condition: 'Excellent',
+            assignedTo: null,
+            department: 'IT Infrastructure',
+            location: 'HQ - New York',
+            specs: {
+                processor: 'Fortinet SOC4 Security Processor',
+                ram: '8 GB Hardware Memory',
+                storage: 'Dual Power Supply Unit',
+                os: 'FortiOS 7.4.3',
+                macAddress: '70:4C:A5:18:22:90',
+                ipAddress: '10.20.0.1'
+            },
+            financials: {
+                vendor: 'Presidio Enterprise Solutions',
+                poNumber: 'PO-2023-5501',
+                purchaseDate: '2023-09-01',
+                cost: 480000.00,
+                warrantyExpiry: '2026-09-01'
+            },
+            history: [
+                { date: '12 Sep 2023', title: 'Core Edge Routing Cutover', desc: 'Configured redundant IPsec VPN and SD-WAN.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 13,
+            tag: 'AST2024013',
+            name: 'Apple MacBook Air 15" M2',
+            category: 'Laptops',
+            brand: 'Apple',
+            model: 'MacBook Air 15 (2023 Midnight)',
+            serial: 'C02HQ81LMD91',
+            status: 'Available',
+            condition: 'Brand New',
+            assignedTo: null,
+            department: 'IT Infrastructure',
+            location: 'London Office',
+            specs: {
+                processor: 'Apple M2 (8-core CPU / 10-core GPU)',
+                ram: '16 GB Unified Memory',
+                storage: '512 GB SSD',
+                os: 'macOS Sonoma 14.5',
+                macAddress: '3C:06:30:19:D4:56',
+                ipAddress: 'DHCP Pool'
+            },
+            financials: {
+                vendor: 'Apple Business UK',
+                poNumber: 'PO-2024-9810',
+                purchaseDate: '2024-03-01',
+                cost: 139900.00,
+                warrantyExpiry: '2027-03-01'
+            },
+            history: [
+                { date: '05 Mar 2024', title: 'Received & Staged', desc: 'Assigned to London general onboarding buffer pool.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 14,
+            tag: 'AST2024014',
+            name: 'Microsoft Surface Pro 9',
+            category: 'Tablets & Mobile',
+            brand: 'Microsoft',
+            model: 'Surface Pro 9 Platinum',
+            serial: '029384729153',
+            status: 'Reserved',
+            condition: 'Excellent',
+            assignedTo: null,
+            department: 'Human Resources',
+            location: 'HQ - New York',
+            specs: {
+                processor: 'Intel Core i7-1255U (10-Core)',
+                ram: '16 GB LPDDR5',
+                storage: '256 GB Removable SSD',
+                os: 'Windows 11 Pro',
+                macAddress: '58:11:22:98:AC:31',
+                ipAddress: 'DHCP Pool'
+            },
+            financials: {
+                vendor: 'Microsoft Commercial Direct',
+                poNumber: 'PO-2024-8840',
+                purchaseDate: '2024-01-05',
+                cost: 119900.00,
+                warrantyExpiry: '2026-01-05'
+            },
+            history: [
+                { date: '10 Jan 2024', title: 'Reserved for New HR Lead', desc: 'Hold until joining date on 15 Oct.' }
+            ],
+            tickets: []
+        },
+        {
+            id: 15,
+            tag: 'AST2024015',
+            name: 'Dell Latitude 5420',
+            category: 'Laptops',
+            brand: 'Dell',
+            model: 'Latitude 5420 Rugged Finish',
+            serial: 'DELL-5420-OLD',
+            status: 'Retired',
+            condition: 'Damaged',
+            assignedTo: null,
+            department: 'IT Infrastructure',
+            location: 'Austin Hub',
+            specs: {
+                processor: 'Intel Core i5-1135G7',
+                ram: '8 GB DDR4',
+                storage: '256 GB SSD (Wiped & Certified)',
+                os: 'Decommissioned',
+                macAddress: '10:65:30:22:11:FE',
+                ipAddress: 'N/A'
+            },
+            financials: {
+                vendor: 'Dell Financial Services',
+                poNumber: 'PO-2020-0012',
+                purchaseDate: '2020-03-10',
+                cost: 89900.00,
+                warrantyExpiry: '2023-03-10'
+            },
+            history: [
+                { date: '12 Jan 2024', title: 'NIST 800-88 Wiped & Retired', desc: 'Disposed via certified e-waste recycling vendor.' }
+            ],
+            tickets: []
+        }
+    ];
+
+    // Working dataset in memory
+    let assetsData = [...initialAssets];
+
+    // State Variables
+    let currentFilterStatus = 'all';
+    let currentSearchQuery = '';
+    let currentCategoryFilter = 'all';
+    let currentDeptFilter = 'all';
+    let currentLocationFilter = 'all';
+    let currentConditionFilter = 'all';
+    let currentViewMode = 'table';
+    let selectedAssetIds = new Set();
+    let currentPage = 1;
+    const pageSize = 10;
+    let activeDrawerAssetId = null;
+
+    // DOM Elements
+    const assetTableBody = document.getElementById('assetTableBody');
+    const assetGridContainer = document.getElementById('assetGridContainer');
+    const assetTableView = document.getElementById('assetTableView');
+    const searchInput = document.getElementById('assetSearchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const deptFilter = document.getElementById('deptFilter');
+    const locationFilter = document.getElementById('locationFilter');
+    const conditionFilter = document.getElementById('conditionFilter');
+    const statusTabBtns = document.querySelectorAll('.status-tab-btn');
+    const selectAllCheckbox = document.getElementById('selectAllAssets');
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    const bulkCountEl = document.getElementById('bulkSelectedCount');
+    const viewTableBtn = document.getElementById('viewTableBtn');
+    const viewGridBtn = document.getElementById('viewGridBtn');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationControls = document.getElementById('paginationControls');
+
+    // Drawer Elements
+    const assetDrawer = document.getElementById('assetDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+
+    // =========================================================================
+    // 2. Helper Functions
+    // =========================================================================
+
+    function getCategoryIconClass(category) {
+        switch (category) {
+            case 'Laptops': return 'laptop';
+            case 'Desktops': return 'laptop';
+            case 'Servers': return 'server';
+            case 'Networking': return 'network';
+            case 'Monitors': return 'monitor';
+            case 'Tablets & Mobile': return 'mobile';
+            case 'Printers': return 'printer';
+            default: return 'laptop';
+        }
+    }
+
+    function getDeviceSvg(category) {
+        switch (category) {
+            case 'Servers':
+                return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>`;
+            case 'Networking':
+                return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="12" rx="2"></rect><path d="M6 20h12"></path><path d="M12 16v4"></path></svg>`;
+            case 'Monitors':
+                return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`;
+            case 'Tablets & Mobile':
+                return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>`;
+            case 'Printers':
+                return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>`;
+            default:
+                return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="20" x2="22" y2="20"></line></svg>`;
+        }
+    }
+
+    function getStatusBadge(status) {
+        switch (status) {
+            case 'In Use':
+                return `<span class="asset-status-badge status-in-use"><span class="dot"></span>In Use</span>`;
+            case 'Available':
+                return `<span class="asset-status-badge status-available"><span class="dot"></span>In Stock</span>`;
+            case 'Under Maintenance':
+                return `<span class="asset-status-badge status-maintenance"><span class="dot"></span>Maintenance</span>`;
+            case 'Reserved':
+                return `<span class="asset-status-badge status-reserved"><span class="dot"></span>Reserved</span>`;
+            case 'Retired':
+                return `<span class="asset-status-badge status-retired"><span class="dot"></span>Retired</span>`;
+            default:
+                return `<span class="asset-status-badge">${status}</span>`;
+        }
+    }
+
+    function getWarrantyBadge(expiryDateStr) {
+        if (!expiryDateStr) return `<span class="warranty-pill">N/A</span>`;
+        const expiry = new Date(expiryDateStr);
+        const today = new Date('2024-10-03'); // Reference date
+        const diffDays = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) {
+            return `<span class="warranty-pill warranty-expired">Expired</span>`;
+        } else if (diffDays <= 30) {
+            return `<span class="warranty-pill warranty-expiring">Expiring (${diffDays}d)</span>`;
+        } else {
+            return `<span class="warranty-pill warranty-active">Active (${diffDays}d)</span>`;
+        }
+    }
+
+    function getInitials(name) {
+        if (!name) return 'NA';
+        const parts = name.split(' ');
+        let initials = '';
+        for (let p of parts) {
+            if (p) initials += p[0].toUpperCase();
+            if (initials.length >= 2) break;
+        }
+        return initials;
+    }
+
+    function formatCurrency(val) {
+        return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    // =========================================================================
+    // 3. Filtering & Metrics Calculation
+    // =========================================================================
+
+    function getFilteredAssets() {
+        return assetsData.filter(item => {
+            // Status Tab Filter
+            if (currentFilterStatus === 'in-use' && item.status !== 'In Use') return false;
+            if (currentFilterStatus === 'available' && item.status !== 'Available') return false;
+            if (currentFilterStatus === 'maintenance' && item.status !== 'Under Maintenance') return false;
+            if (currentFilterStatus === 'reserved' && item.status !== 'Reserved') return false;
+            if (currentFilterStatus === 'retired' && item.status !== 'Retired') return false;
+
+            // Category Filter
+            if (currentCategoryFilter !== 'all' && item.category !== currentCategoryFilter) return false;
+
+            // Department Filter
+            if (currentDeptFilter !== 'all' && item.department !== currentDeptFilter) return false;
+
+            // Location Filter
+            if (currentLocationFilter !== 'all' && item.location !== currentLocationFilter) return false;
+
+            // Condition Filter
+            if (currentConditionFilter !== 'all' && item.condition !== currentConditionFilter) return false;
+
+            // Live Search Query
+            if (currentSearchQuery.trim() !== '') {
+                const q = currentSearchQuery.toLowerCase();
+                const matchTag = item.tag ? item.tag.toLowerCase().includes(q) : false;
+                const matchName = item.name.toLowerCase().includes(q);
+                const matchSerial = item.serial.toLowerCase().includes(q);
+                const matchBrand = item.brand.toLowerCase().includes(q);
+                const matchModel = item.model.toLowerCase().includes(q);
+                const matchUser = item.assignedTo ? item.assignedTo.name.toLowerCase().includes(q) : false;
+                const matchDept = item.department.toLowerCase().includes(q);
+                if (!matchTag && !matchName && !matchSerial && !matchBrand && !matchModel && !matchUser && !matchDept) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    function updateKPIs() {
+        let total = assetsData.length;
+        let inUse = 0;
+        let available = 0;
+        let maintenance = 0;
+        let reserved = 0;
+        let retired = 0;
+        let expiringSoon = 0;
+        let totalValue = 0;
+
+        const refDate = new Date('2024-10-03');
+
+        assetsData.forEach(a => {
+            if (a.status === 'In Use') inUse++;
+            else if (a.status === 'Available') available++;
+            else if (a.status === 'Under Maintenance') maintenance++;
+            else if (a.status === 'Reserved') reserved++;
+            else if (a.status === 'Retired') retired++;
+
+            if (a.financials && a.financials.cost) {
+                totalValue += a.financials.cost;
+            }
+
+            if (a.financials && a.financials.warrantyExpiry) {
+                const exp = new Date(a.financials.warrantyExpiry);
+                const diff = (exp - refDate) / (1000 * 60 * 60 * 24);
+                if (diff >= 0 && diff <= 30) {
+                    expiringSoon++;
+                }
+            }
+        });
+
+        // DOM elements
+        const statTotalEl = document.getElementById('statTotalAssets');
+        const statInUseEl = document.getElementById('statInUseAssets');
+        const statAvailableEl = document.getElementById('statAvailableAssets');
+        const statMaintEl = document.getElementById('statMaintenanceAssets');
+        const statExpiringEl = document.getElementById('statExpiringAssets');
+        const statValueEl = document.getElementById('statTotalValue');
+
+        if (statTotalEl) statTotalEl.textContent = total;
+        if (statInUseEl) statInUseEl.textContent = inUse;
+        if (statAvailableEl) statAvailableEl.textContent = available;
+        if (statMaintEl) statMaintEl.textContent = maintenance;
+        if (statExpiringEl) statExpiringEl.textContent = expiringSoon;
+        if (statValueEl) statValueEl.textContent = formatCurrency(totalValue);
+
+        // Update Tab Badges
+        const tabAllBadge = document.getElementById('tabBadgeAll');
+        const tabInUseBadge = document.getElementById('tabBadgeInUse');
+        const tabAvailBadge = document.getElementById('tabBadgeAvail');
+        const tabMaintBadge = document.getElementById('tabBadgeMaint');
+        const tabResBadge = document.getElementById('tabBadgeRes');
+        const tabRetBadge = document.getElementById('tabBadgeRet');
+
+        if (tabAllBadge) tabAllBadge.textContent = total;
+        if (tabInUseBadge) tabInUseBadge.textContent = inUse;
+        if (tabAvailBadge) tabAvailBadge.textContent = available;
+        if (tabMaintBadge) tabMaintBadge.textContent = maintenance;
+        if (tabResBadge) tabResBadge.textContent = reserved;
+        if (tabRetBadge) tabRetBadge.textContent = retired;
+    }
+
+    // =========================================================================
+    // 4. Render Table & Grid Views
+    // =========================================================================
+
+    function renderAssets() {
+        const filtered = getFilteredAssets();
+        const total = filtered.length;
+
+        // Pagination calculation
+        const totalPages = Math.ceil(total / pageSize) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, total);
+        const pagedItems = filtered.slice(startIndex, endIndex);
+
+        // Render Table View
+        if (assetTableBody) {
+            if (pagedItems.length === 0) {
+                assetTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+                            <div style="font-size: 38px; margin-bottom: 12px; opacity: 0.6;">📦</div>
+                            <h4 style="color: var(--text-primary); font-size: 15px; margin-bottom: 4px;">No matching assets found</h4>
+                            <p style="font-size: 13px;">Try clearing search filters or changing status criteria.</p>
+                            <button class="btn-secondary" style="margin-top: 14px; padding: 6px 14px;" onclick="resetAllFilters()">Reset All Filters</button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                assetTableBody.innerHTML = pagedItems.map(item => {
+                    const isChecked = selectedAssetIds.has(item.id);
+                    const iconClass = getCategoryIconClass(item.category);
+                    const iconSvg = getDeviceSvg(item.category);
+
+                    let assigneeHtml = '';
+                    if (item.assignedTo) {
+                        assigneeHtml = `
+                            <div class="assignee-meta">
+                                <span class="assignee-name">${escapeHtml(item.assignedTo.name)}</span>
+                                <span class="assignee-dept">${escapeHtml(item.assignedTo.department)}</span>
+                            </div>
+                        `;
+                    } else {
+                        assigneeHtml = `<span class="unassigned-badge">In Stock / Pool</span>`;
+                    }
+
+                    return `
+                        <tr class="${isChecked ? 'row-selected' : ''}" data-id="${item.id}">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="custom-checkbox asset-item-checkbox" data-id="${item.id}" ${isChecked ? 'checked' : ''}>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                                    <span class="asset-name-title" onclick="openAssetDrawer(${item.id})">
+                                        ${escapeHtml(item.name)}
+                                    </span>
+                                    <div class="asset-tag-cell">
+                                        <span class="asset-tag-badge" onclick="openAssetDrawer(${item.id})" title="Click to view asset details">${escapeHtml(item.tag)}</span>
+                                        <button class="copy-tag-btn" title="Copy Asset Tag" onclick="copyToClipboard('${item.tag}', 'Asset Tag copied')">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="category-pill">${escapeHtml(item.category)}</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="serial-badge" onclick="openAssetDrawer(${item.id})" style="cursor: pointer;" title="View details">${escapeHtml(item.serial)}</span>
+                                    <button class="copy-tag-btn" title="Copy Serial Number" onclick="copyToClipboard('${item.serial}', 'Serial Number copied')">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                ${assigneeHtml}
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <span style="font-weight: 500; font-size: 12.5px;">${escapeHtml(item.location)}</span>
+                                    <span style="font-size: 11px; color: var(--text-muted);">${escapeHtml(item.department)}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-start;">
+                                    ${getStatusBadge(item.status)}
+                                    ${getWarrantyBadge(item.financials.warrantyExpiry)}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-buttons-wrap">
+                                    <button class="action-icon-btn btn-view" title="View Details" onclick="openAssetDrawer(${item.id})">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                    <button class="action-icon-btn btn-qr" title="Print Barcode / QR Label" onclick="openLabelModal(${item.id})">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                    </button>
+                                    <button class="action-icon-btn btn-edit" title="Edit Asset" onclick="openEditModal(${item.id})">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                    </button>
+                                    <button class="action-icon-btn btn-delete" title="Retire Asset" onclick="deleteAsset(${item.id})">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render Card / Grid View
+        if (assetGridContainer) {
+            if (pagedItems.length === 0) {
+                assetGridContainer.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: #fff; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <p style="color: var(--text-muted); font-size: 14px;">No matching assets found.</p>
+                    </div>
+                `;
+            } else {
+                assetGridContainer.innerHTML = pagedItems.map(item => {
+                    const iconClass = getCategoryIconClass(item.category);
+                    const iconSvg = getDeviceSvg(item.category);
+
+                    return `
+                        <div class="asset-card" data-id="${item.id}">
+                            <div>
+                                <div class="asset-card-header">
+                                    <div class="asset-card-type">
+                                        <div class="asset-device-icon ${iconClass}">
+                                            ${iconSvg}
+                                        </div>
+                                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                                            <span class="asset-tag-badge" onclick="openAssetDrawer(${item.id})" style="font-size: 11px;">${escapeHtml(item.tag)}</span>
+                                            <span class="category-pill">${escapeHtml(item.category)}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        ${getStatusBadge(item.status)}
+                                    </div>
+                                </div>
+
+                                <h4 class="asset-card-title" onclick="openAssetDrawer(${item.id})">${escapeHtml(item.name)}</h4>
+                                <div class="asset-card-specs">${escapeHtml(item.brand)} • ${escapeHtml(item.model)}</div>
+
+                                <div class="asset-card-meta-list">
+                                    <div class="meta-field">
+                                        <div class="meta-title">Asset Tag No.</div>
+                                        <div class="meta-val" style="font-family: monospace; font-weight: 700; color: var(--cyan-primary);">${escapeHtml(item.tag)}</div>
+                                    </div>
+                                    <div class="meta-field">
+                                        <div class="meta-title">Serial Number</div>
+                                        <div class="meta-val">${escapeHtml(item.serial)}</div>
+                                    </div>
+                                    <div class="meta-field">
+                                        <div class="meta-title">Location</div>
+                                        <div class="meta-val">${escapeHtml(item.location)}</div>
+                                    </div>
+                                    <div class="meta-field">
+                                        <div class="meta-title">Category</div>
+                                        <div class="meta-val">${escapeHtml(item.category)}</div>
+                                    </div>
+                                    <div class="meta-field">
+                                        <div class="meta-title">Warranty</div>
+                                        <div class="meta-val">${getWarrantyBadge(item.financials.warrantyExpiry)}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="asset-card-user">
+                                <div>
+                                    ${item.assignedTo ? `
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="assignee-avatar" style="width: 28px; height: 28px; font-size: 11px;">
+                                                ${getInitials(item.assignedTo.name)}
+                                            </div>
+                                            <div style="font-size: 12.5px; font-weight: 600; color: var(--text-primary);">
+                                                ${escapeHtml(item.assignedTo.name)}
+                                            </div>
+                                        </div>
+                                    ` : `<span class="unassigned-badge" style="font-size: 11px;">Unassigned</span>`}
+                                </div>
+                                <div class="asset-card-actions">
+                                    <button class="action-icon-btn btn-view" title="Details" onclick="openAssetDrawer(${item.id})">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                    <button class="action-icon-btn btn-qr" title="Print Sticker" onclick="openLabelModal(${item.id})">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Pagination Info
+        if (paginationInfo) {
+            if (total === 0) {
+                paginationInfo.textContent = 'Showing 0 assets';
+            } else {
+                paginationInfo.textContent = `Showing ${startIndex + 1} to ${endIndex} of ${total} assets`;
+            }
+        }
+
+        // Pagination Controls
+        if (paginationControls) {
+            let pagHtml = '';
+            pagHtml += `<button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
+
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+                    pagHtml += `<button class="pagination-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+                } else if (p === currentPage - 2 || p === currentPage + 2) {
+                    pagHtml += `<span style="padding: 0 4px; color: var(--text-muted);">...</span>`;
+                }
+            }
+
+            pagHtml += `<button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
+            paginationControls.innerHTML = pagHtml;
+        }
+
+        // Update bulk selection toolbar
+        updateBulkBar();
+        updateKPIs();
+    }
+
+    // =========================================================================
+    // 5. Drawer (Asset Details Slide-Over)
+    // =========================================================================
+
+    window.openAssetDrawer = function (id) {
+        const asset = assetsData.find(a => a.id === id);
+        if (!asset) return;
+        activeDrawerAssetId = id;
+
+        // Drawer Header Info
+        const tagEl = document.getElementById('drawerAssetTag');
+        if (tagEl) tagEl.textContent = asset.tag;
+        const serialEl = document.getElementById('drawerAssetSerial');
+        if (serialEl) serialEl.textContent = 'SN: ' + asset.serial;
+        document.getElementById('drawerAssetName').textContent = asset.name;
+        document.getElementById('drawerAssetStatus').innerHTML = getStatusBadge(asset.status);
+
+        // Populate Specs Tab
+        const specTagEl = document.getElementById('specAssetTag');
+        if (specTagEl) specTagEl.textContent = asset.tag;
+        document.getElementById('specCategory').textContent = asset.category;
+        document.getElementById('specBrand').textContent = asset.brand;
+        document.getElementById('specModel').textContent = asset.model;
+        document.getElementById('specSerial').textContent = asset.serial;
+        document.getElementById('specCondition').textContent = asset.condition;
+        document.getElementById('specLocation').textContent = asset.location;
+        document.getElementById('specDepartment').textContent = asset.department;
+        document.getElementById('specProcessor').textContent = asset.specs.processor || 'N/A';
+        document.getElementById('specRam').textContent = asset.specs.ram || 'N/A';
+        document.getElementById('specStorage').textContent = asset.specs.storage || 'N/A';
+        document.getElementById('specOs').textContent = asset.specs.os || 'N/A';
+        document.getElementById('specMac').textContent = asset.specs.macAddress || 'N/A';
+        document.getElementById('specIp').textContent = asset.specs.ipAddress || 'N/A';
+
+        // Financials
+        document.getElementById('specVendor').textContent = asset.financials.vendor || 'N/A';
+        document.getElementById('specPo').textContent = asset.financials.poNumber || 'N/A';
+        document.getElementById('specPurchaseDate').textContent = asset.financials.purchaseDate || 'N/A';
+        document.getElementById('specCost').textContent = formatCurrency(asset.financials.cost || 0);
+        document.getElementById('specWarranty').innerHTML = getWarrantyBadge(asset.financials.warrantyExpiry);
+
+        // Populate Assignee Section
+        const drawerAssigneeWrap = document.getElementById('drawerAssigneeWrap');
+        if (asset.assignedTo) {
+            drawerAssigneeWrap.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 14px; background: #f8fafc; padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <div class="assignee-avatar" style="width: 44px; height: 44px; font-size: 15px;">
+                        ${getInitials(asset.assignedTo.name)}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 14.5px; font-weight: 700; color: var(--text-primary);">${escapeHtml(asset.assignedTo.name)}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 1px;">
+                            ${escapeHtml(asset.assignedTo.role)} • ${escapeHtml(asset.assignedTo.department)}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--cyan-primary); margin-top: 3px;">
+                            ${escapeHtml(asset.assignedTo.email)}
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="openReassignModal(${asset.id})">Transfer / Reassign</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            drawerAssigneeWrap.innerHTML = `
+                <div style="background: #f8fafc; padding: 14px 16px; border-radius: var(--radius-md); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 13.5px; font-weight: 600; color: #1e40af;">Currently In Stock / Unallocated</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">This device is staged in the IT depot and ready for deployment.</div>
+                    </div>
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="openReassignModal(${asset.id})">Assign Asset</button>
+                </div>
+            `;
+        }
+
+        // Timeline History
+        const timelineWrap = document.getElementById('drawerTimelineWrap');
+        if (timelineWrap) {
+            if (asset.history && asset.history.length > 0) {
+                timelineWrap.innerHTML = asset.history.map((h, i) => `
+                    <div class="timeline-item">
+                        <div class="timeline-dot ${i === 0 ? 'green' : ''}"></div>
+                        <div class="timeline-date">${escapeHtml(h.date)}</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">${escapeHtml(h.title)}</div>
+                            <div class="timeline-desc">${escapeHtml(h.desc)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                timelineWrap.innerHTML = `<p style="font-size: 12.5px; color: var(--text-muted);">No recorded movement logs.</p>`;
+            }
+        }
+
+        // Tickets History
+        const ticketsWrap = document.getElementById('drawerTicketsWrap');
+        if (ticketsWrap) {
+            if (asset.tickets && asset.tickets.length > 0) {
+                ticketsWrap.innerHTML = asset.tickets.map(t => `
+                    <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 700; font-size: 12px; color: var(--cyan-primary);">${t.id}</span>
+                            <span class="warranty-pill warranty-active">${t.status}</span>
+                        </div>
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 4px;">${escapeHtml(t.title)}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Logged on ${t.date}</div>
+                    </div>
+                `).join('');
+            } else {
+                ticketsWrap.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">
+                        No support tickets linked to this asset hardware.
+                    </div>
+                `;
+            }
+        }
+
+        // Set Tab 1 as active by default in drawer
+        switchDrawerTab('overview');
+
+        // Open Drawer
+        if (assetDrawer) assetDrawer.classList.add('open');
+        if (drawerBackdrop) drawerBackdrop.classList.add('open');
+    };
+
+    window.closeAssetDrawer = function () {
+        if (assetDrawer) assetDrawer.classList.remove('open');
+        if (drawerBackdrop) drawerBackdrop.classList.remove('open');
+        activeDrawerAssetId = null;
+    };
+
+    if (closeDrawerBtn) {
+        closeDrawerBtn.addEventListener('click', closeAssetDrawer);
+    }
+    if (drawerBackdrop) {
+        drawerBackdrop.addEventListener('click', closeAssetDrawer);
+    }
+
+    // Drawer Tabs Navigation
+    window.switchDrawerTab = function (tabName) {
+        document.querySelectorAll('.drawer-tab').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === tabName);
+        });
+        document.querySelectorAll('.drawer-tab-pane').forEach(p => {
+            p.classList.toggle('active', p.id === 'pane_' + tabName);
+        });
+    };
+
+    document.querySelectorAll('.drawer-tab').forEach(btn => {
+        btn.addEventListener('click', function () {
+            switchDrawerTab(this.dataset.tab);
+        });
+    });
+
+    // =========================================================================
+    // 6. Thermal Label & QR Print Modal
+    // =========================================================================
+
+    window.openLabelModal = function (assetId) {
+        const asset = assetsData.find(a => a.id === assetId);
+        if (!asset) return;
+
+        const tagEl = document.getElementById('lblStickerTag');
+        if (tagEl) tagEl.textContent = 'TAG: ' + asset.tag;
+        document.getElementById('lblStickerName').textContent = asset.name;
+        document.getElementById('lblStickerSerial').textContent = 'SN: ' + asset.serial;
+        const catEl = document.getElementById('lblStickerCategory');
+        if (catEl) catEl.textContent = 'Category: ' + asset.category;
+        document.getElementById('lblBarcodeNumber').textContent = '*' + asset.tag + '*';
+
+        const modal = document.getElementById('labelModal');
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeLabelModal = function () {
+        const modal = document.getElementById('labelModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.printSticker = function () {
+        window.print();
+    };
+
+    // =========================================================================
+    // 7. QR & Barcode Scanner Simulation
+    // =========================================================================
+
+    window.openScannerModal = function () {
+        const modal = document.getElementById('scannerModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            const scanInput = document.getElementById('manualScanInput');
+            if (scanInput) {
+                scanInput.value = '';
+                scanInput.focus();
+            }
+        }
+    };
+
+    window.closeScannerModal = function () {
+        const modal = document.getElementById('scannerModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.handleManualScan = function () {
+        const input = document.getElementById('manualScanInput');
+        if (!input || !input.value.trim()) {
+            if (typeof showToast === 'function') showToast('Please enter a Serial Number', 'warning');
+            return;
+        }
+
+        const query = input.value.trim().toLowerCase();
+        const found = assetsData.find(a =>
+            (a.tag && a.tag.toLowerCase() === query) ||
+            a.serial.toLowerCase() === query ||
+            a.name.toLowerCase().includes(query)
+        );
+
+        if (found) {
+            closeScannerModal();
+            if (typeof showToast === 'function') showToast(`Found asset: ${found.name} (Tag: ${found.tag} | SN: ${found.serial})`, 'success');
+            openAssetDrawer(found.id);
+        } else {
+            if (typeof showToast === 'function') showToast(`No asset found matching "${input.value}"`, 'danger');
+        }
+    };
+
+    // =========================================================================
+    // 8. Add / Edit Asset Modal
+    // =========================================================================
+
+    const assetModal = document.getElementById('assetModal');
+    const assetModalTitle = document.getElementById('assetModalTitle');
+    const assetForm = document.getElementById('assetForm');
+    const openAddModalBtn = document.getElementById('openAddModalBtn');
+    const closeAssetModalBtn = document.getElementById('closeAssetModalBtn');
+    const cancelAssetModalBtn = document.getElementById('cancelAssetModalBtn');
+
+    window.addComponentRow = function (name = '', serial = '') {
+        const container = document.getElementById('componentRowsContainer');
+        if (!container) return;
+        const div = document.createElement('div');
+        div.className = 'component-input-row';
+        div.innerHTML = `
+            <div class="modal-form-group" style="flex: 1;">
+                <label>Asset Name</label>
+                <input type="text" class="component-name" placeholder="e.g. 16GB DDR5 5600MHz / 2TB NVMe SSD" value="${escapeHtml(name)}">
+            </div>
+            <div class="modal-form-group" style="flex: 1;">
+                <label>Serial Number</label>
+                <input type="text" class="component-serial" placeholder="e.g. SN-882109" value="${escapeHtml(serial)}">
+            </div>
+            <div class="modal-form-group" style="flex: 0 0 38px;">
+                <label>&nbsp;</label>
+                <button type="button" class="btn-remove-comp-row" onclick="removeComponentRow(this)" title="Remove Component">&minus;</button>
+            </div>
+        `;
+        container.appendChild(div);
+    };
+
+    window.removeComponentRow = function (btn) {
+        const row = btn.closest('.component-input-row');
+        if (row) row.remove();
+    };
+
+    function resetComponentRows(components = []) {
+        const container = document.getElementById('componentRowsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!components || components.length === 0) {
+            const div = document.createElement('div');
+            div.className = 'component-input-row';
+            div.innerHTML = `
+                <div class="modal-form-group" style="flex: 1;">
+                    <label>Asset Name</label>
+                    <input type="text" class="component-name" placeholder="e.g. 16GB DDR5 5600MHz / 2TB NVMe SSD">
+                </div>
+                <div class="modal-form-group" style="flex: 1;">
+                    <label>Serial Number</label>
+                    <input type="text" class="component-serial" placeholder="e.g. SN-882109">
+                </div>
+                <div class="modal-form-group" style="flex: 0 0 38px;">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn-add-comp-row" onclick="addComponentRow()" title="Add Row">+</button>
+                </div>
+            `;
+            container.appendChild(div);
+        } else {
+            components.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'component-input-row';
+                const actionBtn = index === 0
+                    ? `<button type="button" class="btn-add-comp-row" onclick="addComponentRow()" title="Add Row">+</button>`
+                    : `<button type="button" class="btn-remove-comp-row" onclick="removeComponentRow(this)" title="Remove Component">&minus;</button>`;
+                div.innerHTML = `
+                    <div class="modal-form-group" style="flex: 1;">
+                        <label>Asset Name</label>
+                        <input type="text" class="component-name" placeholder="e.g. 16GB DDR5 5600MHz / 2TB NVMe SSD" value="${escapeHtml(item.name || '')}">
+                    </div>
+                    <div class="modal-form-group" style="flex: 1;">
+                        <label>Serial Number</label>
+                        <input type="text" class="component-serial" placeholder="e.g. SN-882109" value="${escapeHtml(item.serial || '')}">
+                    </div>
+                    <div class="modal-form-group" style="flex: 0 0 38px;">
+                        <label>&nbsp;</label>
+                        ${actionBtn}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+    }
+
+    window.openAddModal = function () {
+        if (assetModalTitle) assetModalTitle.textContent = 'Register New IT Hardware Asset';
+        if (assetForm) assetForm.reset();
+        document.getElementById('editAssetId').value = '';
+
+        const tagInput = document.getElementById('modalAssetTag');
+        if (tagInput) {
+            const nextNum = assetsData.length + 1;
+            tagInput.value = 'AST2024' + String(nextNum).padStart(3, '0');
+        }
+
+        resetComponentRows([]);
+
+        switchModalTab('general');
+        if (assetModal) assetModal.style.display = 'flex';
+    };
+
+    window.openEditModal = function (id) {
+        const asset = assetsData.find(a => a.id === id);
+        if (!asset) return;
+
+        if (assetModalTitle) assetModalTitle.textContent = `Edit Asset: ${asset.name}`;
+        document.getElementById('editAssetId').value = asset.id;
+        const tagInput = document.getElementById('modalAssetTag');
+        if (tagInput) tagInput.value = asset.tag || '';
+        document.getElementById('modalAssetName').value = asset.name;
+        document.getElementById('modalCategory').value = asset.category;
+        document.getElementById('modalBrand').value = asset.brand;
+        document.getElementById('modalModel').value = asset.model;
+        document.getElementById('modalSerial').value = asset.serial;
+        document.getElementById('modalCondition').value = asset.condition;
+        document.getElementById('modalStatus').value = asset.status;
+        document.getElementById('modalLocation').value = asset.location;
+        document.getElementById('modalDepartment').value = asset.department;
+
+        // Specs
+        document.getElementById('modalProcessor').value = asset.specs.processor || '';
+        document.getElementById('modalRam').value = asset.specs.ram || '';
+        document.getElementById('modalStorage').value = asset.specs.storage || '';
+        document.getElementById('modalOs').value = asset.specs.os || '';
+        document.getElementById('modalMac').value = asset.specs.macAddress || '';
+        document.getElementById('modalIp').value = asset.specs.ipAddress || '';
+
+        // Components
+        resetComponentRows(asset.components || []);
+
+        // Financials
+        document.getElementById('modalVendor').value = asset.financials.vendor || '';
+        document.getElementById('modalPoNumber').value = asset.financials.poNumber || '';
+        document.getElementById('modalPurchaseDate').value = asset.financials.purchaseDate || '';
+        document.getElementById('modalCost').value = asset.financials.cost || '';
+        document.getElementById('modalWarrantyExpiry').value = asset.financials.warrantyExpiry || '';
+
+        switchModalTab('general');
+        if (assetModal) assetModal.style.display = 'flex';
+    };
+
+    window.closeAssetModal = function () {
+        if (assetModal) assetModal.style.display = 'none';
+    };
+
+    if (openAddModalBtn) openAddModalBtn.addEventListener('click', openAddModal);
+    if (closeAssetModalBtn) closeAssetModalBtn.addEventListener('click', closeAssetModal);
+    if (cancelAssetModalBtn) cancelAssetModalBtn.addEventListener('click', closeAssetModal);
+
+    window.switchModalTab = function (tabName) {
+        document.querySelectorAll('.modal-tab-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === tabName);
+        });
+        document.querySelectorAll('.modal-tab-pane').forEach(p => {
+            p.classList.toggle('active', p.id === 'modal_pane_' + tabName);
+        });
+    };
+
+    document.querySelectorAll('.modal-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            switchModalTab(this.dataset.tab);
+        });
+    });
+
+    if (assetForm) {
+        assetForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const editId = document.getElementById('editAssetId').value;
+            let tag = document.getElementById('modalAssetTag') ? document.getElementById('modalAssetTag').value.trim() : '';
+            if (!tag) {
+                tag = 'AST2024' + String(assetsData.length + 1).padStart(3, '0');
+            }
+            const name = document.getElementById('modalAssetName').value.trim();
+            const category = document.getElementById('modalCategory').value;
+            const brand = document.getElementById('modalBrand').value.trim();
+            const model = document.getElementById('modalModel').value.trim();
+            const serial = document.getElementById('modalSerial').value.trim();
+            const condition = document.getElementById('modalCondition').value;
+            const status = document.getElementById('modalStatus').value;
+            const location = document.getElementById('modalLocation').value;
+            const department = document.getElementById('modalDepartment').value;
+
+            if (!name || !serial) {
+                if (typeof showToast === 'function') showToast('Please complete required fields (Asset Name, Serial Number)', 'danger');
+                return;
+            }
+
+            // Extract dynamic components
+            const compRows = [];
+            document.querySelectorAll('#componentRowsContainer .component-input-row').forEach(row => {
+                const nm = row.querySelector('.component-name')?.value.trim() || '';
+                const sn = row.querySelector('.component-serial')?.value.trim() || '';
+                if (nm || sn) {
+                    compRows.push({ name: nm, serial: sn });
+                }
+            });
+
+            if (editId) {
+                // Update existing
+                const asset = assetsData.find(a => a.id === parseInt(editId, 10));
+                if (asset) {
+                    asset.tag = tag;
+                    asset.name = name;
+                    asset.category = category;
+                    asset.brand = brand;
+                    asset.model = model;
+                    asset.serial = serial;
+                    asset.condition = condition;
+                    asset.status = status;
+                    asset.location = location;
+                    asset.department = department;
+
+                    asset.specs = {
+                        processor: document.getElementById('modalProcessor').value.trim(),
+                        ram: document.getElementById('modalRam').value.trim(),
+                        storage: document.getElementById('modalStorage').value.trim(),
+                        os: document.getElementById('modalOs').value.trim(),
+                        macAddress: document.getElementById('modalMac').value.trim(),
+                        ipAddress: document.getElementById('modalIp').value.trim()
+                    };
+
+                    asset.components = compRows;
+
+                    asset.financials = {
+                        vendor: document.getElementById('modalVendor').value.trim(),
+                        poNumber: document.getElementById('modalPoNumber').value.trim(),
+                        purchaseDate: document.getElementById('modalPurchaseDate').value,
+                        cost: parseFloat(document.getElementById('modalCost').value) || 0,
+                        warrantyExpiry: document.getElementById('modalWarrantyExpiry').value
+                    };
+
+                    if (typeof showToast === 'function') showToast(`Asset "${asset.name}" updated successfully`, 'success');
+                }
+            } else {
+                // Add new
+                const newId = assetsData.length ? Math.max(...assetsData.map(a => a.id)) + 1 : 1;
+                const newAsset = {
+                    id: newId,
+                    tag,
+                    name,
+                    category,
+                    brand,
+                    model,
+                    serial,
+                    condition,
+                    status,
+                    location,
+                    department,
+                    assignedTo: null,
+                    specs: {
+                        processor: document.getElementById('modalProcessor').value.trim(),
+                        ram: document.getElementById('modalRam').value.trim(),
+                        storage: document.getElementById('modalStorage').value.trim(),
+                        os: document.getElementById('modalOs').value.trim(),
+                        macAddress: document.getElementById('modalMac').value.trim(),
+                        ipAddress: document.getElementById('modalIp').value.trim()
+                    },
+                    components: compRows,
+                    financials: {
+                        vendor: document.getElementById('modalVendor').value.trim(),
+                        poNumber: document.getElementById('modalPoNumber').value.trim(),
+                        purchaseDate: document.getElementById('modalPurchaseDate').value,
+                        cost: parseFloat(document.getElementById('modalCost').value) || 0,
+                        warrantyExpiry: document.getElementById('modalWarrantyExpiry').value
+                    },
+                    history: [
+                        { date: 'Today', title: 'Asset Registered', desc: 'Added into inventory system via portal UI.' }
+                    ],
+                    tickets: []
+                };
+
+                assetsData.unshift(newAsset);
+                if (typeof showToast === 'function') showToast(`New asset "${newAsset.name}" registered successfully!`, 'success');
+            }
+
+            closeAssetModal();
+            renderAssets();
+        });
+    }
+
+    // =========================================================================
+    // 9. Quick Reassign / Transfer Modal
+    // =========================================================================
+
+    window.openReassignModal = function (assetId) {
+        const asset = assetsData.find(a => a.id === assetId);
+        if (!asset) return;
+
+        const modal = document.getElementById('reassignModal');
+        document.getElementById('reassignAssetId').value = asset.id;
+        document.getElementById('reassignAssetName').textContent = asset.name;
+        const serialEl = document.getElementById('reassignAssetSerial');
+        if (serialEl) serialEl.textContent = `Tag: ${asset.tag} • SN: ${asset.serial}`;
+
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeReassignModal = function () {
+        const modal = document.getElementById('reassignModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    const reassignForm = document.getElementById('reassignForm');
+    if (reassignForm) {
+        reassignForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('reassignAssetId').value, 10);
+            const employeeName = document.getElementById('reassignEmpName').value.trim();
+            const empDept = document.getElementById('reassignDept').value;
+            const empEmail = document.getElementById('reassignEmail').value.trim();
+            const actionType = document.getElementById('reassignActionType').value;
+
+            const asset = assetsData.find(a => a.id === id);
+            if (!asset) return;
+
+            if (actionType === 'return_to_stock') {
+                asset.status = 'Available';
+                asset.assignedTo = null;
+                asset.history.unshift({
+                    date: 'Today',
+                    title: 'Returned to IT Stock',
+                    desc: 'Checked back into IT pool inventory.'
+                });
+                if (typeof showToast === 'function') showToast(`Asset "${asset.name}" (SN: ${asset.serial}) returned to available inventory`, 'info');
+            } else {
+                if (!employeeName) {
+                    if (typeof showToast === 'function') showToast('Please specify the recipient employee name', 'warning');
+                    return;
+                }
+                asset.status = 'In Use';
+                asset.assignedTo = {
+                    name: employeeName,
+                    department: empDept,
+                    email: empEmail || `${employeeName.toLowerCase().replace(/\s+/g, '.')}@viros.com`,
+                    role: 'Team Member',
+                    assignedDate: 'Today'
+                };
+                asset.department = empDept;
+                asset.history.unshift({
+                    date: 'Today',
+                    title: `Assigned to ${employeeName}`,
+                    desc: `Hardware custody transferred to ${employeeName} (${empDept}).`
+                });
+                if (typeof showToast === 'function') showToast(`Asset "${asset.name}" (SN: ${asset.serial}) assigned to ${employeeName}`, 'success');
+            }
+
+            closeReassignModal();
+            if (activeDrawerAssetId === id) {
+                openAssetDrawer(id);
+            }
+            renderAssets();
+        });
+    }
+
+    // =========================================================================
+    // 10. Delete / Retire Asset
+    // =========================================================================
+
+    window.deleteAsset = function (id) {
+        const asset = assetsData.find(a => a.id === id);
+        if (!asset) return;
+
+        if (confirm(`Are you sure you want to retire asset "${asset.name}" (SN: ${asset.serial})?`)) {
+            asset.status = 'Retired';
+            asset.assignedTo = null;
+            asset.history.unshift({
+                date: 'Today',
+                title: 'Decommissioned / Retired',
+                desc: 'Asset marked as retired from active circulation.'
+            });
+            if (typeof showToast === 'function') showToast(`Asset "${asset.name}" marked as Retired`, 'warning');
+            renderAssets();
+        }
+    };
+
+    // =========================================================================
+    // 11. Bulk Selection & Actions
+    // =========================================================================
+
+    function updateBulkBar() {
+        if (!bulkActionsBar || !bulkCountEl) return;
+        const count = selectedAssetIds.size;
+        bulkCountEl.textContent = count;
+
+        if (count > 0) {
+            bulkActionsBar.classList.add('active');
+        } else {
+            bulkActionsBar.classList.remove('active');
+        }
+
+        // Sync header checkbox
+        if (selectAllCheckbox) {
+            const filtered = getFilteredAssets();
+            selectAllCheckbox.checked = filtered.length > 0 && filtered.every(item => selectedAssetIds.has(item.id));
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function () {
+            const filtered = getFilteredAssets();
+            if (this.checked) {
+                filtered.forEach(item => selectedAssetIds.add(item.id));
+            } else {
+                filtered.forEach(item => selectedAssetIds.delete(item.id));
+            }
+            renderAssets();
+        });
+    }
+
+    if (assetTableBody) {
+        assetTableBody.addEventListener('change', function (e) {
+            if (e.target.classList.contains('asset-item-checkbox')) {
+                const id = parseInt(e.target.dataset.id, 10);
+                if (e.target.checked) {
+                    selectedAssetIds.add(id);
+                } else {
+                    selectedAssetIds.delete(id);
+                }
+                updateBulkBar();
+                // Toggle row class
+                const tr = e.target.closest('tr');
+                if (tr) tr.classList.toggle('row-selected', e.target.checked);
+            }
+        });
+    }
+
+    window.clearBulkSelection = function () {
+        selectedAssetIds.clear();
+        renderAssets();
+    };
+
+    window.bulkMarkStatus = function (newStatus) {
+        if (selectedAssetIds.size === 0) return;
+        assetsData.forEach(a => {
+            if (selectedAssetIds.has(a.id)) {
+                a.status = newStatus;
+                if (newStatus === 'Available' || newStatus === 'Retired') {
+                    a.assignedTo = null;
+                }
+            }
+        });
+        if (typeof showToast === 'function') showToast(`Updated ${selectedAssetIds.size} assets to "${newStatus}"`, 'success');
+        clearBulkSelection();
+    };
+
+    window.bulkPrintLabels = function () {
+        if (selectedAssetIds.size === 0) return;
+        if (typeof showToast === 'function') showToast(`Preparing barcode stickers for ${selectedAssetIds.size} assets...`, 'info');
+        const firstId = Array.from(selectedAssetIds)[0];
+        openLabelModal(firstId);
+    };
+
+    // =========================================================================
+    // 12. CSV Export & Import Simulation
+    // =========================================================================
+
+    window.exportAssetsCsv = function () {
+        const filtered = getFilteredAssets();
+        if (filtered.length === 0) {
+            if (typeof showToast === 'function') showToast('No assets to export with current filters', 'warning');
+            return;
+        }
+
+        const headers = ['Asset Tag Number', 'Asset Name', 'Category', 'Brand', 'Model', 'Serial Number', 'Status', 'Condition', 'Assigned To', 'Department', 'Location', 'Purchase Cost (INR)', 'Warranty Expiry'];
+        const rows = filtered.map(a => [
+            `"${a.tag || ''}"`,
+            `"${a.name}"`,
+            `"${a.category}"`,
+            `"${a.brand}"`,
+            `"${a.model}"`,
+            `"${a.serial}"`,
+            `"${a.status}"`,
+            `"${a.condition}"`,
+            `"${a.assignedTo ? a.assignedTo.name : 'Unassigned'}"`,
+            `"${a.department}"`,
+            `"${a.location}"`,
+            `"${a.financials.cost || 0}"`,
+            `"${a.financials.warrantyExpiry || ''}"`
+        ]);
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `viros_it_assets_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        if (typeof showToast === 'function') showToast(`Exported ${filtered.length} assets to CSV`, 'success');
+    };
+
+    window.openImportModal = function () {
+        const modal = document.getElementById('importModal');
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeImportModal = function () {
+        const modal = document.getElementById('importModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    // =========================================================================
+    // 13. Event Listeners for Filters & Search
+    // =========================================================================
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            currentSearchQuery = this.value;
+            currentPage = 1;
+            renderAssets();
+        });
+    }
+
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', function () {
+            currentCategoryFilter = this.value;
+            currentPage = 1;
+            renderAssets();
+        });
+    }
+
+    if (deptFilter) {
+        deptFilter.addEventListener('change', function () {
+            currentDeptFilter = this.value;
+            currentPage = 1;
+            renderAssets();
+        });
+    }
+
+    if (locationFilter) {
+        locationFilter.addEventListener('change', function () {
+            currentLocationFilter = this.value;
+            currentPage = 1;
+            renderAssets();
+        });
+    }
+
+    if (conditionFilter) {
+        conditionFilter.addEventListener('change', function () {
+            currentConditionFilter = this.value;
+            currentPage = 1;
+            renderAssets();
+        });
+    }
+
+    statusTabBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            statusTabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilterStatus = this.dataset.status;
+            currentPage = 1;
+            renderAssets();
+        });
+    });
+
+    // View Switcher (Table vs Grid)
+    if (viewTableBtn && viewGridBtn) {
+        viewTableBtn.addEventListener('click', function () {
+            viewTableBtn.classList.add('active');
+            viewGridBtn.classList.remove('active');
+            currentViewMode = 'table';
+            if (assetTableView) assetTableView.style.display = 'block';
+            if (assetGridContainer) assetGridContainer.style.display = 'none';
+        });
+
+        viewGridBtn.addEventListener('click', function () {
+            viewGridBtn.classList.add('active');
+            viewTableBtn.classList.remove('active');
+            currentViewMode = 'grid';
+            if (assetTableView) assetTableView.style.display = 'none';
+            if (assetGridContainer) assetGridContainer.style.display = 'grid';
+        });
+    }
+
+    // Pagination helper
+    window.goToPage = function (pageNum) {
+        currentPage = pageNum;
+        renderAssets();
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+    };
+
+    window.resetAllFilters = function () {
+        if (searchInput) searchInput.value = '';
+        if (categoryFilter) categoryFilter.value = 'all';
+        if (deptFilter) deptFilter.value = 'all';
+        if (locationFilter) locationFilter.value = 'all';
+        if (conditionFilter) conditionFilter.value = 'all';
+
+        currentSearchQuery = '';
+        currentCategoryFilter = 'all';
+        currentDeptFilter = 'all';
+        currentLocationFilter = 'all';
+        currentConditionFilter = 'all';
+        currentFilterStatus = 'all';
+
+        statusTabBtns.forEach(b => {
+            b.classList.toggle('active', b.dataset.status === 'all');
+        });
+
+        currentPage = 1;
+        renderAssets();
+        if (typeof showToast === 'function') showToast('Filters reset', 'info');
+    };
+
+    // Copy to clipboard
+    window.copyToClipboard = function (text, msg) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (typeof showToast === 'function') showToast(msg || 'Copied to clipboard', 'info');
+            });
+        }
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Initial render
+    renderAssets();
+});
