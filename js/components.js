@@ -53,6 +53,14 @@
     const deleteComponentName = document.getElementById('deleteComponentName');
     let componentToDeleteId = null;
 
+    const detachModal = document.getElementById('detachComponentModal');
+    const closeDetachModalBtn = document.getElementById('closeDetachModalBtn');
+    const cancelDetachModalBtn = document.getElementById('cancelDetachModalBtn');
+    const confirmDetachBtn = document.getElementById('confirmDetachBtn');
+    const detachComponentName = document.getElementById('detachComponentName');
+    const detachTargetAsset = document.getElementById('detachTargetAsset');
+    let componentToDetachId = null;
+
     const closeInstallModalBtn = document.getElementById('closeInstallModalBtn');
     const cancelInstallBtn = document.getElementById('cancelInstallBtn');
     const installForm = document.getElementById('installForm');
@@ -290,6 +298,14 @@
             confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
         }
 
+        // Detach Modal
+        if (closeDetachModalBtn) closeDetachModalBtn.addEventListener('click', () => closeModal(detachModal));
+        if (cancelDetachModalBtn) cancelDetachModalBtn.addEventListener('click', () => closeModal(detachModal));
+
+        if (confirmDetachBtn) {
+            confirmDetachBtn.addEventListener('click', handleConfirmDetach);
+        }
+
         // Install Modal
         if (closeInstallModalBtn) closeInstallModalBtn.addEventListener('click', () => closeModal(installModal));
         if (cancelInstallBtn) cancelInstallBtn.addEventListener('click', () => closeModal(installModal));
@@ -362,12 +378,13 @@
                 closeModal(addModal);
                 closeModal(editModal);
                 closeModal(deleteModal);
+                closeModal(detachModal);
                 closeModal(installModal);
                 closeModal(importModal);
             }
         });
 
-        [addModal, editModal, deleteModal, installModal, importModal].forEach(modal => {
+        [addModal, editModal, deleteModal, detachModal, installModal, importModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) closeModal(modal);
@@ -702,13 +719,31 @@
         });
     }
 
-    // Detach from Asset
-    function detachItem(id) {
+    // Detach Item Modal - Opens confirmation modal (same as delete)
+    function openDetachModal(id) {
         const item = components.find(c => c.id === id);
         if (!item) return;
 
-        if (!confirm(`Are you sure you want to detach "${item.name}" from ${item.installedAsset || 'asset'} and return it to available stock?`)) {
-            return;
+        componentToDetachId = item.id;
+        if (detachComponentName) {
+            detachComponentName.textContent = `"${item.name}" (${item.sku})`;
+        }
+        if (detachTargetAsset) {
+            detachTargetAsset.textContent = item.installedAsset || 'Host Asset';
+        }
+        openModal(detachModal);
+    }
+
+    // Handle Confirm Detach - Detaches and returns to stock
+    function handleConfirmDetach() {
+        if (!componentToDetachId) return;
+
+        const item = components.find(c => c.id === componentToDetachId);
+        const itemName = item ? item.name : 'Component';
+
+        if (confirmDetachBtn) {
+            confirmDetachBtn.disabled = true;
+            confirmDetachBtn.textContent = 'Detaching...';
         }
 
         fetch(getApiUrl(), {
@@ -716,19 +751,29 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'detach',
-                id: id
+                id: componentToDetachId
             })
         })
         .then(res => res.json())
         .then(data => {
+            if (confirmDetachBtn) {
+                confirmDetachBtn.disabled = false;
+                confirmDetachBtn.textContent = 'Yes, Detach Component';
+            }
             if (data.success) {
-                showNotification(data.message || `Component "${item.name}" returned to available stock.`, 'info');
+                showNotification(data.message || `Component "${itemName}" returned to available stock.`, 'info');
+                closeModal(detachModal);
+                componentToDetachId = null;
                 loadComponents();
             } else {
                 showNotification(data.message || 'Failed to detach component.', 'error');
             }
         })
         .catch(err => {
+            if (confirmDetachBtn) {
+                confirmDetachBtn.disabled = false;
+                confirmDetachBtn.textContent = 'Yes, Detach Component';
+            }
             showNotification('Server error while detaching component.', 'error');
             console.error(err);
         });
@@ -1022,7 +1067,7 @@
     // Global hooks
     window.compMgr = {
         openInstall: openInstallModal,
-        detachItem: detachItem,
+        detachItem: openDetachModal,
         openEdit: openEditModal,
         deleteItem: openDeleteModal,
         reload: loadComponents

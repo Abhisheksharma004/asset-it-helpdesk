@@ -520,6 +520,28 @@ include 'includes/topbar.php';
     </div>
 </div>
 
+<!-- ==================== DETACH CONFIRMATION MODAL ==================== -->
+<div class="modal-overlay" id="detachComponentModal">
+    <div class="modal-box" style="max-width: 440px;">
+        <div class="delete-modal-content">
+            <div class="delete-modal-icon" style="background: #fff7ed; color: #ea580c;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>
+            <h3 style="font-size: 17px; color: var(--navy-primary); margin-bottom: 8px;">Detach Component from Asset?</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px;">
+                Are you sure you want to detach <strong id="detachComponentName" style="color: var(--text-primary);"></strong> from host asset <strong id="detachTargetAsset" style="color: var(--cyan-primary);"></strong> and return it to available stock?
+            </p>
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" class="btn-secondary" id="cancelDetachModalBtn">Cancel</button>
+                <button type="button" class="btn-primary" id="confirmDetachBtn" style="background: #ea580c; border-color: #ea580c;">Yes, Detach Component</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ==================== INSTALL / ALLOCATE COMPONENT TO ASSET MODAL ==================== -->
 <div class="modal-overlay" id="installModal">
     <div class="modal-box" style="max-width: 500px;">
