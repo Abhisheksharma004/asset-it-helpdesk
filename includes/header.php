@@ -24,13 +24,14 @@ if (!isset($page_title)) {
     <title><?php echo htmlspecialchars($page_title); ?></title>
     
     <!-- Core Stylesheets -->
-    <link rel="stylesheet" href="css/dashboard.css">
-    <link rel="stylesheet" href="css/toast.css">
-    <link rel="stylesheet" href="css/searchable-select.css">
+    <link rel="stylesheet" href="css/dashboard.css?v=<?php echo file_exists(__DIR__ . '/../css/dashboard.css') ? filemtime(__DIR__ . '/../css/dashboard.css') : time(); ?>">
+    <link rel="stylesheet" href="css/toast.css?v=<?php echo file_exists(__DIR__ . '/../css/toast.css') ? filemtime(__DIR__ . '/../css/toast.css') : time(); ?>">
+    <link rel="stylesheet" href="css/searchable-select.css?v=<?php echo file_exists(__DIR__ . '/../css/searchable-select.css') ? filemtime(__DIR__ . '/../css/searchable-select.css') : time(); ?>">
     
     <?php if (isset($extra_css) && is_array($extra_css)): ?>
         <?php foreach ($extra_css as $css_file): ?>
-            <link rel="stylesheet" href="<?php echo htmlspecialchars($css_file); ?>">
+            <?php $css_ver = file_exists(__DIR__ . '/../' . $css_file) ? filemtime(__DIR__ . '/../' . $css_file) : time(); ?>
+            <link rel="stylesheet" href="<?php echo htmlspecialchars($css_file . '?v=' . $css_ver); ?>">
         <?php endforeach; ?>
     <?php endif; ?>
 </head>

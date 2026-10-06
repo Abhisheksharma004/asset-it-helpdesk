@@ -1249,79 +1249,220 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeAssetModalBtn = document.getElementById('closeAssetModalBtn');
     const cancelAssetModalBtn = document.getElementById('cancelAssetModalBtn');
 
-    window.addComponentRow = function (name = '', serial = '') {
-        const container = document.getElementById('componentRowsContainer');
-        if (!container) return;
-        const div = document.createElement('div');
-        div.className = 'component-input-row';
-        div.innerHTML = `
-            <div class="modal-form-group" style="flex: 1;">
-                <label>Asset Name</label>
-                <input type="text" class="component-name" placeholder="e.g. 16GB DDR5 5600MHz / 2TB NVMe SSD" value="${escapeHtml(name)}">
-            </div>
-            <div class="modal-form-group" style="flex: 1;">
-                <label>Serial Number</label>
-                <input type="text" class="component-serial" placeholder="e.g. SN-882109" value="${escapeHtml(serial)}">
-            </div>
-            <div class="modal-form-group" style="flex: 0 0 38px;">
-                <label>&nbsp;</label>
-                <button type="button" class="btn-remove-comp-row" onclick="removeComponentRow(this)" title="Remove Component">&minus;</button>
-            </div>
-        `;
-        container.appendChild(div);
-    };
+    function buildComponentOptionsHtml(selectedName = '') {
+        const list = window.dynamicPartComponents || [];
+        let html = '<option value="">Select Part / Component</option>';
 
-    window.removeComponentRow = function (btn) {
-        const row = btn.closest('.component-input-row');
-        if (row) row.remove();
-    };
+        const grouped = {};
+        list.forEach(item => {
+            const cat = item.category || 'General Components';
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(item);
+        });
 
-    function resetComponentRows(components = []) {
-        const container = document.getElementById('componentRowsContainer');
+        let foundSelected = false;
+        for (const cat in grouped) {
+            html += `<optgroup label="${escapeHtml(cat)}">`;
+            grouped[cat].forEach(item => {
+                const val = item.name || '';
+                const sn = item.serial || '';
+                const tag = item.sku || item.tag || '';
+                const isSel = (val && selectedName && val.trim().toLowerCase() === selectedName.trim().toLowerCase());
+                if (isSel) foundSelected = true;
+
+                html += `<option value="${escapeHtml(val)}" data-serial="${escapeHtml(sn)}" data-sku="${escapeHtml(tag)}" data-tag="${escapeHtml(tag)}" ${isSel ? 'selected' : ''}>${escapeHtml(val)}</option>`;
+            });
+            html += `</optgroup>`;
+        }
+
+        if (selectedName && !foundSelected) {
+            html += `<option value="${escapeHtml(selectedName)}" selected>${escapeHtml(selectedName)}</option>`;
+        }
+
+        return html;
+    }
+
+    // =========================================================================
+    // Attached Components (Part To-Do List)
+    // =========================================================================
+    let currentAssetComponents = []; // Array of { name, serial, id }
+
+    function renderPartTodoList() {
+        const container = document.getElementById('partTodoListContainer');
+        const countBadge = document.getElementById('partTodoCount');
         if (!container) return;
-        container.innerHTML = '';
-        if (!components || components.length === 0) {
-            const div = document.createElement('div');
-            div.className = 'component-input-row';
-            div.innerHTML = `
-                <div class="modal-form-group" style="flex: 1;">
-                    <label>Asset Name</label>
-                    <input type="text" class="component-name" placeholder="e.g. 16GB DDR5 5600MHz / 2TB NVMe SSD">
-                </div>
-                <div class="modal-form-group" style="flex: 1;">
-                    <label>Serial Number</label>
-                    <input type="text" class="component-serial" placeholder="e.g. SN-882109">
-                </div>
-                <div class="modal-form-group" style="flex: 0 0 38px;">
-                    <label>&nbsp;</label>
-                    <button type="button" class="btn-add-comp-row" onclick="addComponentRow()" title="Add Row">+</button>
+
+        if (countBadge) {
+            countBadge.textContent = currentAssetComponents.length;
+        }
+
+        if (currentAssetComponents.length === 0) {
+            container.innerHTML = `
+                <div class="part-todo-empty">
+                    No hardware parts attached yet. Select a component above and click <strong>+</strong> to add.
                 </div>
             `;
-            container.appendChild(div);
-        } else {
-            components.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'component-input-row';
-                const actionBtn = index === 0
-                    ? `<button type="button" class="btn-add-comp-row" onclick="addComponentRow()" title="Add Row">+</button>`
-                    : `<button type="button" class="btn-remove-comp-row" onclick="removeComponentRow(this)" title="Remove Component">&minus;</button>`;
-                div.innerHTML = `
-                    <div class="modal-form-group" style="flex: 1;">
-                        <label>Asset Name</label>
-                        <input type="text" class="component-name" placeholder="e.g. 16GB DDR5 5600MHz / 2TB NVMe SSD" value="${escapeHtml(item.name || '')}">
-                    </div>
-                    <div class="modal-form-group" style="flex: 1;">
-                        <label>Serial Number</label>
-                        <input type="text" class="component-serial" placeholder="e.g. SN-882109" value="${escapeHtml(item.serial || '')}">
-                    </div>
-                    <div class="modal-form-group" style="flex: 0 0 38px;">
-                        <label>&nbsp;</label>
-                        ${actionBtn}
-                    </div>
-                `;
-                container.appendChild(div);
-            });
+            return;
         }
+
+        container.innerHTML = currentAssetComponents.map((item, idx) => {
+            const snVal = (item.serial || '').trim();
+            const tagVal = (item.tag || item.sku || '').trim();
+
+            let badgesHtml = '';
+            if (tagVal) {
+                badgesHtml += `
+                    <span class="part-todo-badge tag-badge" title="Tag Number">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:3px;vertical-align:-1px;">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                        </svg>Tag: ${escapeHtml(tagVal)}
+                    </span>
+                `;
+            }
+            if (snVal && snVal !== tagVal) {
+                badgesHtml += `
+                    <span class="part-todo-badge" title="Serial Number">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:3px;vertical-align:-1px;">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>SN: ${escapeHtml(snVal)}
+                    </span>
+                `;
+            } else if (snVal && !tagVal) {
+                badgesHtml += `
+                    <span class="part-todo-badge" title="Serial Number">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:3px;vertical-align:-1px;">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>SN: ${escapeHtml(snVal)}
+                    </span>
+                `;
+            }
+            if (!badgesHtml) {
+                badgesHtml = `<span class="part-todo-badge no-serial">No Serial / Tag</span>`;
+            }
+
+            return `
+                <div class="part-todo-item" data-index="${idx}">
+                    <div class="part-todo-left">
+                        <div class="part-todo-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                <rect x="9" y="9" width="6" height="6"></rect>
+                                <line x1="9" y1="1" x2="9" y2="4"></line>
+                                <line x1="15" y1="1" x2="15" y2="4"></line>
+                                <line x1="9" y1="20" x2="9" y2="23"></line>
+                                <line x1="15" y1="20" x2="15" y2="23"></line>
+                                <line x1="20" y1="9" x2="23" y2="9"></line>
+                                <line x1="20" y1="14" x2="23" y2="14"></line>
+                                <line x1="1" y1="9" x2="4" y2="9"></line>
+                                <line x1="1" y1="14" x2="4" y2="14"></line>
+                            </svg>
+                        </div>
+                        <div class="part-todo-info">
+                            <div class="part-todo-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+                            <div class="part-todo-serial">${badgesHtml}</div>
+                        </div>
+                    </div>
+                    <button type="button" class="part-todo-remove-btn" onclick="removePartTodo(${idx})" title="Remove Part">&times;</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    window.addPartTodo = function () {
+        const select = document.getElementById('newCompName');
+        const serialInput = document.getElementById('newCompSerial');
+        if (!select) return;
+
+        const name = select.value.trim();
+        if (!name) {
+            if (typeof showToast === 'function') {
+                showToast('Please select a Component Name first', 'warning');
+            }
+            return;
+        }
+
+        const serial = serialInput ? serialInput.value.trim() : '';
+        const opt = select.options[select.selectedIndex];
+        let tag = opt ? (opt.dataset.tag || opt.dataset.sku || '') : '';
+        let sn = opt ? (opt.dataset.serial || '') : '';
+
+        // If tag or sn missing from option, lookup in dynamicPartComponents
+        if ((!tag || !sn) && window.dynamicPartComponents) {
+            const match = window.dynamicPartComponents.find(p => p.name === name);
+            if (match) {
+                if (!tag) tag = match.tag || match.sku || '';
+                if (!sn) sn = match.serial || '';
+            }
+        }
+
+        const finalSerial = serial || sn;
+
+        // Add to array
+        currentAssetComponents.push({
+            name,
+            serial: finalSerial,
+            tag: tag,
+            sku: tag,
+            id: Date.now() + Math.random()
+        });
+
+        // Reset inputs
+        if (serialInput) {
+            serialInput.value = '';
+            serialInput.dataset.autofilled = 'false';
+        }
+        select.value = '';
+        if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+            window.SearchableSelect.sync(select);
+        }
+
+        renderPartTodoList();
+        if (typeof showToast === 'function') {
+            showToast(`Part "${name}" added to list`, 'success');
+        }
+    };
+
+    window.removePartTodo = function (index) {
+        if (index >= 0 && index < currentAssetComponents.length) {
+            const removed = currentAssetComponents.splice(index, 1);
+            renderPartTodoList();
+            if (removed.length > 0 && typeof showToast === 'function') {
+                showToast(`Removed "${removed[0].name}"`, 'info');
+            }
+        }
+    };
+
+    // Backward compatibility aliases
+    window.addComponentRow = window.addPartTodo;
+    window.removeComponentRow = function () {};
+
+    function resetComponentRows(components = []) {
+        currentAssetComponents = Array.isArray(components) ? components.map(c => ({
+            name: c.name || '',
+            serial: c.serial || '',
+            tag: c.tag || c.sku || '',
+            sku: c.tag || c.sku || '',
+            id: Date.now() + Math.random()
+        })) : [];
+
+        // Reset inputs
+        const serialInput = document.getElementById('newCompSerial');
+        const select = document.getElementById('newCompName');
+        if (serialInput) {
+            serialInput.value = '';
+            serialInput.dataset.autofilled = 'false';
+        }
+        if (select) {
+            select.value = '';
+            if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+                window.SearchableSelect.sync(select);
+            }
+        }
+
+        renderPartTodoList();
     }
 
     window.openAddModal = function () {
@@ -1336,6 +1477,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         resetComponentRows([]);
+
+        const vendorSelect = document.getElementById('modalVendor');
+        if (vendorSelect) vendorSelect.value = '';
 
         switchModalTab('general');
         if (assetModal) assetModal.style.display = 'flex';
@@ -1371,7 +1515,20 @@ document.addEventListener('DOMContentLoaded', function () {
         resetComponentRows(asset.components || []);
 
         // Financials
-        document.getElementById('modalVendor').value = asset.financials.vendor || '';
+        const vendorSelect = document.getElementById('modalVendor');
+        if (vendorSelect) {
+            const vVal = (asset.financials && asset.financials.vendor) ? asset.financials.vendor : '';
+            if (vVal) {
+                const optExists = Array.from(vendorSelect.options).some(o => o.value.toLowerCase() === vVal.toLowerCase());
+                if (!optExists) {
+                    const opt = document.createElement('option');
+                    opt.value = vVal;
+                    opt.textContent = vVal;
+                    vendorSelect.appendChild(opt);
+                }
+            }
+            vendorSelect.value = vVal;
+        }
         document.getElementById('modalPoNumber').value = asset.financials.poNumber || '';
         document.getElementById('modalPurchaseDate').value = asset.financials.purchaseDate || '';
         document.getElementById('modalCost').value = asset.financials.cost || '';
@@ -1428,15 +1585,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Extract dynamic components
-            const compRows = [];
-            document.querySelectorAll('#componentRowsContainer .component-input-row').forEach(row => {
-                const nm = row.querySelector('.component-name')?.value.trim() || '';
-                const sn = row.querySelector('.component-serial')?.value.trim() || '';
-                if (nm || sn) {
-                    compRows.push({ name: nm, serial: sn });
+            // Extract dynamic components from the todo list
+            // (If user currently has a part selected in the top bar without clicking +, auto-include it)
+            const activeSel = document.getElementById('newCompName');
+            const activeSerial = document.getElementById('newCompSerial');
+            if (activeSel && activeSel.value.trim()) {
+                const aName = activeSel.value.trim();
+                const aOpt = activeSel.options[activeSel.selectedIndex];
+                let aTag = aOpt ? (aOpt.dataset.tag || aOpt.dataset.sku || '') : '';
+                let aSn = aOpt ? (aOpt.dataset.serial || '') : '';
+                if ((!aTag || !aSn) && window.dynamicPartComponents) {
+                    const match = window.dynamicPartComponents.find(p => p.name === aName);
+                    if (match) {
+                        if (!aTag) aTag = match.tag || match.sku || '';
+                        if (!aSn) aSn = match.serial || '';
+                    }
                 }
-            });
+                const aSerial = activeSerial ? activeSerial.value.trim() : '';
+                currentAssetComponents.push({
+                    name: aName,
+                    serial: aSerial || aSn,
+                    tag: aTag,
+                    sku: aTag,
+                    id: Date.now()
+                });
+            }
+
+            const compRows = currentAssetComponents.map(item => ({
+                name: item.name,
+                serial: item.serial,
+                tag: item.tag || item.sku || '',
+                sku: item.tag || item.sku || ''
+            }));
 
             if (editId) {
                 // Update existing
@@ -1863,6 +2043,88 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    // Initialize Component input & SearchableSelect
+    const compSelect = document.getElementById('newCompName');
+    const compSerial = document.getElementById('newCompSerial');
+
+    function syncPartSerialFromSelection() {
+        if (!compSelect || !compSerial) return;
+        const opt = compSelect.options[compSelect.selectedIndex];
+        if (!opt || !compSelect.value) return;
+
+        let sn = opt.dataset.serial || '';
+        let tag = opt.dataset.tag || opt.dataset.sku || '';
+
+        // If not found directly on option, check window.dynamicPartComponents
+        if ((!sn || !tag) && window.dynamicPartComponents) {
+            const match = window.dynamicPartComponents.find(p => p.name === compSelect.value && (p.serial || p.sku || p.tag));
+            if (match) {
+                if (!sn) sn = match.serial || '';
+                if (!tag) tag = match.tag || match.sku || '';
+            }
+        }
+
+        // Auto-fill serial input with serial number, or tag if no serial
+        const valToFill = sn || tag || '';
+        if (valToFill) {
+            compSerial.value = valToFill;
+            // Visual highlight/feedback
+            compSerial.style.transition = 'background-color 0.25s ease, border-color 0.25s ease';
+            compSerial.style.backgroundColor = '#ecfdf5';
+            compSerial.style.borderColor = '#10b981';
+            setTimeout(() => {
+                compSerial.style.backgroundColor = '';
+                compSerial.style.borderColor = '';
+            }, 600);
+        }
+    }
+
+    if (compSelect) {
+        if (window.SearchableSelect && typeof window.SearchableSelect.init === 'function') {
+            window.SearchableSelect.init(compSelect);
+        }
+        compSelect.addEventListener('change', syncPartSerialFromSelection);
+    }
+
+    if (compSerial) {
+        compSerial.addEventListener('input', function () {
+            const val = this.value.trim().toLowerCase();
+            if (!val || !window.dynamicPartComponents || !compSelect) return;
+            const match = window.dynamicPartComponents.find(p =>
+                (p.serial && p.serial.toLowerCase() === val) ||
+                (p.sku && p.sku.toLowerCase() === val)
+            );
+            if (match && compSelect.value !== match.name) {
+                compSelect.value = match.name;
+                if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+                    window.SearchableSelect.sync(compSelect);
+                }
+            }
+        });
+    }
+
+    renderPartTodoList();
+
+    // Fetch dynamic parts from API if available to ensure fresh options
+    if (typeof fetch === 'function') {
+        fetch('api/components.php')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.components) && data.components.length > 0) {
+                    window.dynamicPartComponents = data.components;
+                    const sel = document.getElementById('newCompName');
+                    if (sel) {
+                        const curVal = sel.value;
+                        sel.innerHTML = buildComponentOptionsHtml(curVal);
+                        if (window.SearchableSelect && typeof window.SearchableSelect.update === 'function') {
+                            window.SearchableSelect.update(sel);
+                        }
+                    }
+                }
+            })
+            .catch(() => {});
     }
 
     // Initial render

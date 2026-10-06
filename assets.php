@@ -15,6 +15,95 @@ $active_page = "assets";
 $extra_css = ['css/categories.css', 'css/assets.css'];
 $extra_js  = ['js/assets.js'];
 
+// Include database to fetch dynamic components/parts
+require_once __DIR__ . '/config/db.php';
+
+$dynamicPartComponents = [];
+if (isset($conn) && $conn !== false) {
+    $partsQuery = "SELECT id, sku, serial, name, category, brand, model, specs, status 
+                   FROM components 
+                   ORDER BY category ASC, name ASC";
+    $partsStmt = sqlsrv_query($conn, $partsQuery);
+    if ($partsStmt !== false) {
+        while ($row = sqlsrv_fetch_array($partsStmt, SQLSRV_FETCH_ASSOC)) {
+            $dynamicPartComponents[] = [
+                'id'       => intval($row['id']),
+                'sku'      => $row['sku'] ?? '',
+                'serial'   => $row['serial'] ?? '',
+                'name'     => $row['name'] ?? '',
+                'category' => !empty($row['category']) ? $row['category'] : 'General Components',
+                'brand'    => $row['brand'] ?? '',
+                'model'    => $row['model'] ?? '',
+                'specs'    => $row['specs'] ?? '',
+                'status'   => $row['status'] ?? 'Available'
+            ];
+        }
+        sqlsrv_free_stmt($partsStmt);
+    }
+}
+
+if (empty($dynamicPartComponents)) {
+    $dynamicPartComponents = [
+        ['id' => 1, 'name' => 'Crucial 16GB DDR4 3200MHz SO-DIMM', 'category' => 'RAM & Memory Modules', 'serial' => 'CRU-DDR4-88492', 'sku' => 'PRT1026002', 'status' => 'Available'],
+        ['id' => 2, 'name' => 'Kingston Fury Beast 32GB DDR5 5600MHz', 'category' => 'RAM & Memory Modules', 'serial' => 'KNG-DDR5-10293', 'sku' => 'PRT1026003', 'status' => 'Available'],
+        ['id' => 3, 'name' => 'Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2', 'category' => 'Solid State Drives (SSD)', 'serial' => 'SAM-NVME-99103', 'sku' => 'PRT1026005', 'status' => 'Available'],
+        ['id' => 4, 'name' => 'Crucial MX500 500GB 2.5-Inch SATA SSD', 'category' => 'Solid State Drives (SSD)', 'serial' => 'CRU-SATA-44129', 'sku' => 'PRT1026006', 'status' => 'Available'],
+        ['id' => 5, 'name' => 'Seagate IronWolf 4TB NAS Hard Drive', 'category' => 'Hard Disk Drives (HDD)', 'serial' => 'SEA-NAS-77218', 'sku' => 'PRT1026007', 'status' => 'Available'],
+        ['id' => 6, 'name' => 'NVIDIA RTX A2000 12GB Workstation GPU', 'category' => 'Graphics & GPU Cards', 'serial' => 'NV-RTX-55102', 'sku' => 'PRT1026008', 'status' => 'Available'],
+        ['id' => 7, 'name' => 'Intel Core i7-13700 Desktop Processor', 'category' => 'Processors & CPUs', 'serial' => 'INT-I7-33910', 'sku' => 'PRT1026009', 'status' => 'Available'],
+        ['id' => 8, 'name' => 'Dell 58Wh 4-Cell Laptop Replacement Battery', 'category' => 'Laptop Batteries', 'serial' => 'DEL-BAT-22019', 'sku' => 'PRT1026010', 'status' => 'Available'],
+        ['id' => 9, 'name' => 'Corsair RM750x 750W Fully Modular PSU', 'category' => 'Power Supply Units (PSU)', 'serial' => 'COR-750-66014', 'sku' => 'PRT1026011', 'status' => 'Available'],
+        ['id' => 10, 'name' => 'Intel X550-T2 Dual Port 10GbE Network Card', 'category' => 'Network Interface Cards (NIC)', 'serial' => 'INT-NIC-12004', 'sku' => 'PRT1026012', 'status' => 'Available']
+    ];
+}
+// Fetch active vendors / suppliers from master
+$vendorsList = [];
+if (isset($conn) && $conn !== false) {
+    $vendorQuery = "SELECT id, vendor_name, status FROM vendors WHERE status = 'Active' ORDER BY vendor_name ASC";
+    $vendorStmt = sqlsrv_query($conn, $vendorQuery);
+    if ($vendorStmt !== false) {
+        while ($row = sqlsrv_fetch_array($vendorStmt, SQLSRV_FETCH_ASSOC)) {
+            $vendorsList[] = $row;
+        }
+        sqlsrv_free_stmt($vendorStmt);
+    }
+}
+
+// Fallback vendor list if table is empty or offline
+if (empty($vendorsList)) {
+    $fallbackVendors = [
+        'Airtel Enterprise Services',
+        'Amazon Business India',
+        'Apple Business Direct',
+        'Canon India Pvt Ltd',
+        'CDW Logistics',
+        'Cisco Systems India',
+        'Dell Technologies India',
+        'HP India Sales Pvt Ltd',
+        'Lenovo Global Technology',
+        'Microsoft Corporation India',
+        'QuickHeal & Seqrite Antivirus',
+        'Redington India Ltd',
+        'Tata Communications'
+    ];
+    foreach ($fallbackVendors as $idx => $vName) {
+        $vendorsList[] = [
+            'id'          => $idx + 1,
+            'vendor_name' => $vName,
+            'status'      => 'Active'
+        ];
+    }
+}
+
+$groupedComponents = [];
+foreach ($dynamicPartComponents as $comp) {
+    $cat = !empty($comp['category']) ? $comp['category'] : 'Other Components';
+    if (!isset($groupedComponents[$cat])) {
+        $groupedComponents[$cat] = [];
+    }
+    $groupedComponents[$cat][] = $comp;
+}
+
 // Include Modular Layout Components
 include 'includes/header.php';
 include 'includes/sidebar.php';
@@ -248,6 +337,15 @@ include 'includes/topbar.php';
             <!-- Location Filter -->
             <select class="asset-filter-select" id="locationFilter">
                 <option value="all">All Locations</option>
+                <option value="Corporate HQ - Mumbai">Corporate HQ - Mumbai</option>
+                <option value="Tech Hub - Bangalore">Tech Hub - Bangalore</option>
+                <option value="Branch Office - Delhi NCR">Branch Office - Delhi NCR</option>
+                <option value="Delivery Center - Hyderabad">Delivery Center - Hyderabad</option>
+                <option value="Development Center - Pune">Development Center - Pune</option>
+                <option value="Operations Center - Chennai">Operations Center - Chennai</option>
+                <option value="Regional Hub - Kolkata">Regional Hub - Kolkata</option>
+                <option value="Support Center - Ahmedabad">Support Center - Ahmedabad</option>
+                <option value="Disaster Recovery Site - Jaipur">Disaster Recovery Site - Jaipur</option>
                 <option value="HQ - New York">HQ - New York</option>
                 <option value="Austin Hub">Austin Hub</option>
                 <option value="London Office">London Office</option>
@@ -467,7 +565,7 @@ include 'includes/topbar.php';
                         <div class="value" id="specVendor">Apple Direct</div>
                     </div>
                     <div class="drawer-spec-item">
-                        <div class="label">Purchase Order (PO #)</div>
+                        <div class="label">Purchase Order (PO #) / Invoice #</div>
                         <div class="value" id="specPo">PO-2024-8901</div>
                     </div>
                     <div class="drawer-spec-item">
@@ -570,11 +668,30 @@ include 'includes/topbar.php';
 
         <form id="assetForm">
             <input type="hidden" id="editAssetId">
-            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+            <div class="modal-body">
                 
                 <!-- Tab Pane 1: General Info -->
                 <div class="modal-tab-pane active" id="modal_pane_general">
                     <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="modalLocation">Select Branch Location *</label>
+                            <select id="modalLocation" required>
+                                <option value="">Select Branch Location</option>
+                                <option value="Corporate HQ - Mumbai">Corporate HQ - Mumbai</option>
+                                <option value="Tech Hub - Bangalore">Tech Hub - Bangalore</option>
+                                <option value="Branch Office - Delhi NCR">Branch Office - Delhi NCR</option>
+                                <option value="Delivery Center - Hyderabad">Delivery Center - Hyderabad</option>
+                                <option value="Development Center - Pune">Development Center - Pune</option>
+                                <option value="Operations Center - Chennai">Operations Center - Chennai</option>
+                                <option value="Regional Hub - Kolkata">Regional Hub - Kolkata</option>
+                                <option value="Support Center - Ahmedabad">Support Center - Ahmedabad</option>
+                                <option value="Disaster Recovery Site - Jaipur">Disaster Recovery Site - Jaipur</option>
+                                <option value="HQ - New York">HQ - New York</option>
+                                <option value="Austin Hub">Austin Hub</option>
+                                <option value="London Office">London Office</option>
+                                <option value="Singapore DC">Singapore DC</option>
+                            </select>
+                        </div>
                         <div class="modal-form-group">
                             <label for="modalCategory">Asset Category *</label>
                             <select id="modalCategory" required>
@@ -586,6 +703,13 @@ include 'includes/topbar.php';
                                 <option value="Tablets & Mobile">Tablets & Mobile</option>
                                 <option value="Printers">Printers</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="modalAssetTag">Asset Tag Number <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Auto Generated)</span></label>
+                            <input type="text" id="modalAssetTag" readonly style="background-color: #f1f5f9; cursor: not-allowed; font-family: monospace; font-weight: 600; color: var(--cyan-primary);">
                         </div>
                         <div class="modal-form-group">
                             <label for="modalCondition">Physical Condition</label>
@@ -599,15 +723,9 @@ include 'includes/topbar.php';
                         </div>
                     </div>
 
-                    <div class="form-grid-2">
-                        <div class="modal-form-group">
-                            <label for="modalAssetTag">Asset Tag Number <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Auto Generated)</span></label>
-                            <input type="text" id="modalAssetTag" readonly style="background-color: #f1f5f9; cursor: not-allowed; font-family: monospace; font-weight: 600; color: var(--cyan-primary);">
-                        </div>
-                        <div class="modal-form-group">
-                            <label for="modalAssetName">Asset Display Name *</label>
-                            <input type="text" id="modalAssetName" placeholder="MacBook Pro 16&quot; M3 Max" required>
-                        </div>
+                    <div class="modal-form-group">
+                        <label for="modalAssetName">Asset Display Name *</label>
+                        <input type="text" id="modalAssetName" placeholder="MacBook Pro 16&quot; M3 Max" required>
                     </div>
 
                     <div class="form-grid-2">
@@ -665,21 +783,62 @@ include 'includes/topbar.php';
 
                 <!-- Tab Pane: Components -->
                 <div class="modal-tab-pane" id="modal_pane_components">
-                    <div id="componentRowsContainer" class="component-row-wrap">
-                        <!-- Initial Component Row -->
-                        <div class="component-input-row">
-                            <div class="modal-form-group" style="flex: 1;">
-                                <label>Asset Name</label>
-                                <input type="text" class="component-name" placeholder="e.g. 16GB DDR5 5600MHz / 2TB NVMe SSD">
+                    <!-- Component Input Row -->
+                    <div class="component-input-row" style="margin-bottom: 16px;">
+                        <div class="modal-form-group" style="flex: 1;">
+                            <label for="newCompSerial">Serial Number / Tag Number</label>
+                            <input type="text" id="newCompSerial" class="component-serial" placeholder="Scan or Type Serial Number/Tag Number">
+                        </div>
+                        <div class="modal-form-group" style="flex: 1;">
+                            <label for="newCompName">Component Name</label>
+                            <select id="newCompName" class="component-name">
+                                <option value="">Select Part / Component</option>
+                                <?php foreach ($groupedComponents as $catName => $items): ?>
+                                    <optgroup label="<?php echo htmlspecialchars($catName); ?>">
+                                        <?php foreach ($items as $item): 
+                                            $val = $item['name'];
+                                            $sn  = $item['serial'] ?? '';
+                                            $tag = $item['sku'] ?? ($item['tag'] ?? '');
+                                        ?>
+                                            <option value="<?php echo htmlspecialchars($val); ?>" 
+                                                    data-serial="<?php echo htmlspecialchars($sn); ?>" 
+                                                    data-sku="<?php echo htmlspecialchars($tag); ?>"
+                                                    data-tag="<?php echo htmlspecialchars($tag); ?>">
+                                                <?php echo htmlspecialchars($val); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="modal-form-group" style="flex: 0 0 38px;">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn-add-comp-row" id="btnAddPartTodo" onclick="addPartTodo()" title="Add Part to List">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Added Parts To-Do List Container -->
+                    <div class="added-parts-section">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);">
+                                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                    <rect x="9" y="9" width="6" height="6"></rect>
+                                    <line x1="9" y1="1" x2="9" y2="4"></line>
+                                    <line x1="15" y1="1" x2="15" y2="4"></line>
+                                    <line x1="9" y1="20" x2="9" y2="23"></line>
+                                    <line x1="15" y1="20" x2="15" y2="23"></line>
+                                    <line x1="20" y1="9" x2="23" y2="9"></line>
+                                    <line x1="20" y1="14" x2="23" y2="14"></line>
+                                    <line x1="1" y1="9" x2="4" y2="9"></line>
+                                    <line x1="1" y1="14" x2="4" y2="14"></line>
+                                </svg>
+                                <span>Attached Hardware Components</span>
+                                <span id="partTodoCount" style="background: var(--cyan-light, #e0f2fe); color: var(--cyan-primary, #0093a7); font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0</span>
                             </div>
-                            <div class="modal-form-group" style="flex: 1;">
-                                <label>Serial Number</label>
-                                <input type="text" class="component-serial" placeholder="e.g. SN-882109">
-                            </div>
-                            <div class="modal-form-group" style="flex: 0 0 38px;">
-                                <label>&nbsp;</label>
-                                <button type="button" class="btn-add-comp-row" onclick="addComponentRow()" title="Add Row">+</button>
-                            </div>
+                        </div>
+                        <div id="partTodoListContainer" class="part-todo-list">
+                            <!-- Populated dynamically via JS -->
                         </div>
                     </div>
                 </div>
@@ -689,11 +848,18 @@ include 'includes/topbar.php';
                     <div class="form-grid-2">
                         <div class="modal-form-group">
                             <label for="modalVendor">Supplier / Vendor</label>
-                            <input type="text" id="modalVendor" placeholder="Dell Direct, CDW, Apple Business">
+                            <select id="modalVendor">
+                                <option value="">Select Supplier / Vendor</option>
+                                <?php foreach ($vendorsList as $v): ?>
+                                    <option value="<?php echo htmlspecialchars($v['vendor_name']); ?>">
+                                        <?php echo htmlspecialchars($v['vendor_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="modal-form-group">
-                            <label for="modalPoNumber">Purchase Order (PO #)</label>
-                            <input type="text" id="modalPoNumber" placeholder="PO-2024-9104">
+                            <label for="modalPoNumber">Purchase Order (PO #) / Invoice Number</label>
+                            <input type="text" id="modalPoNumber" placeholder="PO-2024-9104 / INV-8821">
                         </div>
                     </div>
 
@@ -727,27 +893,17 @@ include 'includes/topbar.php';
                             </select>
                         </div>
                         <div class="modal-form-group">
-                            <label for="modalLocation">Branch / Location *</label>
-                            <select id="modalLocation" required>
-                                <option value="HQ - New York">HQ - New York</option>
-                                <option value="Austin Hub">Austin Hub</option>
-                                <option value="London Office">London Office</option>
-                                <option value="Singapore DC">Singapore DC</option>
+                            <label for="modalDepartment">Assigned Department</label>
+                            <select id="modalDepartment">
+                                <option value="IT Infrastructure">IT Infrastructure</option>
+                                <option value="Software Engineering">Software Engineering</option>
+                                <option value="Design & Creative">Design & Creative</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Human Resources">Human Resources</option>
+                                <option value="Executive Management">Executive Management</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="modal-form-group">
-                        <label for="modalDepartment">Assigned Department</label>
-                        <select id="modalDepartment">
-                            <option value="IT Infrastructure">IT Infrastructure</option>
-                            <option value="Software Engineering">Software Engineering</option>
-                            <option value="Design & Creative">Design & Creative</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Operations">Operations</option>
-                            <option value="Human Resources">Human Resources</option>
-                            <option value="Executive Management">Executive Management</option>
-                        </select>
                     </div>
                 </div>
 
@@ -978,6 +1134,10 @@ include 'includes/topbar.php';
         </div>
     </div>
 </div>
+
+<script>
+    window.dynamicPartComponents = <?php echo json_encode($dynamicPartComponents, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+</script>
 
 <?php
 // Include Global Footer & Modals

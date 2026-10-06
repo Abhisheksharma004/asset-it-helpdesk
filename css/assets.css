@@ -1360,3 +1360,118 @@
     border-color: #fca5a5;
     color: #dc2626;
 }
+
+/* Part Todo List Styles */
+.part-todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.part-todo-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 6px);
+    padding: 8px 12px;
+    transition: all 0.15s ease-in-out;
+}
+.part-todo-item:hover {
+    border-color: var(--cyan-primary, #0093a7);
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+.part-todo-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+.part-todo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--cyan-light, #e0f2fe);
+    color: var(--cyan-primary, #0093a7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.part-todo-info {
+    min-width: 0;
+    flex: 1;
+}
+.part-todo-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.part-todo-serial {
+    font-size: 11px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+}
+.part-todo-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid #a7f3d0;
+    font-family: monospace;
+}
+.part-todo-badge.tag-badge {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+.part-todo-badge.no-serial {
+    background: #f1f5f9;
+    color: #64748b;
+    border-color: #e2e8f0;
+    font-family: inherit;
+}
+.part-todo-remove-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+.part-todo-remove-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+.part-todo-empty {
+    text-align: center;
+    padding: 24px 16px;
+    border: 1px dashed var(--border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 6px);
+    color: var(--text-muted, #94a3b8);
+    font-size: 12.5px;
+    background: #fafafa;
+}

@@ -125,10 +125,23 @@
                 optionsContainer.innerHTML = '';
                 const options = Array.from(select.options);
                 const currentVal = select.value;
+                let lastOptgroup = null;
 
                 options.forEach((opt, idx) => {
+                    const parent = opt.parentElement;
+                    if (parent && parent.tagName === 'OPTGROUP' && parent !== lastOptgroup) {
+                        lastOptgroup = parent;
+                        const grpHeader = document.createElement('div');
+                        grpHeader.className = 'custom-select-group-header';
+                        grpHeader.textContent = parent.label;
+                        optionsContainer.appendChild(grpHeader);
+                    }
+
                     const optEl = document.createElement('div');
                     optEl.className = 'custom-select-option';
+                    if (parent && parent.tagName === 'OPTGROUP') {
+                        optEl.classList.add('is-grouped');
+                    }
                     optEl.dataset.value = opt.value;
                     optEl.dataset.index = idx;
                     optEl.setAttribute('role', 'option');
@@ -158,7 +171,7 @@
                     optEl.addEventListener('click', function (e) {
                         e.stopPropagation();
                         if (opt.disabled) return;
-                        selectOption(opt.value);
+                        selectOption(opt.value, idx);
                     });
 
                     optionsContainer.appendChild(optEl);
@@ -204,13 +217,15 @@
             }
 
             // Select an option
-            function selectOption(val) {
-                if (select.value !== val) {
+            function selectOption(val, optIndex) {
+                if (typeof optIndex === 'number' && optIndex >= 0 && optIndex < select.options.length) {
+                    select.selectedIndex = optIndex;
+                } else {
                     select.value = val;
-                    // Trigger native events so other scripts respond
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                    select.dispatchEvent(new Event('input', { bubbles: true }));
                 }
+                // Trigger native events so other scripts respond
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                select.dispatchEvent(new Event('input', { bubbles: true }));
                 wrapper.classList.remove('has-error');
                 updateSelectedDisplay();
                 closeDropdown();
@@ -277,6 +292,20 @@
                     } else {
                         el.style.display = 'none';
                     }
+                });
+
+                // Update visibility of optgroup headers
+                optionsContainer.querySelectorAll('.custom-select-group-header').forEach(header => {
+                    let next = header.nextElementSibling;
+                    let hasVisibleChild = false;
+                    while (next && !next.classList.contains('custom-select-group-header')) {
+                        if (next.classList.contains('custom-select-option') && next.style.display !== 'none') {
+                            hasVisibleChild = true;
+                            break;
+                        }
+                        next = next.nextElementSibling;
+                    }
+                    header.style.display = hasVisibleChild ? 'block' : 'none';
                 });
 
                 if (visibleCount === 0) {

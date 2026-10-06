@@ -73,13 +73,14 @@
 </div>
 
 <!-- Core Scripts -->
-<script src="js/toast.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/searchable-select.js"></script>
+<script src="js/toast.js?v=<?php echo file_exists(__DIR__ . '/../js/toast.js') ? filemtime(__DIR__ . '/../js/toast.js') : time(); ?>"></script>
+<script src="js/dashboard.js?v=<?php echo file_exists(__DIR__ . '/../js/dashboard.js') ? filemtime(__DIR__ . '/../js/dashboard.js') : time(); ?>"></script>
+<script src="js/searchable-select.js?v=<?php echo file_exists(__DIR__ . '/../js/searchable-select.js') ? filemtime(__DIR__ . '/../js/searchable-select.js') : time(); ?>"></script>
 
 <?php if (isset($extra_js) && is_array($extra_js)): ?>
     <?php foreach ($extra_js as $js_file): ?>
-        <script src="<?php echo htmlspecialchars($js_file); ?>"></script>
+        <?php $file_ver = file_exists(__DIR__ . '/../' . $js_file) ? filemtime(__DIR__ . '/../' . $js_file) : time(); ?>
+        <script src="<?php echo htmlspecialchars($js_file . '?v=' . $file_ver); ?>"></script>
     <?php endforeach; ?>
 <?php endif; ?>
 
