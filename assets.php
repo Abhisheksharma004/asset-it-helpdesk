@@ -1164,87 +1164,78 @@ include 'includes/topbar.php';
      MODAL 2: Print Thermal Barcode & QR Sticker Modal
      ========================================================================= -->
 <div class="modal-overlay" id="labelModal" style="display: none;">
-    <div class="modal-box" style="max-width: 460px;">
+    <div class="modal-box" style="max-width: 500px;">
         <div class="modal-header">
             <h3>Print Physical Asset Label</h3>
             <button type="button" class="modal-close-btn" onclick="closeLabelModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-                High-density thermal sticker layout optimized for standard Zebra / Dymo asset tag roll printers (50mm x 25mm).
-            </p>
-
-            <div class="label-preview-box">
-                <div class="thermal-asset-sticker" id="printableAssetLabel">
-                    <div class="sticker-header">
-                        <div class="sticker-company">VIROS IT ASSETS</div>
-                        <div class="sticker-property">PROPERTY OF VIROS CORP</div>
-                    </div>
-                    <div class="sticker-body">
-                        <div class="sticker-qr">
-                            <!-- Dynamic QR Code SVG -->
-                            <svg viewBox="0 0 100 100" fill="#000">
-                                <rect x="0" y="0" width="30" height="30"></rect>
-                                <rect x="5" y="5" width="20" height="20" fill="#fff"></rect>
-                                <rect x="10" y="10" width="10" height="10"></rect>
-                                <rect x="70" y="0" width="30" height="30"></rect>
-                                <rect x="75" y="5" width="20" height="20" fill="#fff"></rect>
-                                <rect x="80" y="10" width="10" height="10"></rect>
-                                <rect x="0" y="70" width="30" height="30"></rect>
-                                <rect x="5" y="75" width="20" height="20" fill="#fff"></rect>
-                                <rect x="10" y="80" width="10" height="10"></rect>
-                                <rect x="40" y="10" width="8" height="8"></rect>
-                                <rect x="52" y="10" width="8" height="8"></rect>
-                                <rect x="40" y="30" width="15" height="15"></rect>
-                                <rect x="70" y="45" width="12" height="12"></rect>
-                                <rect x="45" y="70" width="14" height="14"></rect>
-                                <rect x="80" y="75" width="12" height="12"></rect>
-                            </svg>
-                        </div>
-                        <div class="sticker-info">
-                            <div class="sticker-tag-number" id="lblStickerTag" style="font-family: monospace; font-size: 11.5px; font-weight: 800; color: #0284c7; margin-bottom: 2px;">TAG: AST2024001</div>
-                            <div class="sticker-name" id="lblStickerName" style="font-size: 13px; font-weight: 800;">MacBook Pro 16" M3 Max</div>
-                            <div class="sticker-serial" id="lblStickerSerial" style="font-size: 11px; font-weight: bold; margin-top: 3px;">SN: C02G40PZMD6T</div>
-                            <div class="sticker-tag" id="lblStickerCategory" style="font-size: 11px; color: #555; margin-top: 2px;">Category: Laptops</div>
-                        </div>
-                    </div>
-                    <div class="sticker-barcode-wrap">
-                        <!-- Barcode lines SVG -->
-                        <svg class="barcode-svg" viewBox="0 0 200 40">
-                            <rect x="5" y="0" width="3" height="40" fill="#000"></rect>
-                            <rect x="12" y="0" width="2" height="40" fill="#000"></rect>
-                            <rect x="18" y="0" width="4" height="40" fill="#000"></rect>
-                            <rect x="26" y="0" width="1" height="40" fill="#000"></rect>
-                            <rect x="32" y="0" width="3" height="40" fill="#000"></rect>
-                            <rect x="40" y="0" width="5" height="40" fill="#000"></rect>
-                            <rect x="50" y="0" width="2" height="40" fill="#000"></rect>
-                            <rect x="56" y="0" width="4" height="40" fill="#000"></rect>
-                            <rect x="65" y="0" width="2" height="40" fill="#000"></rect>
-                            <rect x="72" y="0" width="3" height="40" fill="#000"></rect>
-                            <rect x="80" y="0" width="1" height="40" fill="#000"></rect>
-                            <rect x="86" y="0" width="4" height="40" fill="#000"></rect>
-                            <rect x="95" y="0" width="2" height="40" fill="#000"></rect>
-                            <rect x="102" y="0" width="5" height="40" fill="#000"></rect>
-                            <rect x="112" y="0" width="2" height="40" fill="#000"></rect>
-                            <rect x="118" y="0" width="3" height="40" fill="#000"></rect>
-                            <rect x="126" y="0" width="1" height="40" fill="#000"></rect>
-                            <rect x="132" y="0" width="4" height="40" fill="#000"></rect>
-                            <rect x="142" y="0" width="2" height="40" fill="#000"></rect>
-                            <rect x="148" y="0" width="5" height="40" fill="#000"></rect>
-                            <rect x="158" y="0" width="3" height="40" fill="#000"></rect>
-                            <rect x="166" y="0" width="1" height="40" fill="#000"></rect>
-                            <rect x="172" y="0" width="4" height="40" fill="#000"></rect>
-                            <rect x="180" y="0" width="2" height="40" fill="#000"></rect>
-                            <rect x="188" y="0" width="4" height="40" fill="#000"></rect>
+            <!-- Select Printer & Hardware Configuration Panel -->
+            <div class="printer-selection-panel" style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 13px 15px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <label for="labelPrinterSelect" style="font-size: 12.5px; font-weight: 700; color: var(--navy-primary); display: flex; align-items: center; gap: 7px; margin: 0;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--cyan-primary);">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
                         </svg>
-                        <div class="sticker-human-readable" id="lblBarcodeNumber">*C02G40PZMD6T*</div>
+                        Select System Printer
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="printerStatusBadge" style="font-size: 11px; font-weight: 600; color: #16a34a; background: #dcfce7; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
+                            Ready / Online
+                        </span>
+                        <button type="button" id="refreshPrintersBtn" onclick="refreshSystemPrinters(true)" title="Scan / Refresh System Printers" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div style="position: relative;">
+                    <select id="labelPrinterSelect" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 13px; font-weight: 500; background: #ffffff; color: var(--text-primary); cursor: pointer;" onchange="handleLabelPrinterChange(this.value)">
+                        <option value="" disabled selected>Detecting installed system printers...</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 9px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 11.5px; color: var(--text-secondary);">
+                    <div id="printerMediaInfo" style="display: flex; align-items: center; gap: 5px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        <span id="selectedPrinterNameText">Printer: <strong>Detecting...</strong></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <label for="labelCopiesCount" style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin: 0;">Copies:</label>
+                        <select id="labelCopiesCount" style="padding: 2px 6px; font-size: 11.5px; border: 1px solid var(--border-color); border-radius: 4px; background: #ffffff; cursor: pointer;">
+                            <option value="1" selected>1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="5">5</option>
+                        </select>
                     </div>
                 </div>
             </div>
+
+            <!-- Asset Details Summary Card -->
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Asset To Print</span>
+                    <span id="lblStickerTag" style="font-family: monospace; font-size: 12px; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;"></span>
+                </div>
+                <div style="font-size: 14.5px; font-weight: 700; color: var(--navy-primary); margin-bottom: 4px;" id="lblStickerName"></div>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--text-secondary);">
+                    <div id="lblStickerSerial"></div>
+                    <div id="lblStickerCategory"></div>
+                </div>
+                <div style="font-size: 11px; color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; padding: 7px 10px; border-radius: 6px; margin-top: 10px; display: flex; align-items: center; gap: 6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>Template: <strong>Fortune Marketing (50x25mm ZPL)</strong> will be sent directly to your thermal printer.</span>
+                </div>
+            </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
             <button type="button" class="btn-secondary" onclick="closeLabelModal()">Cancel</button>
-            <button type="button" class="btn-primary" onclick="printSticker()">
+            <button type="button" class="btn-primary" onclick="printSticker()" id="btnPrintStickerBtn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Print Sticker
             </button>

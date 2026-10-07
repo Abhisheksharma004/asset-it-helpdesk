@@ -1321,17 +1321,42 @@ document.addEventListener('DOMContentLoaded', function () {
     // 6. Thermal Label & QR Print Modal
     // =========================================================================
 
+    let currentLabelAsset = null;
+
     window.openLabelModal = function (assetId) {
         const asset = assetsData.find(a => a.id === assetId);
         if (!asset) return;
+        currentLabelAsset = asset;
 
         const tagEl = document.getElementById('lblStickerTag');
-        if (tagEl) tagEl.textContent = 'TAG: ' + asset.tag;
-        document.getElementById('lblStickerName').textContent = asset.name;
-        document.getElementById('lblStickerSerial').textContent = 'SN: ' + asset.serial;
+        if (tagEl) tagEl.textContent = 'TAG: ' + (asset.tag || '');
+        const nameEl = document.getElementById('lblStickerName');
+        if (nameEl) nameEl.textContent = asset.name || '';
+        const serialEl = document.getElementById('lblStickerSerial');
+        if (serialEl) serialEl.textContent = 'SN: ' + (asset.serial || 'N/A');
         const catEl = document.getElementById('lblStickerCategory');
-        if (catEl) catEl.textContent = 'Category: ' + asset.category;
-        document.getElementById('lblBarcodeNumber').textContent = '*' + asset.tag + '*';
+        if (catEl) catEl.textContent = 'Category: ' + (asset.category || '');
+        const barcodeEl = document.getElementById('lblBarcodeNumber');
+        if (barcodeEl) barcodeEl.textContent = '*' + (asset.tag || '') + '*';
+
+        // Check and fetch latest system printers asynchronously if needed
+        if (typeof window.refreshSystemPrinters === 'function') {
+            window.refreshSystemPrinters(false);
+        }
+
+        // Restore preferred printer from localStorage if saved
+        try {
+            const savedPrinter = localStorage.getItem('viros_preferred_printer');
+            const printerSelect = document.getElementById('labelPrinterSelect');
+            if (printerSelect && savedPrinter) {
+                printerSelect.value = savedPrinter;
+                if (typeof window.handleLabelPrinterChange === 'function') {
+                    window.handleLabelPrinterChange(savedPrinter);
+                }
+            } else if (printerSelect) {
+                window.handleLabelPrinterChange(printerSelect.value);
+            }
+        } catch (e) {}
 
         const modal = document.getElementById('labelModal');
         if (modal) modal.style.display = 'flex';
@@ -1342,8 +1367,192 @@ document.addEventListener('DOMContentLoaded', function () {
         if (modal) modal.style.display = 'none';
     };
 
+    window.refreshSystemPrinters = function (force = false) {
+        const btn = document.getElementById('refreshPrintersBtn');
+        if (btn) {
+            btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+            btn.disabled = true;
+        }
+
+        fetch(getApiUrl() + '?action=get_system_printers' + (force ? '&refresh=1' : ''))
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.printers)) {
+                    updatePrinterSelectOptions(data.printers);
+                    if (force && typeof showToast === 'function') {
+                        showToast(`Detected ${data.printers.length} installed system printers`, 'info');
+                    }
+                }
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (btn) {
+                    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg> Refresh`;
+                    btn.disabled = false;
+                }
+            });
+    };
+
+    function updatePrinterSelectOptions(printers) {
+        const select = document.getElementById('labelPrinterSelect');
+        if (!select || !Array.isArray(printers) || printers.length === 0) return;
+
+        const currentVal = select.value;
+        select.innerHTML = '';
+
+        printers.forEach(p => {
+            if (!p || !p.name) return;
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            opt.textContent = p.name;
+            select.appendChild(opt);
+        });
+
+        // Keep previous or saved selection if still valid, or default to first
+        const saved = localStorage.getItem('viros_preferred_printer') || currentVal;
+        const exists = Array.from(select.options).some(o => o.value === saved);
+        if (exists) {
+            select.value = saved;
+        } else if (select.options.length > 0) {
+            select.value = select.options[0].value;
+        }
+        handleLabelPrinterChange(select.value);
+
+        // Sync custom searchable dropdown UI
+        if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+            window.SearchableSelect.sync(select);
+        }
+    }
+
+    // Auto-detect installed printers on initialization
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(() => refreshSystemPrinters(false), 200);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => refreshSystemPrinters(false), 200);
+        });
+    }
+
+    window.handleLabelPrinterChange = function (val) {
+        try {
+            localStorage.setItem('viros_preferred_printer', val);
+        } catch (e) {}
+
+        const textEl = document.getElementById('selectedPrinterNameText');
+        if (textEl) {
+            textEl.innerHTML = `Printer: <strong>${escapeHtml(val || 'Default')}</strong>`;
+        }
+    };
+
+    window.downloadLabelZpl = function () {
+        if (!currentLabelAsset) return;
+        const copies = parseInt(document.getElementById('labelCopiesCount')?.value || '1', 10);
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'generate_zpl',
+                tag: currentLabelAsset.tag,
+                serial: currentLabelAsset.serial,
+                name: currentLabelAsset.name,
+                copies: copies
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success && data.zpl) {
+                const blob = new Blob([data.zpl], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `label_${currentLabelAsset.tag}.prn`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                if (typeof showToast === 'function') {
+                    showToast(`ZPL print file exported for ${currentLabelAsset.tag}`, 'success');
+                }
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast('Failed to generate ZPL code', 'error');
+                }
+            }
+        })
+        .catch(() => {
+            if (typeof showToast === 'function') {
+                showToast('Error downloading ZPL template', 'error');
+            }
+        });
+    };
+
     window.printSticker = function () {
-        window.print();
+        if (!currentLabelAsset) {
+            if (typeof showToast === 'function') showToast('No asset selected for printing', 'warning');
+            return;
+        }
+
+        const printerSelect = document.getElementById('labelPrinterSelect');
+        const printerName = printerSelect ? printerSelect.value.trim() : '';
+        const copies = parseInt(document.getElementById('labelCopiesCount')?.value || '1', 10);
+
+        if (!printerName) {
+            if (typeof showToast === 'function') showToast('Please select a system printer first', 'warning');
+            return;
+        }
+
+        // If explicitly set to system default browser dialog
+        if (printerName === 'system_default') {
+            window.print();
+            return;
+        }
+
+        const btn = document.getElementById('btnPrintStickerBtn');
+        const origContent = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Sending to Printer...`;
+            btn.disabled = true;
+        }
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'print_label',
+                printer_name: printerName,
+                tag: currentLabelAsset.tag,
+                serial: currentLabelAsset.serial,
+                name: currentLabelAsset.name,
+                copies: copies
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success) {
+                if (typeof showToast === 'function') {
+                    showToast(data.message || `Print job sent to "${printerName}" (${copies} ${copies === 1 ? 'copy' : 'copies'})`, 'success');
+                }
+                closeLabelModal();
+            } else if (data && data.fallback_browser) {
+                window.print();
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Failed to send label to printer', 'error');
+                }
+            }
+        })
+        .catch(err => {
+            if (typeof showToast === 'function') {
+                showToast('Error communicating with print service', 'error');
+            }
+        })
+        .finally(() => {
+            if (btn) {
+                btn.innerHTML = origContent;
+                btn.disabled = false;
+            }
+        });
     };
 
     // =========================================================================

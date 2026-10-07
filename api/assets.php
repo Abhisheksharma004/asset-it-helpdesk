@@ -790,10 +790,108 @@ function formatAssetRow($row) {
     ];
 }
 
+/**
+ * Send raw ZPL content directly to a named Windows printer queue via winspool.drv
+ */
+function sendZplToPrinter($printerName, $zplContent, $docName = 'Asset Label') {
+    if (empty($printerName)) {
+        return ['success' => false, 'message' => 'Printer name is required.'];
+    }
+
+    if (empty($zplContent)) {
+        return ['success' => false, 'message' => 'ZPL print data is empty.'];
+    }
+
+    $tempFile = tempnam(sys_get_temp_dir(), 'viros_zpl_') . '.prn';
+    file_put_contents($tempFile, $zplContent);
+
+    $psScript = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'send_to_printer.ps1';
+    if (!file_exists($psScript)) {
+        @unlink($tempFile);
+        return ['success' => false, 'message' => 'Printer communication script (send_to_printer.ps1) missing.'];
+    }
+
+    $escapedPrinter = str_replace('"', '`"', $printerName);
+    $escapedDocName = str_replace('"', '', $docName);
+    $cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File "' . $psScript . '" -PrinterName "' . $escapedPrinter . '" -ZplFilePath "' . $tempFile . '" -DocName "' . $escapedDocName . '"';
+
+    $output = [];
+    $ret = 0;
+    @exec($cmd, $output, $ret);
+
+    @unlink($tempFile);
+
+    $outText = trim(implode("\n", $output));
+    if ($ret === 0 && strpos($outText, 'SUCCESS') !== false) {
+        return [
+            'success' => true,
+            'message' => "Label sent successfully to {$printerName}."
+        ];
+    }
+
+    return [
+        'success' => false,
+        'message' => "Could not send to printer '{$printerName}': " . ($outText ?: 'Check if printer is powered on and connected.')
+    ];
+}
+
+/**
+ * Fetch installed Windows printers on the host system (pure printer names only)
+ */
+function getSystemPrintersList($forceRefresh = false) {
+    $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'viros_system_printers.json';
+    $printers = null;
+
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+        $cached = @file_get_contents($cacheFile);
+        if ($cached) {
+            $printers = json_decode($cached, true);
+        }
+    }
+
+    if (!is_array($printers) || empty($printers)) {
+        $printers = [];
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Printer | Select-Object Name | ConvertTo-Json"';
+            $output = [];
+            @exec($cmd, $output);
+            $json = implode('', $output);
+            $data = json_decode($json, true);
+            if ($data) {
+                if (isset($data['Name'])) {
+                    $data = [$data];
+                }
+                foreach ($data as $p) {
+                    if (!empty($p['Name'])) {
+                        $pName = trim($p['Name']);
+                        $printers[] = [
+                            'name' => $pName
+                        ];
+                    }
+                }
+            }
+        }
+        if (!empty($printers)) {
+            @file_put_contents($cacheFile, json_encode($printers));
+        }
+    }
+
+    return is_array($printers) ? $printers : [];
+}
+
 // =============================================================================
-// ROUTE: GET (Fetch assets + stats)
+// ROUTE: GET (Fetch assets + stats or system printers)
 // =============================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (isset($_GET['action']) && $_GET['action'] === 'get_system_printers') {
+        $refresh = !empty($_GET['refresh']);
+        echo json_encode([
+            'success'  => true,
+            'printers' => getSystemPrintersList($refresh)
+        ]);
+        exit;
+    }
+
     $where = [];
     $params = [];
 
@@ -928,6 +1026,86 @@ switch ($action) {
             'success'  => true,
             'next_tag' => getNextAssetTag($conn)
         ]);
+        exit;
+
+    // -------------------------------------------------------------------------
+    // ACTION: get_system_printers
+    // -------------------------------------------------------------------------
+    case 'get_system_printers':
+        $refresh = !empty($input['refresh']);
+        echo json_encode([
+            'success'  => true,
+            'printers' => getSystemPrintersList($refresh)
+        ]);
+        exit;
+
+    // -------------------------------------------------------------------------
+    // ACTION: generate_zpl
+    // -------------------------------------------------------------------------
+    case 'generate_zpl':
+        $tag = trim($input['tag'] ?? '');
+        $serial = trim($input['serial'] ?? '');
+        $name = trim($input['name'] ?? '');
+        $copies = intval($input['copies'] ?? 1);
+        if ($copies < 1) $copies = 1;
+
+        $templateFile = __DIR__ . '/../lablel/assetlable.txt';
+        $zpl = "";
+        if (file_exists($templateFile)) {
+            $zpl = file_get_contents($templateFile);
+            $zpl = str_replace('#Fortune Marketing Private Limited#', 'Fortune Marketing Private Limited', $zpl);
+            $zpl = str_replace('#Asset Code#', $tag, $zpl);
+            $zpl = str_replace('#Serial#', $serial, $zpl);
+            $zpl = str_replace('#Asset Name#', $name, $zpl);
+            $zpl = str_replace('#Code#', $tag, $zpl);
+            $zpl = str_replace('^PQ1,0,1,Y', '^PQ' . $copies . ',0,1,Y', $zpl);
+        }
+        echo json_encode([
+            'success' => true,
+            'zpl'     => $zpl
+        ]);
+        exit;
+
+    // -------------------------------------------------------------------------
+    // ACTION: print_label (Send formatted assetlable.txt directly to Windows printer)
+    // -------------------------------------------------------------------------
+    case 'print_label':
+        $printerName = trim($input['printer_name'] ?? '');
+        $tag = trim($input['tag'] ?? '');
+        $serial = trim($input['serial'] ?? '');
+        $name = trim($input['name'] ?? '');
+        $copies = intval($input['copies'] ?? 1);
+        if ($copies < 1) $copies = 1;
+
+        if (empty($printerName)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Please select a printer to print the label.']);
+            exit;
+        }
+
+        // If user explicitly chooses browser default / virtual print
+        if ($printerName === 'system_default') {
+            echo json_encode(['success' => false, 'fallback_browser' => true, 'message' => 'Use browser print for Default System Printer.']);
+            exit;
+        }
+
+        $templateFile = __DIR__ . '/../lablel/assetlable.txt';
+        if (!file_exists($templateFile)) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Label template file (lablel/assetlable.txt) not found.']);
+            exit;
+        }
+
+        $zpl = file_get_contents($templateFile);
+        $zpl = str_replace('#Fortune Marketing Private Limited#', 'Fortune Marketing Private Limited', $zpl);
+        $zpl = str_replace('#Asset Code#', $tag, $zpl);
+        $zpl = str_replace('#Serial#', $serial, $zpl);
+        $zpl = str_replace('#Asset Name#', $name, $zpl);
+        $zpl = str_replace('#Code#', $tag, $zpl);
+        $zpl = str_replace('^PQ1,0,1,Y', '^PQ' . $copies . ',0,1,Y', $zpl);
+
+        $res = sendZplToPrinter($printerName, $zpl, "Asset Label " . $tag);
+        echo json_encode($res);
         exit;
 
     // -------------------------------------------------------------------------
