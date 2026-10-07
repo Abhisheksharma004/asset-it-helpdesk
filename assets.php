@@ -171,7 +171,7 @@ $dbAssets = [];
 if (isset($conn) && $conn !== false) {
     // Prefetch all components currently linked to assets in components table
     $installedComponentsByAsset = [];
-    $icStmt = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, specs, installed_asset FROM components WHERE installed_asset IS NOT NULL AND installed_asset != ''");
+    $icStmt = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, brand, model, specs, status, installed_asset FROM components WHERE installed_asset IS NOT NULL AND installed_asset != ''");
     if ($icStmt !== false) {
         while ($icRow = sqlsrv_fetch_array($icStmt, SQLSRV_FETCH_ASSOC)) {
             $instAsset = trim(strval($icRow['installed_asset']));
@@ -186,7 +186,10 @@ if (isset($conn) && $conn !== false) {
                 'tag'          => $icRow['sku'] ?? '',
                 'sku'          => $icRow['sku'] ?? '',
                 'category'     => $icRow['category'] ?? '',
-                'specs'        => $icRow['specs'] ?? ''
+                'brand'        => $icRow['brand'] ?? '',
+                'model'        => $icRow['model'] ?? '',
+                'specs'        => $icRow['specs'] ?? '',
+                'status'       => $icRow['status'] ?? 'Installed'
             ];
         }
         sqlsrv_free_stmt($icStmt);
@@ -624,9 +627,9 @@ include 'includes/topbar.php';
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                 Print QR Labels
             </button>
-            <button type="button" class="bulk-btn bulk-btn-danger" onclick="bulkMarkStatus('Retired')">
+            <button type="button" class="bulk-btn bulk-btn-danger" onclick="bulkDeleteAssets()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                Retire Selected
+                Delete Selected
             </button>
             <button type="button" class="bulk-btn" onclick="clearBulkSelection()">
                 &times; Deselect All
@@ -697,10 +700,15 @@ include 'includes/topbar.php';
     </div>
 
     <!-- Drawer Navigation Tabs -->
+    <!-- Drawer Navigation Tabs -->
     <div class="drawer-tabs">
         <button type="button" class="drawer-tab active" data-tab="overview">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
             Overview & Specs
+        </button>
+        <button type="button" class="drawer-tab" data-tab="components">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+            Components & Parts <span id="drawerCompBadge" style="margin-left: 5px; background: var(--cyan-primary); color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0</span>
         </button>
         <button type="button" class="drawer-tab" data-tab="custody">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
@@ -767,6 +775,20 @@ include 'includes/topbar.php';
                         <div class="label">IP Address</div>
                         <div class="value" id="specIp">10.20.104.42</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Installed Hardware Components Section in Overview -->
+            <div class="drawer-section">
+                <div class="drawer-section-title" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                        Installed Hardware Components
+                    </div>
+                    <span id="drawerOverviewCompCount" style="font-size: 11.5px; font-weight: 700; color: var(--cyan-primary); background: #e0f2fe; padding: 2px 8px; border-radius: 12px;">0 Parts</span>
+                </div>
+                <div id="drawerOverviewComponentsWrap">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
@@ -849,18 +871,39 @@ include 'includes/topbar.php';
                 </div>
             </div>
         </div>
+
+        <!-- Pane 4: Components & Parts Detailed Tab -->
+        <div class="drawer-tab-pane" id="pane_components">
+            <div class="drawer-section">
+                <div class="drawer-section-title" style="display: flex; align-items: center; justify-content: space-between;">
+                    <span>Linked Hardware Components & Upgrades (<span id="drawerPaneCompCount">0</span>)</span>
+                    <button type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 11.5px;" onclick="openEditModal(activeDrawerAssetId, 'components')">
+                        + Attach / Edit Parts
+                    </button>
+                </div>
+                <div id="drawerTabComponentsWrap">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Drawer Footer Actions -->
-    <div class="drawer-footer">
-        <button type="button" class="btn-secondary" onclick="openLabelModal(activeDrawerAssetId)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            Print Asset Label
+    <div class="drawer-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <button type="button" class="btn-danger" style="background: #ef4444; color: #fff; border: 1px solid #dc2626; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'" onclick="deleteAsset(activeDrawerAssetId)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Delete Asset
         </button>
-        <button type="button" class="btn-primary" onclick="openEditModal(activeDrawerAssetId)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-            Edit Asset
-        </button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn-secondary" onclick="openLabelModal(activeDrawerAssetId)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                Print Label
+            </button>
+            <button type="button" class="btn-primary" onclick="openEditModal(activeDrawerAssetId)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                Edit Asset
+            </button>
+        </div>
     </div>
 </aside>
 
@@ -1335,6 +1378,69 @@ include 'includes/topbar.php';
         </div>
         <div class="modal-footer">
             <button type="button" class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+     MODAL 6: Delete Asset Confirmation Modal (Portal Design System)
+     ========================================================================= -->
+<div class="modal-overlay" id="deleteAssetModal" style="display: none;">
+    <div class="modal-box" style="max-width: 460px;">
+        <div class="delete-modal-content">
+            <div class="delete-modal-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--navy-primary); margin-bottom: 8px;">Delete Asset Completely?</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+                Are you sure you want to delete asset <strong id="deleteModalAssetName" style="color: var(--text-primary);"></strong> <span id="deleteModalAssetTag" style="color: var(--cyan-primary); font-weight: 600;"></span>?
+            </p>
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 14px; margin-bottom: 22px; text-align: left; font-size: 12.5px; color: #991b1b; display: flex; gap: 10px; align-items: flex-start; line-height: 1.45;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span>This will permanently remove the asset from the database. <strong>All hardware components</strong> attached to this asset will automatically be released back to <strong>Available</strong> inventory.</span>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" class="btn-secondary" id="cancelDeleteAssetModalBtn" onclick="closeDeleteAssetModal()">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmDeleteAssetModalBtn" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Yes, Delete Asset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+     MODAL 7: Bulk Delete Confirmation Modal (Portal Design System)
+     ========================================================================= -->
+<div class="modal-overlay" id="bulkDeleteModal" style="display: none;">
+    <div class="modal-box" style="max-width: 460px;">
+        <div class="delete-modal-content">
+            <div class="delete-modal-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--navy-primary); margin-bottom: 8px;">Delete Selected Assets?</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+                Are you sure you want to permanently delete <strong id="bulkDeleteCountText" style="color: var(--text-primary);"></strong> selected assets?
+            </p>
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 14px; margin-bottom: 22px; text-align: left; font-size: 12.5px; color: #991b1b; display: flex; gap: 10px; align-items: flex-start; line-height: 1.45;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span>These assets will be permanently deleted from the database. All hardware components attached to them will automatically be updated to <strong>Available</strong> stock.</span>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" class="btn-secondary" id="cancelBulkDeleteModalBtn" onclick="closeBulkDeleteModal()">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmBulkDeleteModalBtn" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Yes, Delete Selected
+                </button>
+            </div>
         </div>
     </div>
 </div>

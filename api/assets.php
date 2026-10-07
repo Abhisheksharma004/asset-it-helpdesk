@@ -710,7 +710,7 @@ function formatAssetRow($row) {
     // Fetch linked components directly from components table
     global $conn;
     if (!empty($assetIdStr) && isset($conn) && $conn !== false) {
-        $cQuery = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, specs FROM components WHERE installed_asset = ? OR installed_asset = ?", [$assetIdStr, $assetTagStr]);
+        $cQuery = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, brand, model, specs, status FROM components WHERE installed_asset = ? OR installed_asset = ?", [$assetIdStr, $assetTagStr]);
         if ($cQuery !== false) {
             while ($cr = sqlsrv_fetch_array($cQuery, SQLSRV_FETCH_ASSOC)) {
                 $components[] = [
@@ -721,7 +721,10 @@ function formatAssetRow($row) {
                     'tag'          => $cr['sku'] ?? '',
                     'sku'          => $cr['sku'] ?? '',
                     'category'     => $cr['category'] ?? '',
-                    'specs'        => $cr['specs'] ?? ''
+                    'brand'        => $cr['brand'] ?? '',
+                    'model'        => $cr['model'] ?? '',
+                    'specs'        => $cr['specs'] ?? '',
+                    'status'       => $cr['status'] ?? 'Installed'
                 ];
             }
             sqlsrv_free_stmt($cQuery);
@@ -1168,12 +1171,53 @@ switch ($action) {
     // -------------------------------------------------------------------------
     case 'delete':
         $id = intval($input['id'] ?? 0);
-        $hardDelete = !empty($input['hard']);
+        $hardDelete = !isset($input['hard']) || !empty($input['hard']); // Default to complete delete
 
         if ($id <= 0) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Invalid asset ID.']);
             exit;
+        }
+
+        // Fetch asset tag, name and components_json
+        $aStmt = sqlsrv_query($conn, "SELECT id, tag, name, components_json FROM assets WHERE id = ?", [$id]);
+        $assetTag = '';
+        $assetName = '';
+        $componentsJson = '';
+        if ($aStmt && ($aRow = sqlsrv_fetch_array($aStmt, SQLSRV_FETCH_ASSOC))) {
+            $assetTag = $aRow['tag'] ?? '';
+            $assetName = $aRow['name'] ?? '';
+            $componentsJson = $aRow['components_json'] ?? '';
+            sqlsrv_free_stmt($aStmt);
+        }
+
+        // 1. Release all attached components in components table to UNUSED / AVAILABLE
+        $updCompSql = "UPDATE components 
+                       SET installed_asset = '', 
+                           status = 'Available', 
+                           location = 'Storage Depot (Unassigned)', 
+                           updated_at = GETDATE() 
+                       WHERE installed_asset = ?";
+        $updCompParams = [strval($id)];
+        if (!empty($assetTag)) {
+            $updCompSql .= " OR installed_asset = ?";
+            $updCompParams[] = $assetTag;
+        }
+        sqlsrv_query($conn, $updCompSql, $updCompParams);
+
+        // Also release by IDs/serials from components_json if any
+        if (!empty($componentsJson)) {
+            $cList = json_decode($componentsJson, true);
+            if (is_array($cList)) {
+                foreach ($cList as $ci) {
+                    $cId = !empty($ci['component_id']) ? intval($ci['component_id']) : (!empty($ci['id']) && is_numeric($ci['id']) && intval($ci['id']) < 100000000 ? intval($ci['id']) : 0);
+                    if ($cId > 0) {
+                        sqlsrv_query($conn, "UPDATE components SET installed_asset = '', status = 'Available', location = 'Storage Depot (Unassigned)', updated_at = GETDATE() WHERE id = ?", [$cId]);
+                    } else if (!empty($ci['serial'])) {
+                        sqlsrv_query($conn, "UPDATE components SET installed_asset = '', status = 'Available', location = 'Storage Depot (Unassigned)', updated_at = GETDATE() WHERE serial = ?", [trim($ci['serial'])]);
+                    }
+                }
+            }
         }
 
         if ($hardDelete) {
@@ -1185,14 +1229,14 @@ switch ($action) {
 
         if ($stmt === false) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to remove asset.', 'errors' => sqlsrv_errors()]);
+            echo json_encode(['success' => false, 'message' => 'Failed to delete asset from database.', 'errors' => sqlsrv_errors()]);
             exit;
         }
 
-        // Detach any components installed in this asset and return to stock
-        sqlsrv_query($conn, "UPDATE components SET installed_asset = '', status = 'Available', location = 'Returned to Depot Shelf', updated_at = GETDATE() WHERE installed_asset = ?", [strval($id)]);
-
-        echo json_encode(['success' => true, 'message' => 'Asset retired/deleted successfully.']);
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Asset completely deleted and all attached components released to available inventory.'
+        ]);
         exit;
 
     // -------------------------------------------------------------------------
@@ -1227,6 +1271,65 @@ switch ($action) {
         echo json_encode([
             'success' => true,
             'message' => 'Updated ' . count($ids) . ' assets to "' . $newStatus . '"'
+        ]);
+        exit;
+
+    // -------------------------------------------------------------------------
+    // ACTION: bulk_delete
+    // -------------------------------------------------------------------------
+    case 'bulk_delete':
+        $ids = $input['ids'] ?? [];
+        if (!is_array($ids) || empty($ids)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid asset IDs for bulk delete.']);
+            exit;
+        }
+
+        $idInts = array_map('intval', $ids);
+        $idStrs = array_map('strval', $idInts);
+        $placeholders = implode(',', array_fill(0, count($idInts), '?'));
+
+        // Get tags and components_json
+        $tags = [];
+        $tStmt = sqlsrv_query($conn, "SELECT tag, components_json FROM assets WHERE id IN ($placeholders)", $idInts);
+        if ($tStmt) {
+            while ($tr = sqlsrv_fetch_array($tStmt, SQLSRV_FETCH_ASSOC)) {
+                if (!empty($tr['tag'])) $tags[] = $tr['tag'];
+                if (!empty($tr['components_json'])) {
+                    $cList = json_decode($tr['components_json'], true);
+                    if (is_array($cList)) {
+                        foreach ($cList as $ci) {
+                            $cId = !empty($ci['component_id']) ? intval($ci['component_id']) : (!empty($ci['id']) && is_numeric($ci['id']) && intval($ci['id']) < 100000000 ? intval($ci['id']) : 0);
+                            if ($cId > 0) {
+                                sqlsrv_query($conn, "UPDATE components SET installed_asset = '', status = 'Available', location = 'Storage Depot (Unassigned)', updated_at = GETDATE() WHERE id = ?", [$cId]);
+                            } else if (!empty($ci['serial'])) {
+                                sqlsrv_query($conn, "UPDATE components SET installed_asset = '', status = 'Available', location = 'Storage Depot (Unassigned)', updated_at = GETDATE() WHERE serial = ?", [trim($ci['serial'])]);
+                            }
+                        }
+                    }
+                }
+            }
+            sqlsrv_free_stmt($tStmt);
+        }
+
+        // Release all attached components to Available
+        $allRefStrs = array_unique(array_merge($idStrs, $tags));
+        if (!empty($allRefStrs)) {
+            $cPlaceholders = implode(',', array_fill(0, count($allRefStrs), '?'));
+            sqlsrv_query($conn, "UPDATE components SET installed_asset = '', status = 'Available', location = 'Storage Depot (Unassigned)', updated_at = GETDATE() WHERE installed_asset IN ($cPlaceholders)", $allRefStrs);
+        }
+
+        // Delete assets completely
+        $delStmt = sqlsrv_query($conn, "DELETE FROM assets WHERE id IN ($placeholders)", $idInts);
+        if ($delStmt === false) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to delete assets from database.', 'errors' => sqlsrv_errors()]);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Successfully deleted ' . count($idInts) . ' asset(s) and released all attached components.'
         ]);
         exit;
 

@@ -816,12 +816,12 @@
 .asset-drawer {
     position: fixed;
     top: 0;
-    right: -600px;
-    width: 580px;
-    max-width: 90vw;
+    right: -750px;
+    width: 720px;
+    max-width: 95vw;
     height: 100vh;
     background: #ffffff;
-    box-shadow: -10px 0 30px rgba(0, 25, 56, 0.15);
+    box-shadow: -10px 0 35px rgba(0, 25, 56, 0.18);
     z-index: 1060;
     transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
@@ -878,7 +878,13 @@
     display: flex;
     border-bottom: 1px solid var(--border-color);
     background: #f8fafc;
-    padding: 0 20px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.drawer-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .drawer-tab {
@@ -893,7 +899,9 @@
     transition: all 0.15s;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .drawer-tab:hover {

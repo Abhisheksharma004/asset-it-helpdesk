@@ -915,7 +915,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <button class="action-icon-btn btn-edit" title="Edit Asset" onclick="openEditModal(${item.id})">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                                     </button>
-                                    <button class="action-icon-btn btn-delete" title="Retire Asset" onclick="deleteAsset(${item.id})">
+                                    <button class="action-icon-btn btn-delete" title="Delete Asset" onclick="deleteAsset(${item.id})">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     </button>
                                 </div>
@@ -1003,6 +1003,12 @@ document.addEventListener('DOMContentLoaded', function () {
                                     </button>
                                     <button class="action-icon-btn btn-qr" title="Print Sticker" onclick="openLabelModal(${item.id})">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                    </button>
+                                    <button class="action-icon-btn btn-edit" title="Edit Asset" onclick="openEditModal(${item.id})">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                    </button>
+                                    <button class="action-icon-btn btn-delete" title="Delete Asset" onclick="deleteAsset(${item.id})">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     </button>
                                 </div>
                             </div>
@@ -1193,6 +1199,86 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        // Attached Hardware Components & Upgrades
+        const attachedComps = Array.isArray(asset.components) ? asset.components : [];
+        const compCount = attachedComps.length;
+
+        const badgeEl = document.getElementById('drawerCompBadge');
+        if (badgeEl) badgeEl.textContent = compCount;
+
+        const ovCountEl = document.getElementById('drawerOverviewCompCount');
+        if (ovCountEl) ovCountEl.textContent = `${compCount} ${compCount === 1 ? 'Part' : 'Parts'}`;
+
+        const paneCountEl = document.getElementById('drawerPaneCompCount');
+        if (paneCountEl) paneCountEl.textContent = compCount;
+
+        const ovWrap = document.getElementById('drawerOverviewComponentsWrap');
+        const tabWrap = document.getElementById('drawerTabComponentsWrap');
+
+        if (compCount === 0) {
+            const emptyHtml = `
+                <div style="text-align: center; padding: 22px 16px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: var(--radius-md); color: var(--text-muted);">
+                    <div style="font-size: 24px; margin-bottom: 6px; opacity: 0.7;">🔌</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">No attached hardware components</div>
+                    <div style="font-size: 11.5px; margin-top: 3px;">No modular components (RAM, SSD, GPU, etc.) are currently installed in this device.</div>
+                    <button type="button" class="btn-secondary" style="margin-top: 10px; padding: 5px 12px; font-size: 12px;" onclick="openEditModal(${asset.id}, 'components')">
+                        + Attach Components
+                    </button>
+                </div>
+            `;
+            if (ovWrap) ovWrap.innerHTML = emptyHtml;
+            if (tabWrap) tabWrap.innerHTML = emptyHtml;
+        } else {
+            const renderCompItem = (c) => {
+                const cName = c.name || 'Component / Module';
+                const cTag = (c.tag || c.sku) ? `<span class="asset-tag-badge" style="font-size: 11px; padding: 1px 7px;">${escapeHtml(c.tag || c.sku)}</span>` : '';
+                const cSerial = c.serial ? `<span class="serial-badge" style="font-size: 11px; padding: 1px 7px;">SN: ${escapeHtml(c.serial)}</span>` : '';
+                const cCat = c.category ? `<span class="category-pill" style="font-size: 11px; padding: 1px 7px;">${escapeHtml(c.category)}</span>` : '';
+                const cSpecs = c.specs ? `<div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">${escapeHtml(c.specs)}</div>` : '';
+                const cBrandModel = (c.brand || c.model) ? `<div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">${escapeHtml([c.brand, c.model].filter(Boolean).join(' '))}</div>` : '';
+
+                return `
+                    <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 9px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                            <div style="width: 36px; height: 36px; border-radius: 8px; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                    <rect x="9" y="9" width="6" height="6"></rect>
+                                    <line x1="9" y1="1" x2="9" y2="4"></line>
+                                    <line x1="15" y1="1" x2="15" y2="4"></line>
+                                    <line x1="9" y1="20" x2="9" y2="23"></line>
+                                    <line x1="15" y1="20" x2="15" y2="23"></line>
+                                    <line x1="20" y1="9" x2="23" y2="9"></line>
+                                    <line x1="20" y1="14" x2="23" y2="14"></line>
+                                    <line x1="1" y1="9" x2="4" y2="9"></line>
+                                    <line x1="1" y1="14" x2="4" y2="14"></line>
+                                </svg>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 13.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(cName)}">
+                                    ${escapeHtml(cName)}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap;">
+                                    ${cCat}
+                                    ${cTag}
+                                    ${cSerial}
+                                </div>
+                                ${cBrandModel}
+                                ${cSpecs}
+                            </div>
+                        </div>
+                        <div style="flex-shrink: 0; text-align: right;">
+                            <span class="warranty-pill warranty-active" style="font-size: 11px;">Installed</span>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const cardsHtml = attachedComps.map(c => renderCompItem(c)).join('');
+            if (ovWrap) ovWrap.innerHTML = cardsHtml;
+            if (tabWrap) tabWrap.innerHTML = cardsHtml;
+        }
+
         // Set Tab 1 as active by default in drawer
         switchDrawerTab('overview');
 
@@ -1315,38 +1401,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeAssetModalBtn = document.getElementById('closeAssetModalBtn');
     const cancelAssetModalBtn = document.getElementById('cancelAssetModalBtn');
 
-    function buildComponentOptionsHtml(selectedName = '') {
-        const list = window.dynamicPartComponents || [];
-        let html = '<option value="">Select Part / Component</option>';
 
-        const grouped = {};
-        list.forEach(item => {
-            const cat = item.category || 'General Components';
-            if (!grouped[cat]) grouped[cat] = [];
-            grouped[cat].push(item);
-        });
-
-        let foundSelected = false;
-        for (const cat in grouped) {
-            html += `<optgroup label="${escapeHtml(cat)}">`;
-            grouped[cat].forEach(item => {
-                const val = item.name || '';
-                const sn = item.serial || '';
-                const tag = item.sku || item.tag || '';
-                const isSel = (val && selectedName && val.trim().toLowerCase() === selectedName.trim().toLowerCase());
-                if (isSel) foundSelected = true;
-
-                html += `<option value="${escapeHtml(val)}" data-serial="${escapeHtml(sn)}" data-sku="${escapeHtml(tag)}" data-tag="${escapeHtml(tag)}" ${isSel ? 'selected' : ''}>${escapeHtml(val)}</option>`;
-            });
-            html += `</optgroup>`;
-        }
-
-        if (selectedName && !foundSelected) {
-            html += `<option value="${escapeHtml(selectedName)}" selected>${escapeHtml(selectedName)}</option>`;
-        }
-
-        return html;
-    }
 
     // =========================================================================
     // Attached Components (Part To-Do List)
@@ -1634,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (assetModal) assetModal.style.display = 'flex';
     };
 
-    window.openEditModal = function (id) {
+    window.openEditModal = function (id, initialTab = 'general') {
         if (id === undefined || id === null || id === '') {
             id = window.activeDrawerAssetId;
         }
@@ -1692,7 +1747,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modalCost').value = fin.cost || '';
         document.getElementById('modalWarrantyExpiry').value = fin.warrantyExpiry || '';
 
-        switchModalTab('general');
+        switchModalTab(initialTab || 'general');
         if (assetModal) assetModal.style.display = 'flex';
     };
 
@@ -1857,6 +1912,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 closeAssetModal();
+                if (typeof refreshAvailableComponents === 'function') {
+                    refreshAvailableComponents();
+                }
                 renderAssets();
                 updateKPIs();
                 if (editId && activeDrawerAssetId === parseInt(editId, 10)) {
@@ -2063,41 +2121,113 @@ document.addEventListener('DOMContentLoaded', function () {
     // 10. Delete / Retire Asset
     // =========================================================================
 
-    window.deleteAsset = function (id) {
-        const asset = assetsData.find(a => a.id === id);
+    let pendingDeleteAsset = null;
+    let pendingBulkDeleteIds = [];
+
+    const deleteAssetModal = document.getElementById('deleteAssetModal');
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+
+    window.openDeleteAssetModal = function (id) {
+        const parsedId = parseInt(id, 10);
+        const asset = assetsData.find(a => a.id === id || a.id === parsedId || a.tag === id);
         if (!asset) return;
 
-        if (confirm(`Are you sure you want to retire asset "${asset.name}" (SN: ${asset.serial}) from active circulation?`)) {
+        pendingDeleteAsset = asset;
+        const nameEl = document.getElementById('deleteModalAssetName');
+        const tagEl = document.getElementById('deleteModalAssetTag');
+        if (nameEl) nameEl.textContent = `"${asset.name}"`;
+        if (tagEl) tagEl.textContent = asset.tag ? `(${asset.tag})` : '';
+
+        if (deleteAssetModal) {
+            deleteAssetModal.style.display = 'flex';
+            deleteAssetModal.classList.add('active');
+        }
+    };
+
+    window.closeDeleteAssetModal = function () {
+        if (deleteAssetModal) {
+            deleteAssetModal.style.display = 'none';
+            deleteAssetModal.classList.remove('active');
+        }
+        pendingDeleteAsset = null;
+        const btn = document.getElementById('confirmDeleteAssetModalBtn');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Yes, Delete Asset
+            `;
+        }
+    };
+
+    window.deleteAsset = function (id) {
+        window.openDeleteAssetModal(id);
+    };
+
+    const confirmDeleteAssetBtn = document.getElementById('confirmDeleteAssetModalBtn');
+    if (confirmDeleteAssetBtn) {
+        confirmDeleteAssetBtn.addEventListener('click', function () {
+            if (!pendingDeleteAsset) return;
+            const asset = pendingDeleteAsset;
+
+            confirmDeleteAssetBtn.disabled = true;
+            confirmDeleteAssetBtn.innerHTML = `
+                <span style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                    Deleting...
+                </span>
+            `;
+
             fetch(getApiUrl(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', id: id })
+                body: JSON.stringify({ action: 'delete', id: asset.id, hard: true })
             })
             .then(res => res.json())
             .then(data => {
                 if (data && data.success) {
-                    asset.status = 'Retired';
-                    asset.assignedTo = null;
-                    if (!asset.history) asset.history = [];
-                    asset.history.unshift({
-                        date: 'Today',
-                        title: 'Decommissioned / Retired',
-                        desc: 'Asset marked as retired from active circulation in database.'
-                    });
-                    if (typeof showToast === 'function') showToast(`Asset "${asset.name}" marked as Retired in database`, 'warning');
+                    // Completely remove from local assetsData
+                    assetsData = assetsData.filter(a => a.id !== asset.id);
+                    selectedAssetIds.delete(asset.id);
+
+                    // Close slide-over drawer if open on this asset
+                    if (window.activeDrawerAssetId === asset.id || activeDrawerAssetId === asset.id) {
+                        closeAssetDrawer();
+                    }
+
+                    closeDeleteAssetModal();
+
+                    if (typeof showToast === 'function') {
+                        showToast(`Asset "${asset.name}" completely deleted. Attached components updated to Available.`, 'success');
+                    }
+
+                    // Refresh available components from backend to immediately sync parts dropdown
+                    if (typeof refreshAvailableComponents === 'function') {
+                        refreshAvailableComponents();
+                    }
+
                     renderAssets();
                     updateKPIs();
-                    if (activeDrawerAssetId === id) openAssetDrawer(id);
                 } else {
-                    if (typeof showToast === 'function') showToast((data && data.message) || 'Failed to retire asset', 'danger');
+                    confirmDeleteAssetBtn.disabled = false;
+                    confirmDeleteAssetBtn.innerHTML = `Yes, Delete Asset`;
+                    if (typeof showToast === 'function') showToast((data && data.message) || 'Failed to delete asset', 'danger');
                 }
             })
             .catch(err => {
+                confirmDeleteAssetBtn.disabled = false;
+                confirmDeleteAssetBtn.innerHTML = `Yes, Delete Asset`;
                 console.error(err);
-                if (typeof showToast === 'function') showToast('Network error while retiring asset', 'danger');
+                if (typeof showToast === 'function') showToast('Network error while deleting asset', 'danger');
             });
-        }
-    };
+        });
+    }
+
+    if (deleteAssetModal) {
+        deleteAssetModal.addEventListener('click', function (e) {
+            if (e.target === this) closeDeleteAssetModal();
+        });
+    }
 
     // =========================================================================
     // 11. Bulk Selection & Actions
@@ -2186,6 +2316,102 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof showToast === 'function') showToast('Network error on bulk update', 'danger');
         });
     };
+
+    window.openBulkDeleteModal = function () {
+        if (selectedAssetIds.size === 0) return;
+        pendingBulkDeleteIds = Array.from(selectedAssetIds);
+        const countText = document.getElementById('bulkDeleteCountText');
+        if (countText) countText.textContent = `${pendingBulkDeleteIds.length}`;
+
+        if (bulkDeleteModal) {
+            bulkDeleteModal.style.display = 'flex';
+            bulkDeleteModal.classList.add('active');
+        }
+    };
+
+    window.closeBulkDeleteModal = function () {
+        if (bulkDeleteModal) {
+            bulkDeleteModal.style.display = 'none';
+            bulkDeleteModal.classList.remove('active');
+        }
+        pendingBulkDeleteIds = [];
+        const btn = document.getElementById('confirmBulkDeleteModalBtn');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Yes, Delete Selected
+            `;
+        }
+    };
+
+    window.bulkDeleteAssets = function () {
+        window.openBulkDeleteModal();
+    };
+
+    const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteModalBtn');
+    if (confirmBulkDeleteBtn) {
+        confirmBulkDeleteBtn.addEventListener('click', function () {
+            if (pendingBulkDeleteIds.length === 0) return;
+            const ids = [...pendingBulkDeleteIds];
+            const count = ids.length;
+
+            confirmBulkDeleteBtn.disabled = true;
+            confirmBulkDeleteBtn.innerHTML = `
+                <span style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                    Deleting...
+                </span>
+            `;
+
+            fetch(getApiUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'bulk_delete', ids: ids })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success) {
+                    const idSet = new Set(ids);
+                    assetsData = assetsData.filter(a => !idSet.has(a.id));
+                    selectedAssetIds.clear();
+
+                    if (window.activeDrawerAssetId && idSet.has(window.activeDrawerAssetId)) {
+                        closeAssetDrawer();
+                    }
+
+                    closeBulkDeleteModal();
+
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || `Deleted ${count} asset(s) and released components to available inventory.`, 'success');
+                    }
+
+                    if (typeof refreshAvailableComponents === 'function') {
+                        refreshAvailableComponents();
+                    }
+
+                    renderAssets();
+                    updateKPIs();
+                } else {
+                    confirmBulkDeleteBtn.disabled = false;
+                    confirmBulkDeleteBtn.innerHTML = `Yes, Delete Selected`;
+                    if (typeof showToast === 'function') showToast((data && data.message) || 'Bulk delete failed', 'danger');
+                }
+            })
+            .catch(err => {
+                confirmBulkDeleteBtn.disabled = false;
+                confirmBulkDeleteBtn.innerHTML = `Yes, Delete Selected`;
+                console.error(err);
+                if (typeof showToast === 'function') showToast('Network error on bulk delete', 'danger');
+            });
+        });
+    }
+
+    if (bulkDeleteModal) {
+        bulkDeleteModal.addEventListener('click', function (e) {
+            if (e.target === this) closeBulkDeleteModal();
+        });
+    }
 
     window.bulkPrintLabels = function () {
         if (selectedAssetIds.size === 0) return;
@@ -2544,8 +2770,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     renderPartTodoList();
 
-    // Fetch dynamic parts from API if available to ensure fresh options (Available only)
-    if (typeof fetch === 'function') {
+    // Fetch dynamic parts from API to ensure fresh options (Available only)
+    window.refreshAvailableComponents = function () {
+        if (typeof fetch !== 'function') return;
         fetch('api/components.php?status=Available')
             .then(res => res.json())
             .then(data => {
@@ -2566,7 +2793,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(() => {});
-    }
+    };
+
+    window.refreshAvailableComponents();
 
     // Initial render
     renderAssets();
