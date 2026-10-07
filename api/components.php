@@ -140,32 +140,34 @@ if ($method === 'GET') {
     }
 
     // Filtered records query
-    $sql = "SELECT id, sku, serial, name, category, branch_location, brand, model, specs, status, 
-                   installed_asset, location,
-                   CONVERT(VARCHAR(10), created_at, 105) AS created_date
-            FROM components 
+    $sql = "SELECT c.id, c.sku, c.serial, c.name, c.category, c.branch_location, c.brand, c.model, c.specs, c.status, 
+                   c.installed_asset, c.location,
+                   a.id AS host_asset_id, a.tag AS host_asset_tag, a.name AS host_asset_name,
+                   CONVERT(VARCHAR(10), c.created_at, 105) AS created_date
+            FROM components c
+            LEFT JOIN assets a ON (TRY_CAST(c.installed_asset AS INT) = a.id OR c.installed_asset = a.tag)
             WHERE 1=1";
     $params = [];
 
     if ($search !== '') {
-        $sql .= " AND (name LIKE ? OR sku LIKE ? OR serial LIKE ? OR brand LIKE ? OR model LIKE ? OR specs LIKE ? OR installed_asset LIKE ? OR location LIKE ? OR branch_location LIKE ?)";
+        $sql .= " AND (c.name LIKE ? OR c.sku LIKE ? OR c.serial LIKE ? OR c.brand LIKE ? OR c.model LIKE ? OR c.specs LIKE ? OR c.installed_asset LIKE ? OR c.location LIKE ? OR c.branch_location LIKE ? OR a.tag LIKE ? OR a.name LIKE ?)";
         $searchWild = '%' . $search . '%';
-        for ($i = 0; $i < 9; $i++) {
+        for ($i = 0; $i < 11; $i++) {
             $params[] = $searchWild;
         }
     }
 
     if ($category !== '' && $category !== 'all') {
-        $sql .= " AND category = ?";
+        $sql .= " AND c.category = ?";
         $params[] = $category;
     }
 
     if ($status !== '' && $status !== 'all') {
-        $sql .= " AND status = ?";
+        $sql .= " AND c.status = ?";
         $params[] = $status;
     }
 
-    $sql .= " ORDER BY id DESC";
+    $sql .= " ORDER BY c.id DESC";
 
     $stmt = sqlsrv_query($conn, $sql, $params);
     if ($stmt === false) {
@@ -176,6 +178,13 @@ if ($method === 'GET') {
 
     $components = [];
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $hostDisplay = '';
+        if (!empty($row['host_asset_tag'])) {
+            $hostDisplay = $row['host_asset_tag'] . ' (' . $row['host_asset_name'] . ')';
+        } elseif (!empty($row['installed_asset'])) {
+            $hostDisplay = $row['installed_asset'];
+        }
+
         $components[] = [
             'id'              => intval($row['id']),
             'sku'             => $row['sku'],
@@ -187,7 +196,8 @@ if ($method === 'GET') {
             'model'           => $row['model'] ?? '',
             'specs'           => $row['specs'] ?? '',
             'status'          => $row['status'],
-            'installedAsset'  => $row['installed_asset'] ?? '',
+            'installedAsset'  => $hostDisplay,
+            'installedAssetId'=> $row['installed_asset'] ?? '',
             'location'        => $row['location'] ?? '',
             'created_date'    => $row['created_date'] ?? ''
         ];
@@ -356,11 +366,28 @@ if ($method === 'POST') {
             exit;
         }
 
+        $assetIdStr = $targetAsset;
+        $locStr = "Installed in Asset #" . $targetAsset;
+        if (is_numeric($targetAsset)) {
+            $aStmt = sqlsrv_query($conn, "SELECT id, tag, name FROM assets WHERE id = ?", [intval($targetAsset)]);
+            if ($aStmt && ($aRow = sqlsrv_fetch_array($aStmt, SQLSRV_FETCH_ASSOC))) {
+                $assetIdStr = strval($aRow['id']);
+                $locStr = "Installed in " . $aRow['tag'] . " (" . $aRow['name'] . ")";
+            }
+            if ($aStmt) sqlsrv_free_stmt($aStmt);
+        } else {
+            $aStmt = sqlsrv_query($conn, "SELECT id, tag, name FROM assets WHERE tag = ?", [$targetAsset]);
+            if ($aStmt && ($aRow = sqlsrv_fetch_array($aStmt, SQLSRV_FETCH_ASSOC))) {
+                $assetIdStr = strval($aRow['id']);
+                $locStr = "Installed in " . $aRow['tag'] . " (" . $aRow['name'] . ")";
+            }
+            if ($aStmt) sqlsrv_free_stmt($aStmt);
+        }
+
         $insSql = "UPDATE components 
                    SET status = 'Installed', installed_asset = ?, location = ?, updated_at = GETDATE() 
                    WHERE id = ?";
-        $locStr = "Installed in " . $targetAsset;
-        $insStmt = sqlsrv_query($conn, $insSql, [$targetAsset, $locStr, $id]);
+        $insStmt = sqlsrv_query($conn, $insSql, [$assetIdStr, $locStr, $id]);
 
         if ($insStmt === false) {
             http_response_code(500);

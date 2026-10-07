@@ -20,8 +20,9 @@ require_once __DIR__ . '/config/db.php';
 
 $dynamicPartComponents = [];
 if (isset($conn) && $conn !== false) {
-    $partsQuery = "SELECT id, sku, serial, name, category, brand, model, specs, status 
+    $partsQuery = "SELECT id, sku, serial, name, category, brand, model, specs, status, installed_asset 
                    FROM components 
+                   WHERE status = 'Available' AND (installed_asset IS NULL OR installed_asset = '')
                    ORDER BY category ASC, name ASC";
     $partsStmt = sqlsrv_query($conn, $partsQuery);
     if ($partsStmt !== false) {
@@ -168,6 +169,29 @@ if (isset($conn) && $conn !== false) {
 // Fetch Real Assets from MS SQL Server database
 $dbAssets = [];
 if (isset($conn) && $conn !== false) {
+    // Prefetch all components currently linked to assets in components table
+    $installedComponentsByAsset = [];
+    $icStmt = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, specs, installed_asset FROM components WHERE installed_asset IS NOT NULL AND installed_asset != ''");
+    if ($icStmt !== false) {
+        while ($icRow = sqlsrv_fetch_array($icStmt, SQLSRV_FETCH_ASSOC)) {
+            $instAsset = trim(strval($icRow['installed_asset']));
+            if (!isset($installedComponentsByAsset[$instAsset])) {
+                $installedComponentsByAsset[$instAsset] = [];
+            }
+            $installedComponentsByAsset[$instAsset][] = [
+                'component_id' => intval($icRow['id']),
+                'id'           => intval($icRow['id']),
+                'name'         => $icRow['name'] ?? '',
+                'serial'       => $icRow['serial'] ?? '',
+                'tag'          => $icRow['sku'] ?? '',
+                'sku'          => $icRow['sku'] ?? '',
+                'category'     => $icRow['category'] ?? '',
+                'specs'        => $icRow['specs'] ?? ''
+            ];
+        }
+        sqlsrv_free_stmt($icStmt);
+    }
+
     $assetsStmt = sqlsrv_query($conn, "SELECT * FROM assets ORDER BY id DESC");
     if ($assetsStmt !== false) {
         while ($row = sqlsrv_fetch_array($assetsStmt, SQLSRV_FETCH_ASSOC)) {
@@ -201,10 +225,26 @@ if (isset($conn) && $conn !== false) {
                     ];
                 }
             }
-            $components = [];
+            $aid = strval($row['id']);
+            $atag = strval($row['tag'] ?? '');
+            $components = $installedComponentsByAsset[$aid] ?? ($installedComponentsByAsset[$atag] ?? []);
             if (!empty($row['components_json'])) {
                 $dec = json_decode($row['components_json'], true);
-                if (is_array($dec)) $components = $dec;
+                if (is_array($dec)) {
+                    foreach ($dec as $item) {
+                        $exists = false;
+                        foreach ($components as $cEx) {
+                            if ((!empty($item['serial']) && $cEx['serial'] === $item['serial']) ||
+                                (!empty($item['component_id']) && $cEx['component_id'] === $item['component_id'])) {
+                                $exists = true;
+                                break;
+                            }
+                        }
+                        if (!$exists) {
+                            $components[] = $item;
+                        }
+                    }
+                }
             }
             $history = [];
             $tickets = [];
@@ -838,7 +878,7 @@ include 'includes/topbar.php';
         <div class="modal-tabs-header">
             <button type="button" class="modal-tab-btn active" data-tab="general">General Info</button>
             <button type="button" class="modal-tab-btn" data-tab="specs">Specs & Network</button>
-            <button type="button" class="modal-tab-btn" data-tab="components">Components</button>
+            <button type="button" class="modal-tab-btn" data-tab="components">Components <span id="modalCompTabBadge" class="modal-tab-count-badge" style="display:none; margin-left: 5px; background: var(--cyan-primary); color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0</span></button>
             <button type="button" class="modal-tab-btn" data-tab="procurement">Procurement & Cost</button>
             <button type="button" class="modal-tab-btn" data-tab="placement">Location & Status</button>
         </div>
@@ -964,6 +1004,7 @@ include 'includes/topbar.php';
                                             $tag = $item['sku'] ?? ($item['tag'] ?? '');
                                         ?>
                                             <option value="<?php echo htmlspecialchars($val); ?>" 
+                                                    data-id="<?php echo htmlspecialchars($item['id'] ?? ''); ?>"
                                                     data-serial="<?php echo htmlspecialchars($sn); ?>" 
                                                     data-sku="<?php echo htmlspecialchars($tag); ?>"
                                                     data-tag="<?php echo htmlspecialchars($tag); ?>">

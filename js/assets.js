@@ -1079,9 +1079,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // =========================================================================
 
     window.openAssetDrawer = function (id) {
-        const asset = assetsData.find(a => a.id === id);
+        const parsedId = parseInt(id, 10);
+        const asset = assetsData.find(a => a.id === id || a.id === parsedId || a.tag === id);
         if (!asset) return;
-        activeDrawerAssetId = id;
+        activeDrawerAssetId = asset.id;
+        window.activeDrawerAssetId = asset.id;
 
         // Drawer Header Info
         const tagEl = document.getElementById('drawerAssetTag');
@@ -1203,6 +1205,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (assetDrawer) assetDrawer.classList.remove('open');
         if (drawerBackdrop) drawerBackdrop.classList.remove('open');
         activeDrawerAssetId = null;
+        window.activeDrawerAssetId = null;
     };
 
     if (closeDrawerBtn) {
@@ -1348,15 +1351,65 @@ document.addEventListener('DOMContentLoaded', function () {
     // =========================================================================
     // Attached Components (Part To-Do List)
     // =========================================================================
-    let currentAssetComponents = []; // Array of { name, serial, id }
+    let currentAssetComponents = []; // Array of { name, serial, tag, sku, id, component_id }
+
+    function buildComponentOptionsHtml(selectedVal = '') {
+        if (!Array.isArray(window.dynamicPartComponents)) return '<option value="">Select Part / Component</option>';
+
+        // Filter: ONLY parts whose status is Available and NOT installed / in-use anywhere
+        const availableParts = window.dynamicPartComponents.filter(item => {
+            const status = (item.status || 'Available').trim().toLowerCase();
+            if (status !== 'available') return false;
+
+            const inst = (item.installedAsset || item.installed_asset || '').trim();
+            if (inst && inst !== '— (Unassigned / In Stock)' && inst !== '') return false;
+
+            // Also exclude if already attached in current modal list
+            const alreadyInList = currentAssetComponents.some(c => 
+                (c.component_id && item.id && c.component_id == item.id) ||
+                (c.id && item.id && c.id == item.id) ||
+                (c.serial && item.serial && c.serial.trim().toLowerCase() === item.serial.trim().toLowerCase())
+            );
+            if (alreadyInList) return false;
+
+            return true;
+        });
+
+        const groups = {};
+        availableParts.forEach(item => {
+            const cat = item.category || 'General Components';
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(item);
+        });
+
+        let html = '<option value="">Select Part / Component</option>';
+        Object.keys(groups).sort().forEach(cat => {
+            html += `<optgroup label="${escapeHtml(cat)}">`;
+            groups[cat].forEach(item => {
+                const isSel = (item.name === selectedVal) ? 'selected' : '';
+                html += `<option value="${escapeHtml(item.name)}" 
+                                data-id="${escapeHtml(item.id || '')}"
+                                data-serial="${escapeHtml(item.serial || '')}" 
+                                data-sku="${escapeHtml(item.sku || item.tag || '')}" 
+                                data-tag="${escapeHtml(item.sku || item.tag || '')}" ${isSel}>${escapeHtml(item.name)}</option>`;
+            });
+            html += `</optgroup>`;
+        });
+        return html;
+    }
 
     function renderPartTodoList() {
         const container = document.getElementById('partTodoListContainer');
         const countBadge = document.getElementById('partTodoCount');
+        const modalTabBadge = document.getElementById('modalCompTabBadge');
         if (!container) return;
 
         if (countBadge) {
             countBadge.textContent = currentAssetComponents.length;
+        }
+        if (modalTabBadge) {
+            modalTabBadge.textContent = currentAssetComponents.length;
+            modalTabBadge.style.display = currentAssetComponents.length > 0 ? 'inline-block' : 'none';
         }
 
         if (currentAssetComponents.length === 0) {
@@ -1451,11 +1504,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const opt = select.options[select.selectedIndex];
         let tag = opt ? (opt.dataset.tag || opt.dataset.sku || '') : '';
         let sn = opt ? (opt.dataset.serial || '') : '';
+        let compId = opt ? (opt.dataset.id || '') : '';
 
-        // If tag or sn missing from option, lookup in dynamicPartComponents
-        if ((!tag || !sn) && window.dynamicPartComponents) {
-            const match = window.dynamicPartComponents.find(p => p.name === name);
+        // If tag, sn or compId missing from option, lookup in dynamicPartComponents
+        if (window.dynamicPartComponents) {
+            const match = window.dynamicPartComponents.find(p => 
+                (compId && p.id == compId) ||
+                (sn && p.serial === sn) ||
+                (tag && (p.sku === tag || p.tag === tag)) ||
+                (p.name === name)
+            );
             if (match) {
+                if (!compId) compId = match.id || '';
                 if (!tag) tag = match.tag || match.sku || '';
                 if (!sn) sn = match.serial || '';
             }
@@ -1465,18 +1525,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Add to array
         currentAssetComponents.push({
+            component_id: compId ? parseInt(compId, 10) : null,
             name,
             serial: finalSerial,
             tag: tag,
             sku: tag,
-            id: Date.now() + Math.random()
+            id: compId ? parseInt(compId, 10) : (Date.now() + Math.random())
         });
 
-        // Reset inputs
+        // Reset inputs and re-render dropdown so the added item disappears
         if (serialInput) {
             serialInput.value = '';
             serialInput.dataset.autofilled = 'false';
         }
+        select.innerHTML = buildComponentOptionsHtml();
         select.value = '';
         if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
             window.SearchableSelect.sync(select);
@@ -1491,6 +1553,14 @@ document.addEventListener('DOMContentLoaded', function () {
     window.removePartTodo = function (index) {
         if (index >= 0 && index < currentAssetComponents.length) {
             const removed = currentAssetComponents.splice(index, 1);
+            const select = document.getElementById('newCompName');
+            if (select) {
+                select.innerHTML = buildComponentOptionsHtml();
+                select.value = '';
+                if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+                    window.SearchableSelect.sync(select);
+                }
+            }
             renderPartTodoList();
             if (removed.length > 0 && typeof showToast === 'function') {
                 showToast(`Removed "${removed[0].name}"`, 'info');
@@ -1504,14 +1574,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function resetComponentRows(components = []) {
         currentAssetComponents = Array.isArray(components) ? components.map(c => ({
+            component_id: c.component_id || (typeof c.id === 'number' && c.id < 1000000 ? c.id : null),
             name: c.name || '',
             serial: c.serial || '',
             tag: c.tag || c.sku || '',
             sku: c.tag || c.sku || '',
-            id: Date.now() + Math.random()
+            id: c.component_id || (typeof c.id === 'number' && c.id < 1000000 ? c.id : (Date.now() + Math.random()))
         })) : [];
 
-        // Reset inputs
+        // Reset inputs & refresh dropdown options excluding parts in current list
         const serialInput = document.getElementById('newCompSerial');
         const select = document.getElementById('newCompName');
         if (serialInput) {
@@ -1519,6 +1590,7 @@ document.addEventListener('DOMContentLoaded', function () {
             serialInput.dataset.autofilled = 'false';
         }
         if (select) {
+            select.innerHTML = buildComponentOptionsHtml();
             select.value = '';
             if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
                 window.SearchableSelect.sync(select);
@@ -1563,8 +1635,15 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     window.openEditModal = function (id) {
-        const asset = assetsData.find(a => a.id === id);
+        if (id === undefined || id === null || id === '') {
+            id = window.activeDrawerAssetId;
+        }
+        const parsedId = parseInt(id, 10);
+        const asset = assetsData.find(a => a.id === id || a.id === parsedId || a.tag === id);
         if (!asset) return;
+
+        // Close drawer if open
+        if (typeof closeAssetDrawer === 'function') closeAssetDrawer();
 
         if (assetModalTitle) assetModalTitle.textContent = `Edit Asset: ${asset.name}`;
         document.getElementById('editAssetId').value = asset.id;
@@ -1672,24 +1751,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 const aOpt = activeSel.options[activeSel.selectedIndex];
                 let aTag = aOpt ? (aOpt.dataset.tag || aOpt.dataset.sku || '') : '';
                 let aSn = aOpt ? (aOpt.dataset.serial || '') : '';
-                if ((!aTag || !aSn) && window.dynamicPartComponents) {
-                    const match = window.dynamicPartComponents.find(p => p.name === aName);
+                let aId = aOpt ? (aOpt.dataset.id || '') : '';
+                if (window.dynamicPartComponents) {
+                    const match = window.dynamicPartComponents.find(p => 
+                        (aId && p.id == aId) ||
+                        (aSn && p.serial === aSn) ||
+                        (aTag && (p.sku === aTag || p.tag === aTag)) ||
+                        (p.name === aName)
+                    );
                     if (match) {
+                        if (!aId) aId = match.id || '';
                         if (!aTag) aTag = match.tag || match.sku || '';
                         if (!aSn) aSn = match.serial || '';
                     }
                 }
                 const aSerial = activeSerial ? activeSerial.value.trim() : '';
                 currentAssetComponents.push({
+                    component_id: aId ? parseInt(aId, 10) : null,
                     name: aName,
                     serial: aSerial || aSn,
                     tag: aTag,
                     sku: aTag,
-                    id: Date.now()
+                    id: aId ? parseInt(aId, 10) : Date.now()
                 });
             }
 
             const compRows = currentAssetComponents.map(item => ({
+                component_id: item.component_id || (typeof item.id === 'number' && item.id < 1000000 ? item.id : null),
                 name: item.name,
                 serial: item.serial,
                 tag: item.tag || item.sku || '',
@@ -2456,19 +2544,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     renderPartTodoList();
 
-    // Fetch dynamic parts from API if available to ensure fresh options
+    // Fetch dynamic parts from API if available to ensure fresh options (Available only)
     if (typeof fetch === 'function') {
-        fetch('api/components.php')
+        fetch('api/components.php?status=Available')
             .then(res => res.json())
             .then(data => {
-                if (data && data.success && Array.isArray(data.components) && data.components.length > 0) {
-                    window.dynamicPartComponents = data.components;
+                if (data && data.success && Array.isArray(data.components)) {
+                    // Filter to Available only with no installed host asset
+                    window.dynamicPartComponents = data.components.filter(c => 
+                        (c.status || '').toLowerCase() === 'available' && 
+                        (!c.installedAsset || c.installedAsset === '— (Unassigned / In Stock)' || c.installedAsset === '')
+                    );
                     const sel = document.getElementById('newCompName');
                     if (sel) {
                         const curVal = sel.value;
                         sel.innerHTML = buildComponentOptionsHtml(curVal);
-                        if (window.SearchableSelect && typeof window.SearchableSelect.update === 'function') {
-                            window.SearchableSelect.update(sel);
+                        if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+                            window.SearchableSelect.sync(sel);
                         }
                     }
                 }

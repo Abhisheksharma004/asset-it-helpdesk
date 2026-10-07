@@ -77,14 +77,25 @@ if (empty($branchLocations)) {
 $initialComponents = [];
 $stats = ['total' => 0, 'available' => 0, 'installed' => 0, 'repair' => 0];
 
+$allAssetsList = [];
 if (isset($conn) && $conn !== false) {
-    $compQuery = "SELECT id, sku, serial, name, category, brand, model, specs, status, installed_asset, location, branch_location,
-                         CONVERT(VARCHAR(10), created_at, 105) AS created_date
-                  FROM components 
-                  ORDER BY id DESC";
+    $compQuery = "SELECT c.id, c.sku, c.serial, c.name, c.category, c.brand, c.model, c.specs, c.status, 
+                         c.installed_asset, c.location, c.branch_location,
+                         a.id AS host_asset_id, a.tag AS host_asset_tag, a.name AS host_asset_name,
+                         CONVERT(VARCHAR(10), c.created_at, 105) AS created_date
+                  FROM components c
+                  LEFT JOIN assets a ON (TRY_CAST(c.installed_asset AS INT) = a.id OR c.installed_asset = a.tag)
+                  ORDER BY c.id DESC";
     $compStmt = sqlsrv_query($conn, $compQuery);
     if ($compStmt !== false) {
         while ($row = sqlsrv_fetch_array($compStmt, SQLSRV_FETCH_ASSOC)) {
+            $hostDisplay = '';
+            if (!empty($row['host_asset_tag'])) {
+                $hostDisplay = $row['host_asset_tag'] . ' (' . $row['host_asset_name'] . ')';
+            } elseif (!empty($row['installed_asset'])) {
+                $hostDisplay = $row['installed_asset'];
+            }
+
             $initialComponents[] = [
                 'id'              => intval($row['id']),
                 'sku'             => $row['sku'],
@@ -96,7 +107,8 @@ if (isset($conn) && $conn !== false) {
                 'model'           => $row['model'] ?? '',
                 'specs'           => $row['specs'] ?? '',
                 'status'          => $row['status'],
-                'installedAsset'  => $row['installed_asset'] ?? '',
+                'installedAsset'  => $hostDisplay,
+                'installedAssetId'=> $row['installed_asset'] ?? '',
                 'location'        => $row['location'] ?? '',
                 'created_date'    => $row['created_date'] ?? ''
             ];
@@ -111,6 +123,15 @@ if (isset($conn) && $conn !== false) {
         }
         $stats['total'] = count($initialComponents);
         sqlsrv_free_stmt($compStmt);
+    }
+
+    // Load active assets for install modal dropdown
+    $aQuery = sqlsrv_query($conn, "SELECT id, tag, name, assigned_to FROM assets WHERE status != 'Retired' ORDER BY tag ASC");
+    if ($aQuery !== false) {
+        while ($ar = sqlsrv_fetch_array($aQuery, SQLSRV_FETCH_ASSOC)) {
+            $allAssetsList[] = $ar;
+        }
+        sqlsrv_free_stmt($aQuery);
     }
 }
 
@@ -618,12 +639,15 @@ include 'includes/topbar.php';
                     <label for="installTargetAsset">Target Asset / Host Machine *</label>
                     <select id="installTargetAsset" required>
                         <option value="">Select Target Asset</option>
-                        <option value="AST-2026-001 (Dell Latitude 5420)">AST-2026-001 — Dell Latitude 5420 (Priya Sharma)</option>
-                        <option value="AST-2026-002 (ThinkPad T14 Gen 2)">AST-2026-002 — Lenovo ThinkPad T14 Gen 2 (Rahul Mehta)</option>
-                        <option value="AST-2026-003 (MacBook Pro 16 M1)">AST-2026-003 — Apple MacBook Pro 16 M1 Pro (Arjun Verma)</option>
-                        <option value="AST-2026-004 (HP EliteDesk 800 G6)">AST-2026-004 — HP EliteDesk 800 G6 Mini (Finance Dept)</option>
-                        <option value="AST-2026-005 (Dell PowerEdge R740)">AST-2026-005 — Dell PowerEdge R740 Server (DC Rack 1)</option>
-                        <option value="AST-2026-006 (Custom AI Workstation)">AST-2026-006 — Custom Deep Learning Rig (AI Lab)</option>
+                        <?php if (!empty($allAssetsList)): ?>
+                            <?php foreach ($allAssetsList as $ast): ?>
+                                <option value="<?php echo htmlspecialchars($ast['id']); ?>">
+                                    <?php echo htmlspecialchars($ast['tag'] . ' — ' . $ast['name'] . (!empty($ast['assigned_to']) ? ' (' . $ast['assigned_to'] . ')' : '')); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <option value="AST-2026-001 (Dell Latitude 5420)">AST-2026-001 — Dell Latitude 5420</option>
+                        <?php endif; ?>
                     </select>
                 </div>
 

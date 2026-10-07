@@ -542,6 +542,109 @@ function getNextAssetTag($conn) {
 }
 
 /**
+ * Synchronize components in the 'components' table with an asset.
+ * Sets components.installed_asset = strval($assetId) for attached components,
+ * sets status = 'Installed', and detaches any components no longer attached.
+ */
+function syncAssetComponents($conn, $assetId, $assetTag = '', $assetName = '', $componentsList = []) {
+    if (!isset($conn) || $conn === false || empty($assetId)) {
+        return;
+    }
+
+    $assetIdStr = strval($assetId);
+    $locationStr = 'Installed in ' . ($assetTag ?: ('Asset #' . $assetIdStr)) . ($assetName ? ' (' . $assetName . ')' : '');
+
+    // 1. Identify which component IDs should be linked
+    $matchedComponentIds = [];
+
+    if (is_array($componentsList)) {
+        foreach ($componentsList as $c) {
+            $matchedId = null;
+
+            // Priority 1: Match by explicit component_id / id provided
+            $cIdToCheck = !empty($c['component_id']) ? $c['component_id'] : (!empty($c['id']) && is_numeric($c['id']) && intval($c['id']) < 100000000 ? $c['id'] : null);
+            if (!empty($cIdToCheck)) {
+                $cid = intval($cIdToCheck);
+                $chk = sqlsrv_query($conn, "SELECT id FROM components WHERE id = ?", [$cid]);
+                if ($chk && ($cRow = sqlsrv_fetch_array($chk, SQLSRV_FETCH_ASSOC))) {
+                    $matchedId = intval($cRow['id']);
+                }
+                if ($chk) sqlsrv_free_stmt($chk);
+            }
+
+            // Priority 2: Match by unique serial number
+            if (!$matchedId && !empty($c['serial'])) {
+                $sn = trim($c['serial']);
+                $chk = sqlsrv_query($conn, "SELECT id FROM components WHERE serial = ?", [$sn]);
+                if ($chk && ($cRow = sqlsrv_fetch_array($chk, SQLSRV_FETCH_ASSOC))) {
+                    $matchedId = intval($cRow['id']);
+                }
+                if ($chk) sqlsrv_free_stmt($chk);
+            }
+
+            // Priority 3: Match by SKU / tag
+            $tagOrSku = trim($c['tag'] ?? ($c['sku'] ?? ''));
+            if (!$matchedId && !empty($tagOrSku)) {
+                $chk = sqlsrv_query($conn, "SELECT id FROM components WHERE sku = ?", [$tagOrSku]);
+                if ($chk && ($cRow = sqlsrv_fetch_array($chk, SQLSRV_FETCH_ASSOC))) {
+                    $matchedId = intval($cRow['id']);
+                }
+                if ($chk) sqlsrv_free_stmt($chk);
+            }
+
+            // Priority 4: Match by component name if Available or already installed on this asset
+            if (!$matchedId && !empty($c['name'])) {
+                $cname = trim($c['name']);
+                $chk = sqlsrv_query($conn, "SELECT TOP 1 id FROM components WHERE name = ? AND (installed_asset IS NULL OR installed_asset = '' OR installed_asset = ? OR installed_asset = ?) ORDER BY id ASC", [$cname, $assetIdStr, $assetTag]);
+                if ($chk && ($cRow = sqlsrv_fetch_array($chk, SQLSRV_FETCH_ASSOC))) {
+                    $matchedId = intval($cRow['id']);
+                }
+                if ($chk) sqlsrv_free_stmt($chk);
+            }
+
+            if ($matchedId && !in_array($matchedId, $matchedComponentIds, true)) {
+                $matchedComponentIds[] = $matchedId;
+            }
+        }
+    }
+
+    // 2. Detach components previously linked to this asset that are not in $matchedComponentIds
+    $detachParams = [$assetIdStr];
+    $detachSql = "UPDATE components 
+                  SET installed_asset = '', 
+                      status = 'Available', 
+                      location = 'Depot Shelf (Unassigned)', 
+                      updated_at = GETDATE() 
+                  WHERE (installed_asset = ?";
+    if (!empty($assetTag)) {
+        $detachSql .= " OR installed_asset = ?";
+        $detachParams[] = $assetTag;
+    }
+    $detachSql .= ")";
+
+    if (!empty($matchedComponentIds)) {
+        $placeholders = implode(',', array_fill(0, count($matchedComponentIds), '?'));
+        $detachSql .= " AND id NOT IN ($placeholders)";
+        $detachParams = array_merge($detachParams, $matchedComponentIds);
+    }
+
+    sqlsrv_query($conn, $detachSql, $detachParams);
+
+    // 3. Link all matched components to this asset ID in installed_asset column
+    if (!empty($matchedComponentIds)) {
+        $linkPlaceholders = implode(',', array_fill(0, count($matchedComponentIds), '?'));
+        $linkSql = "UPDATE components 
+                    SET installed_asset = ?, 
+                        status = 'Installed', 
+                        location = ?, 
+                        updated_at = GETDATE() 
+                    WHERE id IN ($linkPlaceholders)";
+        $linkParams = array_merge([$assetIdStr, $locationStr], $matchedComponentIds);
+        sqlsrv_query($conn, $linkSql, $linkParams);
+    }
+}
+
+/**
  * Format a DB row to the rich frontend Asset object
  */
 function getEmployeeLookup() {
@@ -601,9 +704,48 @@ function formatAssetRow($row) {
     }
 
     $components = [];
+    $assetIdStr = strval($row['id'] ?? '');
+    $assetTagStr = strval($row['tag'] ?? '');
+
+    // Fetch linked components directly from components table
+    global $conn;
+    if (!empty($assetIdStr) && isset($conn) && $conn !== false) {
+        $cQuery = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, specs FROM components WHERE installed_asset = ? OR installed_asset = ?", [$assetIdStr, $assetTagStr]);
+        if ($cQuery !== false) {
+            while ($cr = sqlsrv_fetch_array($cQuery, SQLSRV_FETCH_ASSOC)) {
+                $components[] = [
+                    'component_id' => intval($cr['id']),
+                    'id'           => intval($cr['id']),
+                    'name'         => $cr['name'] ?? '',
+                    'serial'       => $cr['serial'] ?? '',
+                    'tag'          => $cr['sku'] ?? '',
+                    'sku'          => $cr['sku'] ?? '',
+                    'category'     => $cr['category'] ?? '',
+                    'specs'        => $cr['specs'] ?? ''
+                ];
+            }
+            sqlsrv_free_stmt($cQuery);
+        }
+    }
+
+    // Merge any non-duplicate components from components_json
     if (!empty($row['components_json'])) {
         $decoded = json_decode($row['components_json'], true);
-        if (is_array($decoded)) $components = $decoded;
+        if (is_array($decoded)) {
+            foreach ($decoded as $item) {
+                $alreadyExists = false;
+                foreach ($components as $cExisting) {
+                    if ((!empty($item['serial']) && $cExisting['serial'] === $item['serial']) ||
+                        (!empty($item['component_id']) && $cExisting['component_id'] === $item['component_id'])) {
+                        $alreadyExists = true;
+                        break;
+                    }
+                }
+                if (!$alreadyExists) {
+                    $components[] = $item;
+                }
+            }
+        }
     }
 
     $history = [];
@@ -854,6 +996,9 @@ switch ($action) {
 
         $newId = getLastInsertId($conn);
 
+        // Link installed components to this asset ID in components table
+        syncAssetComponents($conn, $newId, $tag, $name, $components);
+
         // Fetch inserted row to return
         $fetchStmt = sqlsrv_query($conn, "SELECT * FROM assets WHERE id = ?", [$newId]);
         $createdAsset = null;
@@ -941,6 +1086,9 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Failed to update asset in database.', 'errors' => sqlsrv_errors()]);
             exit;
         }
+
+        // Link/sync installed components to this asset ID in components table
+        syncAssetComponents($conn, $id, $tag, $name, $components);
 
         $fetchStmt = sqlsrv_query($conn, "SELECT * FROM assets WHERE id = ?", [$id]);
         $updatedAsset = null;
@@ -1040,6 +1188,9 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Failed to remove asset.', 'errors' => sqlsrv_errors()]);
             exit;
         }
+
+        // Detach any components installed in this asset and return to stock
+        sqlsrv_query($conn, "UPDATE components SET installed_asset = '', status = 'Available', location = 'Returned to Depot Shelf', updated_at = GETDATE() WHERE installed_asset = ?", [strval($id)]);
 
         echo json_encode(['success' => true, 'message' => 'Asset retired/deleted successfully.']);
         exit;
