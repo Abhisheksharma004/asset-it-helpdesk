@@ -95,6 +95,201 @@ if (empty($vendorsList)) {
     }
 }
 
+// Fetch dynamic Categories from asset_categories table
+$dbCategories = [];
+if (isset($conn) && $conn !== false) {
+    $cStmt = sqlsrv_query($conn, "SELECT category_name FROM asset_categories WHERE status = 'Active' ORDER BY category_name ASC");
+    if ($cStmt !== false) {
+        while ($r = sqlsrv_fetch_array($cStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($r['category_name'])) $dbCategories[] = $r['category_name'];
+        }
+        sqlsrv_free_stmt($cStmt);
+    }
+}
+if (empty($dbCategories)) {
+    $dbCategories = ['Laptops', 'Desktops', 'Servers', 'Networking', 'Monitors', 'Tablets & Mobile', 'Printers'];
+}
+
+// Fetch dynamic Locations from locations table
+$dbLocations = [];
+if (isset($conn) && $conn !== false) {
+    $lStmt = sqlsrv_query($conn, "SELECT location_name FROM locations WHERE status = 'Active' ORDER BY location_name ASC");
+    if ($lStmt !== false) {
+        while ($r = sqlsrv_fetch_array($lStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($r['location_name'])) $dbLocations[] = $r['location_name'];
+        }
+        sqlsrv_free_stmt($lStmt);
+    }
+}
+if (empty($dbLocations)) {
+    $dbLocations = [
+        'Corporate HQ - Mumbai', 'Tech Hub - Bangalore', 'Branch Office - Delhi NCR',
+        'Delivery Center - Hyderabad', 'Development Center - Pune', 'Operations Center - Chennai',
+        'Regional Hub - Kolkata', 'Support Center - Ahmedabad', 'HQ - New York', 'Austin Hub', 'London Office', 'Singapore DC'
+    ];
+}
+
+// Fetch dynamic Departments from departments table
+$dbDepartments = [];
+if (isset($conn) && $conn !== false) {
+    $dStmt = sqlsrv_query($conn, "SELECT department_name FROM departments WHERE status = 'Active' ORDER BY department_name ASC");
+    if ($dStmt !== false) {
+        while ($r = sqlsrv_fetch_array($dStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($r['department_name'])) $dbDepartments[] = $r['department_name'];
+        }
+        sqlsrv_free_stmt($dStmt);
+    }
+}
+if (empty($dbDepartments)) {
+    $dbDepartments = ['Software Engineering', 'IT Infrastructure', 'Design & Creative', 'Finance', 'Operations', 'Human Resources', 'Executive Management'];
+}
+
+// Fetch active Employees from employees table
+$dbEmployees = [];
+if (isset($conn) && $conn !== false) {
+    $eStmt = sqlsrv_query($conn, "SELECT id, emp_code, first_name, last_name, email, designation FROM employees WHERE status = 'Active' ORDER BY first_name ASC");
+    if ($eStmt !== false) {
+        while ($r = sqlsrv_fetch_array($eStmt, SQLSRV_FETCH_ASSOC)) {
+            $fullName = trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''));
+            if (!empty($fullName)) {
+                $dbEmployees[] = [
+                    'id'          => $r['id'],
+                    'emp_code'    => $r['emp_code'] ?? '',
+                    'name'        => $fullName,
+                    'email'       => $r['email'] ?? '',
+                    'designation' => $r['designation'] ?? ''
+                ];
+            }
+        }
+        sqlsrv_free_stmt($eStmt);
+    }
+}
+
+// Fetch Real Assets from MS SQL Server database
+$dbAssets = [];
+if (isset($conn) && $conn !== false) {
+    $assetsStmt = sqlsrv_query($conn, "SELECT * FROM assets ORDER BY id DESC");
+    if ($assetsStmt !== false) {
+        while ($row = sqlsrv_fetch_array($assetsStmt, SQLSRV_FETCH_ASSOC)) {
+            $assignedTo = null;
+            $assignedVal = !empty($row['assigned_to']) ? trim($row['assigned_to']) : '';
+            if (!empty($assignedVal)) {
+                $eMatch = null;
+                foreach ($dbEmployees as $e) {
+                    if (strcasecmp($e['name'], $assignedVal) === 0 || (!empty($e['emp_code']) && strcasecmp($e['emp_code'], $assignedVal) === 0)) {
+                        $eMatch = $e;
+                        break;
+                    }
+                }
+                if ($eMatch) {
+                    $assignedTo = [
+                        'name'         => $eMatch['name'],
+                        'empCode'      => $eMatch['emp_code'] ?? '',
+                        'email'        => $eMatch['email'] ?? '',
+                        'department'   => $row['department'] ?: ($eMatch['designation'] ?? ''),
+                        'role'         => $eMatch['designation'] ?? 'Team Member',
+                        'assignedDate' => 'Active'
+                    ];
+                } else {
+                    $assignedTo = [
+                        'name'         => $assignedVal,
+                        'empCode'      => '',
+                        'email'        => strtolower(preg_replace('/\s+/', '.', $assignedVal)) . '@viros.com',
+                        'department'   => $row['department'] ?? '',
+                        'role'         => 'Team Member',
+                        'assignedDate' => 'Active'
+                    ];
+                }
+            }
+            $components = [];
+            if (!empty($row['components_json'])) {
+                $dec = json_decode($row['components_json'], true);
+                if (is_array($dec)) $components = $dec;
+            }
+            $history = [];
+            $tickets = [];
+            $dbAssets[] = [
+                'id'          => intval($row['id']),
+                'tag'         => $row['tag'] ?? '',
+                'name'        => $row['name'] ?? '',
+                'category'    => $row['category'] ?? '',
+                'brand'       => $row['brand'] ?? '',
+                'model'       => $row['model'] ?? '',
+                'serial'      => $row['serial'] ?? '',
+                'status'      => $row['status'] ?? 'Available',
+                'condition'   => $row['condition'] ?? 'Good',
+                'location'    => $row['location'] ?? '',
+                'department'  => $row['department'] ?? '',
+                'assignedTo'  => $assignedTo,
+                'specs'       => [
+                    'processor'  => $row['processor'] ?? '',
+                    'ram'        => $row['ram'] ?? '',
+                    'storage'    => $row['storage'] ?? '',
+                    'os'         => $row['os'] ?? '',
+                    'macAddress' => $row['mac_address'] ?? '',
+                    'ipAddress'  => $row['ip_address'] ?? ''
+                ],
+                'financials'  => [
+                    'vendor'         => $row['vendor'] ?? '',
+                    'poNumber'       => $row['po_number'] ?? '',
+                    'purchaseDate'   => $row['purchase_date'] ?? '',
+                    'cost'           => floatval($row['cost'] ?? 0),
+                    'warrantyExpiry' => $row['warranty_expiry'] ?? ''
+                ],
+                'components'  => $components,
+                'history'     => $history,
+                'tickets'     => $tickets,
+                'created_at'  => isset($row['created_at']) && $row['created_at'] instanceof DateTime ? $row['created_at']->format('Y-m-d H:i:s') : '',
+                'updated_at'  => isset($row['updated_at']) && $row['updated_at'] instanceof DateTime ? $row['updated_at']->format('Y-m-d H:i:s') : ''
+            ];
+        }
+        sqlsrv_free_stmt($assetsStmt);
+    }
+}
+
+// Compute live real KPI statistics
+$statsTotal = count($dbAssets);
+$statsInUse = 0;
+$statsAvailable = 0;
+$statsMaintenance = 0;
+$statsReserved = 0;
+$statsRetired = 0;
+$statsExpiring = 0;
+$statsTotalValue = 0;
+$refDate = new DateTime();
+$thirtyDaysLater = (new DateTime())->modify('+30 days');
+
+foreach ($dbAssets as $a) {
+    $st = $a['status'] ?? '';
+    if ($st === 'In Use') $statsInUse++;
+    elseif ($st === 'Available') $statsAvailable++;
+    elseif ($st === 'Under Maintenance') $statsMaintenance++;
+    elseif ($st === 'Reserved') $statsReserved++;
+    elseif ($st === 'Retired') $statsRetired++;
+
+    $costVal = floatval($a['financials']['cost'] ?? 0);
+    $statsTotalValue += $costVal;
+
+    if (!empty($a['financials']['warrantyExpiry'])) {
+        try {
+            $wDate = new DateTime($a['financials']['warrantyExpiry']);
+            if ($wDate >= $refDate && $wDate <= $thirtyDaysLater) {
+                $statsExpiring++;
+            }
+        } catch (Exception $e) {}
+    }
+}
+$stats = [
+    'total'         => $statsTotal,
+    'in_use'        => $statsInUse,
+    'available'     => $statsAvailable,
+    'maintenance'   => $statsMaintenance,
+    'reserved'      => $statsReserved,
+    'retired'       => $statsRetired,
+    'expiring_soon' => $statsExpiring,
+    'total_value'   => $statsTotalValue
+];
+
 $groupedComponents = [];
 foreach ($dynamicPartComponents as $comp) {
     $cat = !empty($comp['category']) ? $comp['category'] : 'Other Components';
@@ -130,7 +325,7 @@ include 'includes/topbar.php';
                     <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
                 Hardware & IT Asset Management
-                <span class="status-tab-badge" style="background: var(--cyan-light); color: var(--cyan-primary); font-size: 13px; font-weight: 700; padding: 3px 10px;">842 Assets</span>
+                <span class="status-tab-badge" id="headerAssetBadge" style="background: var(--cyan-light); color: var(--cyan-primary); font-size: 13px; font-weight: 700; padding: 3px 10px;"><?php echo $stats['total']; ?> Assets</span>
             </h1>
             <p>Track hardware inventory, warranty lifecycles, user allocations, and asset depreciation across all branch offices.</p>
         </div>
@@ -174,9 +369,9 @@ include 'includes/topbar.php';
         <div class="asset-stat-card card-total" onclick="resetAllFilters()">
             <div class="asset-stat-info">
                 <div class="stat-lbl">Total Assets</div>
-                <div class="stat-val" id="statTotalAssets">842</div>
+                <div class="stat-val" id="statTotalAssets"><?php echo $stats['total']; ?></div>
                 <div class="stat-sub">
-                    <span class="stat-trend-up">↑ 14</span> added this month
+                    <span class="stat-trend-up">Database Synced</span>
                 </div>
             </div>
             <div class="asset-stat-icon cyan">
@@ -192,9 +387,9 @@ include 'includes/topbar.php';
         <div class="asset-stat-card card-in-use" onclick="document.querySelector('[data-status=in-use]').click()">
             <div class="asset-stat-info">
                 <div class="stat-lbl">In Use / Assigned</div>
-                <div class="stat-val" id="statInUseAssets">614</div>
+                <div class="stat-val" id="statInUseAssets"><?php echo $stats['in_use']; ?></div>
                 <div class="stat-sub">
-                    <span style="color: var(--success); font-weight: 600;">72.9%</span> deployed rate
+                    <span style="color: var(--success); font-weight: 600;">Active</span> deployments
                 </div>
             </div>
             <div class="asset-stat-icon green">
@@ -210,7 +405,7 @@ include 'includes/topbar.php';
         <div class="asset-stat-card card-available" onclick="document.querySelector('[data-status=available]').click()">
             <div class="asset-stat-info">
                 <div class="stat-lbl">Available in Stock</div>
-                <div class="stat-val" id="statAvailableAssets">156</div>
+                <div class="stat-val" id="statAvailableAssets"><?php echo $stats['available']; ?></div>
                 <div class="stat-sub">Ready for issue</div>
             </div>
             <div class="asset-stat-icon blue">
@@ -226,7 +421,7 @@ include 'includes/topbar.php';
         <div class="asset-stat-card card-maintenance" onclick="document.querySelector('[data-status=maintenance]').click()">
             <div class="asset-stat-info">
                 <div class="stat-lbl">Under Maintenance</div>
-                <div class="stat-val" id="statMaintenanceAssets">42</div>
+                <div class="stat-val" id="statMaintenanceAssets"><?php echo $stats['maintenance']; ?></div>
                 <div class="stat-sub">IT Depot & RMA</div>
             </div>
             <div class="asset-stat-icon amber">
@@ -240,7 +435,7 @@ include 'includes/topbar.php';
         <div class="asset-stat-card card-expiring">
             <div class="asset-stat-info">
                 <div class="stat-lbl">Warranty Expiring</div>
-                <div class="stat-val" id="statExpiringAssets" style="color: #ea580c;">18</div>
+                <div class="stat-val" id="statExpiringAssets" style="color: #ea580c;"><?php echo $stats['expiring_soon']; ?></div>
                 <div class="stat-sub">Within next 30 days</div>
             </div>
             <div class="asset-stat-icon orange">
@@ -256,7 +451,7 @@ include 'includes/topbar.php';
         <div class="asset-stat-card card-retired">
             <div class="asset-stat-info">
                 <div class="stat-lbl">Est. Inventory Value</div>
-                <div class="stat-val" id="statTotalValue">₹36,53,900</div>
+                <div class="stat-val" id="statTotalValue">₹<?php echo number_format($stats['total_value']); ?></div>
                 <div class="stat-sub">Historical PO total</div>
             </div>
             <div class="asset-stat-icon slate">
@@ -274,27 +469,27 @@ include 'includes/topbar.php';
     <div class="asset-status-tabs">
         <button type="button" class="status-tab-btn active" data-status="all">
             All Assets
-            <span class="status-tab-badge" id="tabBadgeAll">842</span>
+            <span class="status-tab-badge" id="tabBadgeAll"><?php echo $stats['total']; ?></span>
         </button>
         <button type="button" class="status-tab-btn" data-status="in-use">
             In Use
-            <span class="status-tab-badge" id="tabBadgeInUse">614</span>
+            <span class="status-tab-badge" id="tabBadgeInUse"><?php echo $stats['in_use']; ?></span>
         </button>
         <button type="button" class="status-tab-btn" data-status="available">
             Available / In Stock
-            <span class="status-tab-badge" id="tabBadgeAvail">156</span>
+            <span class="status-tab-badge" id="tabBadgeAvail"><?php echo $stats['available']; ?></span>
         </button>
         <button type="button" class="status-tab-btn" data-status="maintenance">
             Under Maintenance
-            <span class="status-tab-badge" id="tabBadgeMaint">42</span>
+            <span class="status-tab-badge" id="tabBadgeMaint"><?php echo $stats['maintenance']; ?></span>
         </button>
         <button type="button" class="status-tab-btn" data-status="reserved">
             Reserved
-            <span class="status-tab-badge" id="tabBadgeRes">12</span>
+            <span class="status-tab-badge" id="tabBadgeRes"><?php echo $stats['reserved']; ?></span>
         </button>
         <button type="button" class="status-tab-btn" data-status="retired">
             Retired / Disposed
-            <span class="status-tab-badge" id="tabBadgeRet">18</span>
+            <span class="status-tab-badge" id="tabBadgeRet"><?php echo $stats['retired']; ?></span>
         </button>
     </div>
 
@@ -313,43 +508,25 @@ include 'includes/topbar.php';
             <!-- Category Filter -->
             <select class="asset-filter-select" id="categoryFilter">
                 <option value="all">All Categories</option>
-                <option value="Laptops">Laptops</option>
-                <option value="Desktops">Desktops</option>
-                <option value="Servers">Servers</option>
-                <option value="Networking">Networking</option>
-                <option value="Monitors">Monitors</option>
-                <option value="Tablets & Mobile">Tablets & Mobile</option>
-                <option value="Printers">Printers</option>
+                <?php foreach ($dbCategories as $cat): ?>
+                    <option value="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></option>
+                <?php endforeach; ?>
             </select>
 
             <!-- Department Filter -->
             <select class="asset-filter-select" id="deptFilter">
                 <option value="all">All Departments</option>
-                <option value="Software Engineering">Software Engineering</option>
-                <option value="IT Infrastructure">IT Infrastructure</option>
-                <option value="Design & Creative">Design & Creative</option>
-                <option value="Finance">Finance</option>
-                <option value="Operations">Operations</option>
-                <option value="Human Resources">Human Resources</option>
-                <option value="Executive Management">Executive Management</option>
+                <?php foreach ($dbDepartments as $dept): ?>
+                    <option value="<?php echo htmlspecialchars($dept); ?>"><?php echo htmlspecialchars($dept); ?></option>
+                <?php endforeach; ?>
             </select>
 
             <!-- Location Filter -->
             <select class="asset-filter-select" id="locationFilter">
                 <option value="all">All Locations</option>
-                <option value="Corporate HQ - Mumbai">Corporate HQ - Mumbai</option>
-                <option value="Tech Hub - Bangalore">Tech Hub - Bangalore</option>
-                <option value="Branch Office - Delhi NCR">Branch Office - Delhi NCR</option>
-                <option value="Delivery Center - Hyderabad">Delivery Center - Hyderabad</option>
-                <option value="Development Center - Pune">Development Center - Pune</option>
-                <option value="Operations Center - Chennai">Operations Center - Chennai</option>
-                <option value="Regional Hub - Kolkata">Regional Hub - Kolkata</option>
-                <option value="Support Center - Ahmedabad">Support Center - Ahmedabad</option>
-                <option value="Disaster Recovery Site - Jaipur">Disaster Recovery Site - Jaipur</option>
-                <option value="HQ - New York">HQ - New York</option>
-                <option value="Austin Hub">Austin Hub</option>
-                <option value="London Office">London Office</option>
-                <option value="Singapore DC">Singapore DC</option>
+                <?php foreach ($dbLocations as $loc): ?>
+                    <option value="<?php echo htmlspecialchars($loc); ?>"><?php echo htmlspecialchars($loc); ?></option>
+                <?php endforeach; ?>
             </select>
 
             <!-- Condition Filter -->
@@ -677,31 +854,17 @@ include 'includes/topbar.php';
                             <label for="modalLocation">Select Branch Location *</label>
                             <select id="modalLocation" required>
                                 <option value="">Select Branch Location</option>
-                                <option value="Corporate HQ - Mumbai">Corporate HQ - Mumbai</option>
-                                <option value="Tech Hub - Bangalore">Tech Hub - Bangalore</option>
-                                <option value="Branch Office - Delhi NCR">Branch Office - Delhi NCR</option>
-                                <option value="Delivery Center - Hyderabad">Delivery Center - Hyderabad</option>
-                                <option value="Development Center - Pune">Development Center - Pune</option>
-                                <option value="Operations Center - Chennai">Operations Center - Chennai</option>
-                                <option value="Regional Hub - Kolkata">Regional Hub - Kolkata</option>
-                                <option value="Support Center - Ahmedabad">Support Center - Ahmedabad</option>
-                                <option value="Disaster Recovery Site - Jaipur">Disaster Recovery Site - Jaipur</option>
-                                <option value="HQ - New York">HQ - New York</option>
-                                <option value="Austin Hub">Austin Hub</option>
-                                <option value="London Office">London Office</option>
-                                <option value="Singapore DC">Singapore DC</option>
+                                <?php foreach ($dbLocations as $loc): ?>
+                                    <option value="<?php echo htmlspecialchars($loc); ?>"><?php echo htmlspecialchars($loc); ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="modal-form-group">
                             <label for="modalCategory">Asset Category *</label>
                             <select id="modalCategory" required>
-                                <option value="Laptops">Laptops</option>
-                                <option value="Desktops">Desktops</option>
-                                <option value="Servers">Servers</option>
-                                <option value="Networking">Networking</option>
-                                <option value="Monitors">Monitors</option>
-                                <option value="Tablets & Mobile">Tablets & Mobile</option>
-                                <option value="Printers">Printers</option>
+                                <?php foreach ($dbCategories as $cat): ?>
+                                    <option value="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -895,13 +1058,9 @@ include 'includes/topbar.php';
                         <div class="modal-form-group">
                             <label for="modalDepartment">Assigned Department</label>
                             <select id="modalDepartment">
-                                <option value="IT Infrastructure">IT Infrastructure</option>
-                                <option value="Software Engineering">Software Engineering</option>
-                                <option value="Design & Creative">Design & Creative</option>
-                                <option value="Finance">Finance</option>
-                                <option value="Operations">Operations</option>
-                                <option value="Human Resources">Human Resources</option>
-                                <option value="Executive Management">Executive Management</option>
+                                <?php foreach ($dbDepartments as $dept): ?>
+                                    <option value="<?php echo htmlspecialchars($dept); ?>"><?php echo htmlspecialchars($dept); ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -1074,19 +1233,23 @@ include 'includes/topbar.php';
                 </div>
 
                 <div class="modal-form-group">
-                    <label for="reassignEmpName">Recipient Employee Name *</label>
-                    <input type="text" id="reassignEmpName" placeholder="Enter employee name">
+                    <label for="reassignEmpName">Recipient Employee *</label>
+                    <input type="text" id="reassignEmpName" list="reassignEmpDatalist" placeholder="Select or type employee name">
+                    <datalist id="reassignEmpDatalist">
+                        <?php foreach ($dbEmployees as $emp): ?>
+                            <option value="<?php echo htmlspecialchars($emp['name']); ?>" data-dept="<?php echo htmlspecialchars($emp['designation'] ?? ''); ?>" data-email="<?php echo htmlspecialchars($emp['email']); ?>" data-code="<?php echo htmlspecialchars($emp['emp_code']); ?>">
+                                <?php echo htmlspecialchars($emp['emp_code'] . ' - ' . $emp['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </datalist>
                 </div>
 
                 <div class="modal-form-group">
                     <label for="reassignDept">Department *</label>
                     <select id="reassignDept">
-                        <option value="Software Engineering">Software Engineering</option>
-                        <option value="IT Infrastructure">IT Infrastructure</option>
-                        <option value="Design & Creative">Design & Creative</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Operations">Operations</option>
-                        <option value="Human Resources">Human Resources</option>
+                        <?php foreach ($dbDepartments as $dept): ?>
+                            <option value="<?php echo htmlspecialchars($dept); ?>"><?php echo htmlspecialchars($dept); ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 
@@ -1114,7 +1277,7 @@ include 'includes/topbar.php';
         </div>
         <div class="modal-body">
             <div class="file-dropzone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 32px 20px; text-align: center; background: #f8fafc; cursor: pointer;" onclick="document.getElementById('csvAssetFile').click()">
-                <input type="file" id="csvAssetFile" accept=".csv" style="display: none;" onchange="showToast('CSV uploaded and 8 records staged for review!', 'success'); closeImportModal();">
+                <input type="file" id="csvAssetFile" accept=".csv" style="display: none;">
                 <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color: var(--cyan-primary); margin-bottom: 10px;">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -1137,6 +1300,9 @@ include 'includes/topbar.php';
 
 <script>
     window.dynamicPartComponents = <?php echo json_encode($dynamicPartComponents, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    window.INITIAL_ASSETS = <?php echo json_encode($dbAssets, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    window.INITIAL_STATS = <?php echo json_encode($stats, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    window.DB_EMPLOYEES = <?php echo json_encode($dbEmployees, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 </script>
 
 <?php

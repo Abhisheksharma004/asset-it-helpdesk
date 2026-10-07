@@ -555,8 +555,38 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     ];
 
-    // Working dataset in memory
-    let assetsData = [...initialAssets];
+    // Working dataset in memory (Synced with MSSQL database)
+    let assetsData = (typeof window !== 'undefined' && Array.isArray(window.INITIAL_ASSETS) && window.INITIAL_ASSETS.length > 0)
+        ? window.INITIAL_ASSETS
+        : [...initialAssets];
+
+    // Helper: Build API URL
+    function getApiUrl(params = {}) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('preview')) {
+            params.preview = 1;
+        }
+        const qs = new URLSearchParams(params).toString();
+        return 'api/assets.php' + (qs ? '?' + qs : '');
+    }
+
+    // Helper: Sync / Reload Assets from Database
+    function loadAssetsFromDB(callback) {
+        fetch(getApiUrl())
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.assets)) {
+                    assetsData = data.assets;
+                    renderAssets();
+                    updateKPIs();
+                    if (typeof callback === 'function') callback();
+                }
+            })
+            .catch(err => {
+                console.warn('Could not load assets from API:', err);
+                if (typeof callback === 'function') callback();
+            });
+    }
 
     // State Variables
     let currentFilterStatus = 'all';
@@ -729,7 +759,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let expiringSoon = 0;
         let totalValue = 0;
 
-        const refDate = new Date('2024-10-03');
+        const refDate = new Date();
 
         assetsData.forEach(a => {
             if (a.status === 'In Use') inUse++;
@@ -758,6 +788,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const statMaintEl = document.getElementById('statMaintenanceAssets');
         const statExpiringEl = document.getElementById('statExpiringAssets');
         const statValueEl = document.getElementById('statTotalValue');
+        const headerBadgeEl = document.getElementById('headerAssetBadge');
 
         if (statTotalEl) statTotalEl.textContent = total;
         if (statInUseEl) statInUseEl.textContent = inUse;
@@ -765,6 +796,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (statMaintEl) statMaintEl.textContent = maintenance;
         if (statExpiringEl) statExpiringEl.textContent = expiringSoon;
         if (statValueEl) statValueEl.textContent = formatCurrency(totalValue);
+        if (headerBadgeEl) headerBadgeEl.textContent = `${total} Assets`;
 
         // Update Tab Badges
         const tabAllBadge = document.getElementById('tabBadgeAll');
@@ -1505,6 +1537,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (tagInput) {
             const nextNum = assetsData.length + 1;
             tagInput.value = 'AST2024' + String(nextNum).padStart(3, '0');
+
+            // Asynchronously fetch next exact database sequence tag
+            fetch(getApiUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_next_tag' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && data.next_tag && !document.getElementById('editAssetId').value) {
+                    tagInput.value = data.next_tag;
+                }
+            })
+            .catch(() => {});
         }
 
         resetComponentRows([]);
@@ -1535,20 +1581,22 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modalDepartment').value = asset.department;
 
         // Specs
-        document.getElementById('modalProcessor').value = asset.specs.processor || '';
-        document.getElementById('modalRam').value = asset.specs.ram || '';
-        document.getElementById('modalStorage').value = asset.specs.storage || '';
-        document.getElementById('modalOs').value = asset.specs.os || '';
-        document.getElementById('modalMac').value = asset.specs.macAddress || '';
-        document.getElementById('modalIp').value = asset.specs.ipAddress || '';
+        const specs = asset.specs || {};
+        document.getElementById('modalProcessor').value = specs.processor || '';
+        document.getElementById('modalRam').value = specs.ram || '';
+        document.getElementById('modalStorage').value = specs.storage || '';
+        document.getElementById('modalOs').value = specs.os || '';
+        document.getElementById('modalMac').value = specs.macAddress || '';
+        document.getElementById('modalIp').value = specs.ipAddress || '';
 
         // Components
         resetComponentRows(asset.components || []);
 
         // Financials
+        const fin = asset.financials || {};
         const vendorSelect = document.getElementById('modalVendor');
         if (vendorSelect) {
-            const vVal = (asset.financials && asset.financials.vendor) ? asset.financials.vendor : '';
+            const vVal = fin.vendor || '';
             if (vVal) {
                 const optExists = Array.from(vendorSelect.options).some(o => o.value.toLowerCase() === vVal.toLowerCase());
                 if (!optExists) {
@@ -1560,10 +1608,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             vendorSelect.value = vVal;
         }
-        document.getElementById('modalPoNumber').value = asset.financials.poNumber || '';
-        document.getElementById('modalPurchaseDate').value = asset.financials.purchaseDate || '';
-        document.getElementById('modalCost').value = asset.financials.cost || '';
-        document.getElementById('modalWarrantyExpiry').value = asset.financials.warrantyExpiry || '';
+        document.getElementById('modalPoNumber').value = fin.poNumber || '';
+        document.getElementById('modalPurchaseDate').value = fin.purchaseDate || '';
+        document.getElementById('modalCost').value = fin.cost || '';
+        document.getElementById('modalWarrantyExpiry').value = fin.warrantyExpiry || '';
 
         switchModalTab('general');
         if (assetModal) assetModal.style.display = 'flex';
@@ -1617,7 +1665,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Extract dynamic components from the todo list
-            // (If user currently has a part selected in the top bar without clicking +, auto-include it)
             const activeSel = document.getElementById('newCompName');
             const activeSerial = document.getElementById('newCompSerial');
             if (activeSel && activeSel.value.trim()) {
@@ -1649,86 +1696,93 @@ document.addEventListener('DOMContentLoaded', function () {
                 sku: item.tag || item.sku || ''
             }));
 
-            if (editId) {
-                // Update existing
-                const asset = assetsData.find(a => a.id === parseInt(editId, 10));
-                if (asset) {
-                    asset.tag = tag;
-                    asset.name = name;
-                    asset.category = category;
-                    asset.brand = brand;
-                    asset.model = model;
-                    asset.serial = serial;
-                    asset.condition = condition;
-                    asset.status = status;
-                    asset.location = location;
-                    asset.department = department;
-
-                    asset.specs = {
-                        processor: document.getElementById('modalProcessor').value.trim(),
-                        ram: document.getElementById('modalRam').value.trim(),
-                        storage: document.getElementById('modalStorage').value.trim(),
-                        os: document.getElementById('modalOs').value.trim(),
-                        macAddress: document.getElementById('modalMac').value.trim(),
-                        ipAddress: document.getElementById('modalIp').value.trim()
-                    };
-
-                    asset.components = compRows;
-
-                    asset.financials = {
-                        vendor: document.getElementById('modalVendor').value.trim(),
-                        poNumber: document.getElementById('modalPoNumber').value.trim(),
-                        purchaseDate: document.getElementById('modalPurchaseDate').value,
-                        cost: parseFloat(document.getElementById('modalCost').value) || 0,
-                        warrantyExpiry: document.getElementById('modalWarrantyExpiry').value
-                    };
-
-                    if (typeof showToast === 'function') showToast(`Asset "${asset.name}" updated successfully`, 'success');
+            const payload = {
+                action: editId ? 'edit' : 'create',
+                id: editId ? parseInt(editId, 10) : undefined,
+                tag: tag,
+                name: name,
+                category: category,
+                brand: brand,
+                model: model,
+                serial: serial,
+                condition: condition,
+                status: status,
+                location: location,
+                department: department,
+                specs: {
+                    processor: document.getElementById('modalProcessor').value.trim(),
+                    ram: document.getElementById('modalRam').value.trim(),
+                    storage: document.getElementById('modalStorage').value.trim(),
+                    os: document.getElementById('modalOs').value.trim(),
+                    macAddress: document.getElementById('modalMac').value.trim(),
+                    ipAddress: document.getElementById('modalIp').value.trim()
+                },
+                components: compRows,
+                financials: {
+                    vendor: document.getElementById('modalVendor').value.trim(),
+                    poNumber: document.getElementById('modalPoNumber').value.trim(),
+                    purchaseDate: document.getElementById('modalPurchaseDate').value,
+                    cost: parseFloat(document.getElementById('modalCost').value) || 0,
+                    warrantyExpiry: document.getElementById('modalWarrantyExpiry').value
                 }
-            } else {
-                // Add new
-                const newId = assetsData.length ? Math.max(...assetsData.map(a => a.id)) + 1 : 1;
-                const newAsset = {
-                    id: newId,
-                    tag,
-                    name,
-                    category,
-                    brand,
-                    model,
-                    serial,
-                    condition,
-                    status,
-                    location,
-                    department,
-                    assignedTo: null,
-                    specs: {
-                        processor: document.getElementById('modalProcessor').value.trim(),
-                        ram: document.getElementById('modalRam').value.trim(),
-                        storage: document.getElementById('modalStorage').value.trim(),
-                        os: document.getElementById('modalOs').value.trim(),
-                        macAddress: document.getElementById('modalMac').value.trim(),
-                        ipAddress: document.getElementById('modalIp').value.trim()
-                    },
-                    components: compRows,
-                    financials: {
-                        vendor: document.getElementById('modalVendor').value.trim(),
-                        poNumber: document.getElementById('modalPoNumber').value.trim(),
-                        purchaseDate: document.getElementById('modalPurchaseDate').value,
-                        cost: parseFloat(document.getElementById('modalCost').value) || 0,
-                        warrantyExpiry: document.getElementById('modalWarrantyExpiry').value
-                    },
-                    history: [
-                        { date: 'Today', title: 'Asset Registered', desc: 'Added into inventory system via portal UI.' }
-                    ],
-                    tickets: []
-                };
+            };
 
-                assetsData.unshift(newAsset);
-                if (typeof showToast === 'function') showToast(`New asset "${newAsset.name}" registered successfully!`, 'success');
+            const submitBtn = assetForm.querySelector('button[type="submit"]');
+            const origBtnText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Saving to DB...</span>';
             }
 
-            closeAssetModal();
-            renderAssets();
+            fetch(getApiUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origBtnText;
+                }
+                if (!data || !data.success) {
+                    throw new Error((data && data.message) || 'Failed to save asset into database');
+                }
+
+                if (editId) {
+                    const parsedId = parseInt(editId, 10);
+                    const idx = assetsData.findIndex(a => a.id === parsedId);
+                    if (idx !== -1) {
+                        assetsData[idx] = data.asset || { ...assetsData[idx], ...payload };
+                    }
+                    if (typeof showToast === 'function') showToast(`Asset "${name}" updated successfully in database!`, 'success');
+                } else {
+                    const newAsset = data.asset || {
+                        id: Date.now(),
+                        ...payload,
+                        assignedTo: null,
+                        history: [{ date: 'Today', title: 'Asset Registered', desc: 'Added into database.' }],
+                        tickets: []
+                    };
+                    assetsData.unshift(newAsset);
+                    if (typeof showToast === 'function') showToast(`Asset "${name}" (${newAsset.tag}) registered in database!`, 'success');
+                }
+
+                closeAssetModal();
+                renderAssets();
+                updateKPIs();
+                if (editId && activeDrawerAssetId === parseInt(editId, 10)) {
+                    openAssetDrawer(parseInt(editId, 10));
+                }
+            })
+            .catch(err => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origBtnText;
+                }
+                console.error(err);
+                if (typeof showToast === 'function') showToast(err.message || 'Error communicating with database', 'danger');
+            });
         });
     }
 
@@ -1746,6 +1800,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const serialEl = document.getElementById('reassignAssetSerial');
         if (serialEl) serialEl.textContent = `Tag: ${asset.tag} • SN: ${asset.serial}`;
 
+        const empNameInput = document.getElementById('reassignEmpName');
+        const deptSelect = document.getElementById('reassignDept');
+        const emailInput = document.getElementById('reassignEmail');
+        const actionSelect = document.getElementById('reassignActionType');
+
+        if (actionSelect) {
+            actionSelect.value = 'assign_employee';
+            toggleReassignFields('assign_employee');
+        }
+
+        if (asset.assignedTo && asset.assignedTo.name) {
+            if (empNameInput) empNameInput.value = asset.assignedTo.name;
+            if (deptSelect && asset.assignedTo.department) deptSelect.value = asset.assignedTo.department;
+            if (emailInput && asset.assignedTo.email) emailInput.value = asset.assignedTo.email;
+        } else {
+            if (empNameInput) empNameInput.value = '';
+            if (emailInput) emailInput.value = '';
+        }
+
         if (modal) modal.style.display = 'flex';
     };
 
@@ -1753,6 +1826,56 @@ document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('reassignModal');
         if (modal) modal.style.display = 'none';
     };
+
+    function toggleReassignFields(actionType) {
+        const isReturn = actionType === 'return_to_stock';
+        const empInput = document.getElementById('reassignEmpName');
+        const deptInput = document.getElementById('reassignDept');
+        const emailInput = document.getElementById('reassignEmail');
+
+        const empGroup = empInput ? empInput.closest('.modal-form-group') : null;
+        const deptGroup = deptInput ? deptInput.closest('.modal-form-group') : null;
+        const emailGroup = emailInput ? emailInput.closest('.modal-form-group') : null;
+
+        if (empGroup) empGroup.style.display = isReturn ? 'none' : 'block';
+        if (deptGroup) deptGroup.style.display = isReturn ? 'none' : 'block';
+        if (emailGroup) emailGroup.style.display = isReturn ? 'none' : 'block';
+    }
+
+    const reassignActionSelect = document.getElementById('reassignActionType');
+    if (reassignActionSelect) {
+        reassignActionSelect.addEventListener('change', function () {
+            toggleReassignFields(this.value);
+        });
+    }
+
+    const reassignEmpInput = document.getElementById('reassignEmpName');
+    if (reassignEmpInput) {
+        reassignEmpInput.addEventListener('input', function () {
+            const val = this.value.trim().toLowerCase();
+            if (!val || !Array.isArray(window.DB_EMPLOYEES)) return;
+
+            const matched = window.DB_EMPLOYEES.find(e =>
+                (e.name && e.name.toLowerCase() === val) ||
+                (e.emp_code && e.emp_code.toLowerCase() === val) ||
+                ((e.emp_code + ' - ' + e.name).toLowerCase() === val)
+            );
+
+            if (matched) {
+                const emailInput = document.getElementById('reassignEmail');
+                const deptInput = document.getElementById('reassignDept');
+                if (emailInput && matched.email) emailInput.value = matched.email;
+                if (deptInput && (matched.designation || matched.department)) {
+                    // Try to match department
+                    const matchDept = matched.department || matched.designation;
+                    const optExists = Array.from(deptInput.options).some(o => o.value.toLowerCase() === matchDept.toLowerCase());
+                    if (optExists) {
+                        deptInput.value = matchDept;
+                    }
+                }
+            }
+        });
+    }
 
     const reassignForm = document.getElementById('reassignForm');
     if (reassignForm) {
@@ -1767,42 +1890,84 @@ document.addEventListener('DOMContentLoaded', function () {
             const asset = assetsData.find(a => a.id === id);
             if (!asset) return;
 
-            if (actionType === 'return_to_stock') {
-                asset.status = 'Available';
-                asset.assignedTo = null;
-                asset.history.unshift({
-                    date: 'Today',
-                    title: 'Returned to IT Stock',
-                    desc: 'Checked back into IT pool inventory.'
-                });
-                if (typeof showToast === 'function') showToast(`Asset "${asset.name}" (SN: ${asset.serial}) returned to available inventory`, 'info');
-            } else {
-                if (!employeeName) {
-                    if (typeof showToast === 'function') showToast('Please specify the recipient employee name', 'warning');
-                    return;
-                }
-                asset.status = 'In Use';
-                asset.assignedTo = {
-                    name: employeeName,
-                    department: empDept,
-                    email: empEmail || `${employeeName.toLowerCase().replace(/\s+/g, '.')}@viros.com`,
-                    role: 'Team Member',
-                    assignedDate: 'Today'
-                };
-                asset.department = empDept;
-                asset.history.unshift({
-                    date: 'Today',
-                    title: `Assigned to ${employeeName}`,
-                    desc: `Hardware custody transferred to ${employeeName} (${empDept}).`
-                });
-                if (typeof showToast === 'function') showToast(`Asset "${asset.name}" (SN: ${asset.serial}) assigned to ${employeeName}`, 'success');
+            if (actionType !== 'return_to_stock' && !employeeName) {
+                if (typeof showToast === 'function') showToast('Please specify recipient employee name', 'warning');
+                return;
             }
 
-            closeReassignModal();
-            if (activeDrawerAssetId === id) {
-                openAssetDrawer(id);
+            const submitBtn = reassignForm.querySelector('button[type="submit"]');
+            const origBtnText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Updating DB...</span>';
             }
-            renderAssets();
+
+            const payload = {
+                action: 'reassign',
+                id: id,
+                actionType: actionType,
+                employeeName: employeeName,
+                department: empDept,
+                email: empEmail,
+                role: 'Team Member'
+            };
+
+            fetch(getApiUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origBtnText;
+                }
+                if (!data || !data.success) {
+                    throw new Error((data && data.message) || 'Failed to update asset assignment in database');
+                }
+
+                if (data.asset) {
+                    const idx = assetsData.findIndex(a => a.id === id);
+                    if (idx !== -1) assetsData[idx] = data.asset;
+                } else {
+                    if (actionType === 'return_to_stock') {
+                        asset.status = 'Available';
+                        asset.assignedTo = null;
+                    } else {
+                        asset.status = 'In Use';
+                        asset.assignedTo = {
+                            name: employeeName,
+                            department: empDept,
+                            email: empEmail || `${employeeName.toLowerCase().replace(/\s+/g, '.')}@viros.com`,
+                            role: 'Team Member',
+                            assignedDate: 'Today'
+                        };
+                        asset.department = empDept;
+                    }
+                }
+
+                if (actionType === 'return_to_stock') {
+                    if (typeof showToast === 'function') showToast(`Asset "${asset.name}" returned to ready stock in database`, 'info');
+                } else {
+                    if (typeof showToast === 'function') showToast(`Asset "${asset.name}" assigned to ${employeeName} in database!`, 'success');
+                }
+
+                closeReassignModal();
+                if (activeDrawerAssetId === id) {
+                    openAssetDrawer(id);
+                }
+                renderAssets();
+                updateKPIs();
+            })
+            .catch(err => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origBtnText;
+                }
+                console.error(err);
+                if (typeof showToast === 'function') showToast(err.message || 'Error updating assignment in database', 'danger');
+            });
         });
     }
 
@@ -1814,16 +1979,35 @@ document.addEventListener('DOMContentLoaded', function () {
         const asset = assetsData.find(a => a.id === id);
         if (!asset) return;
 
-        if (confirm(`Are you sure you want to retire asset "${asset.name}" (SN: ${asset.serial})?`)) {
-            asset.status = 'Retired';
-            asset.assignedTo = null;
-            asset.history.unshift({
-                date: 'Today',
-                title: 'Decommissioned / Retired',
-                desc: 'Asset marked as retired from active circulation.'
+        if (confirm(`Are you sure you want to retire asset "${asset.name}" (SN: ${asset.serial}) from active circulation?`)) {
+            fetch(getApiUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id: id })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success) {
+                    asset.status = 'Retired';
+                    asset.assignedTo = null;
+                    if (!asset.history) asset.history = [];
+                    asset.history.unshift({
+                        date: 'Today',
+                        title: 'Decommissioned / Retired',
+                        desc: 'Asset marked as retired from active circulation in database.'
+                    });
+                    if (typeof showToast === 'function') showToast(`Asset "${asset.name}" marked as Retired in database`, 'warning');
+                    renderAssets();
+                    updateKPIs();
+                    if (activeDrawerAssetId === id) openAssetDrawer(id);
+                } else {
+                    if (typeof showToast === 'function') showToast((data && data.message) || 'Failed to retire asset', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (typeof showToast === 'function') showToast('Network error while retiring asset', 'danger');
             });
-            if (typeof showToast === 'function') showToast(`Asset "${asset.name}" marked as Retired`, 'warning');
-            renderAssets();
         }
     };
 
@@ -1885,16 +2069,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.bulkMarkStatus = function (newStatus) {
         if (selectedAssetIds.size === 0) return;
-        assetsData.forEach(a => {
-            if (selectedAssetIds.has(a.id)) {
-                a.status = newStatus;
-                if (newStatus === 'Available' || newStatus === 'Retired') {
-                    a.assignedTo = null;
-                }
+        const ids = Array.from(selectedAssetIds);
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'bulk_status', ids: ids, status: newStatus })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success) {
+                assetsData.forEach(a => {
+                    if (selectedAssetIds.has(a.id)) {
+                        a.status = newStatus;
+                        if (newStatus === 'Available' || newStatus === 'Retired') {
+                            a.assignedTo = null;
+                        }
+                    }
+                });
+                if (typeof showToast === 'function') showToast(data.message || `Updated ${ids.length} assets to "${newStatus}" in database`, 'success');
+                clearBulkSelection();
+                updateKPIs();
+            } else {
+                if (typeof showToast === 'function') showToast((data && data.message) || 'Bulk update failed', 'danger');
             }
+        })
+        .catch(err => {
+            console.error(err);
+            if (typeof showToast === 'function') showToast('Network error on bulk update', 'danger');
         });
-        if (typeof showToast === 'function') showToast(`Updated ${selectedAssetIds.size} assets to "${newStatus}"`, 'success');
-        clearBulkSelection();
     };
 
     window.bulkPrintLabels = function () {
@@ -1905,7 +2107,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // =========================================================================
-    // 12. CSV Export & Import Simulation
+    // 12. CSV Export & Import (Real Database Integration)
     // =========================================================================
 
     window.exportAssetsCsv = function () {
@@ -1918,18 +2120,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const headers = ['Asset Tag Number', 'Asset Name', 'Category', 'Brand', 'Model', 'Serial Number', 'Status', 'Condition', 'Assigned To', 'Department', 'Location', 'Purchase Cost (INR)', 'Warranty Expiry'];
         const rows = filtered.map(a => [
             `"${a.tag || ''}"`,
-            `"${a.name}"`,
-            `"${a.category}"`,
-            `"${a.brand}"`,
-            `"${a.model}"`,
-            `"${a.serial}"`,
-            `"${a.status}"`,
-            `"${a.condition}"`,
+            `"${a.name || ''}"`,
+            `"${a.category || ''}"`,
+            `"${a.brand || ''}"`,
+            `"${a.model || ''}"`,
+            `"${a.serial || ''}"`,
+            `"${a.status || ''}"`,
+            `"${a.condition || ''}"`,
             `"${a.assignedTo ? a.assignedTo.name : 'Unassigned'}"`,
-            `"${a.department}"`,
-            `"${a.location}"`,
-            `"${a.financials.cost || 0}"`,
-            `"${a.financials.warrantyExpiry || ''}"`
+            `"${a.department || ''}"`,
+            `"${a.location || ''}"`,
+            `"${(a.financials && a.financials.cost) || 0}"`,
+            `"${(a.financials && a.financials.warrantyExpiry) || ''}"`
         ]);
 
         const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -1953,6 +2155,114 @@ document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('importModal');
         if (modal) modal.style.display = 'none';
     };
+
+    // CSV File Import Handler
+    const csvFileInput = document.getElementById('csvAssetFile');
+    if (csvFileInput) {
+        csvFileInput.addEventListener('change', function (e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                const text = evt.target.result;
+                const rows = parseCsvContent(text);
+                if (!rows || rows.length === 0) {
+                    if (typeof showToast === 'function') showToast('No valid asset rows found in CSV file', 'warning');
+                    return;
+                }
+
+                if (typeof showToast === 'function') showToast(`Importing ${rows.length} assets into database...`, 'info');
+
+                fetch(getApiUrl(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'import', items: rows })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.success) {
+                        if (typeof showToast === 'function') showToast(data.message || `Successfully imported ${rows.length} assets!`, 'success');
+                        closeImportModal();
+                        loadAssetsFromDB();
+                    } else {
+                        if (typeof showToast === 'function') showToast((data && data.message) || 'CSV import failed', 'danger');
+                    }
+                    csvFileInput.value = '';
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (typeof showToast === 'function') showToast('Network error during CSV import', 'danger');
+                    csvFileInput.value = '';
+                });
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    function parseCsvContent(csvText) {
+        const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length < 2) return [];
+
+        function parseLine(line) {
+            const values = [];
+            let inQuotes = false;
+            let current = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current.trim());
+            return values;
+        }
+
+        const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        const items = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const cols = parseLine(lines[i]);
+            if (!cols || cols.length === 0 || cols.every(c => !c)) continue;
+
+            const rowObj = {};
+            headers.forEach((h, idx) => {
+                rowObj[h] = cols[idx] !== undefined ? cols[idx] : '';
+            });
+
+            const tag = rowObj['assettagnumber'] || rowObj['assettag'] || rowObj['tag'] || '';
+            const name = rowObj['assetname'] || rowObj['name'] || '';
+            const category = rowObj['category'] || 'General';
+            const brand = rowObj['brand'] || '';
+            const model = rowObj['model'] || '';
+            const serial = rowObj['serialnumber'] || rowObj['serial'] || '';
+            const status = rowObj['status'] || 'Available';
+            const condition = rowObj['condition'] || 'Good';
+            const location = rowObj['location'] || '';
+            const department = rowObj['department'] || '';
+            const cost = parseFloat(rowObj['purchasecostinr'] || rowObj['cost'] || rowObj['purchasecost'] || '0') || 0;
+            const warranty = rowObj['warrantyexpiry'] || rowObj['warranty'] || '';
+
+            if (name && serial) {
+                items.push({
+                    tag, name, category, brand, model, serial,
+                    status, condition, location, department,
+                    cost, warrantyExpiry: warranty
+                });
+            }
+        }
+        return items;
+    }
 
     // =========================================================================
     // 13. Event Listeners for Filters & Search
