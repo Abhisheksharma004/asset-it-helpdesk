@@ -448,9 +448,9 @@ include 'includes/topbar.php';
     </div>
 
     <!-- Pagination Footer -->
-    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 30px;">
-        <div style="font-size: 13px; color: var(--text-secondary);" id="paginationInfo">
-            Showing 1 to 10 of 842 assets
+    <div class="assets-pagination-card">
+        <div class="pagination-info" id="paginationInfo">
+            Showing <strong>1</strong> to <strong>10</strong> of <strong>842</strong> assets
         </div>
         <div class="pagination-controls" id="paginationControls">
             <!-- Dynamically populated pagination buttons -->
@@ -725,23 +725,23 @@ include 'includes/topbar.php';
 
                     <div class="modal-form-group">
                         <label for="modalAssetName">Asset Display Name *</label>
-                        <input type="text" id="modalAssetName" placeholder="MacBook Pro 16&quot; M3 Max" required>
+                        <input type="text" id="modalAssetName" placeholder="Enter asset name" required>
                     </div>
 
                     <div class="form-grid-2">
                         <div class="modal-form-group">
                             <label for="modalBrand">Brand / Manufacturer *</label>
-                            <input type="text" id="modalBrand" placeholder="Apple, Dell, Lenovo" required>
+                            <input type="text" id="modalBrand" placeholder="Enter brand name" required>
                         </div>
                         <div class="modal-form-group">
                             <label for="modalModel">Model Number / Specification</label>
-                            <input type="text" id="modalModel" placeholder="XPS 15 9530 / A2991">
+                            <input type="text" id="modalModel" placeholder="Enter model number">
                         </div>
                     </div>
 
                     <div class="modal-form-group">
                         <label for="modalSerial">Serial Number (S/N) *</label>
-                        <input type="text" id="modalSerial" placeholder="Manufacturer Serial Number (. C02G40PZMD6T)" required>
+                        <input type="text" id="modalSerial" placeholder="Enter serial number" required>
                     </div>
                 </div>
 
@@ -750,33 +750,33 @@ include 'includes/topbar.php';
                     <div class="form-grid-2">
                         <div class="modal-form-group">
                             <label for="modalProcessor">Processor / CPU</label>
-                            <input type="text" id="modalProcessor" placeholder="Intel Core i7-13700H / Apple M3">
+                            <input type="text" id="modalProcessor" placeholder="Enter processor (e.g. Intel i5 / i7)">
                         </div>
                         <div class="modal-form-group">
                             <label for="modalRam">Installed RAM</label>
-                            <input type="text" id="modalRam" placeholder="32 GB DDR5">
+                            <input type="text" id="modalRam" placeholder="Enter RAM (e.g. 16 GB)">
                         </div>
                     </div>
 
                     <div class="form-grid-2">
                         <div class="modal-form-group">
                             <label for="modalStorage">Storage Capacity & Type</label>
-                            <input type="text" id="modalStorage" placeholder="1 TB NVMe SSD">
+                            <input type="text" id="modalStorage" placeholder="Enter storage (e.g. 512 GB SSD)">
                         </div>
                         <div class="modal-form-group">
                             <label for="modalOs">Installed OS / Firmware</label>
-                            <input type="text" id="modalOs" placeholder="Windows 11 Enterprise / macOS Sonoma">
+                            <input type="text" id="modalOs" placeholder="Enter OS (e.g. Windows 11)">
                         </div>
                     </div>
 
                     <div class="form-grid-2">
                         <div class="modal-form-group">
                             <label for="modalMac">MAC Address</label>
-                            <input type="text" id="modalMac" placeholder="00:1A:2B:3C:4D:5E">
+                            <input type="text" id="modalMac" placeholder="Enter MAC address">
                         </div>
                         <div class="modal-form-group">
                             <label for="modalIp">Static IP / IP Reservation</label>
-                            <input type="text" id="modalIp" placeholder="10.20.104.42 (or DHCP)">
+                            <input type="text" id="modalIp" placeholder="Enter IP address (or DHCP)">
                         </div>
                     </div>
                 </div>
@@ -787,7 +787,7 @@ include 'includes/topbar.php';
                     <div class="component-input-row" style="margin-bottom: 16px;">
                         <div class="modal-form-group" style="flex: 1;">
                             <label for="newCompSerial">Serial Number / Tag Number</label>
-                            <input type="text" id="newCompSerial" class="component-serial" placeholder="Scan or Type Serial Number/Tag Number">
+                            <input type="text" id="newCompSerial" class="component-serial" placeholder="Enter or scan serial number">
                         </div>
                         <div class="modal-form-group" style="flex: 1;">
                             <label for="newCompName">Component Name</label>
@@ -859,7 +859,7 @@ include 'includes/topbar.php';
                         </div>
                         <div class="modal-form-group">
                             <label for="modalPoNumber">Purchase Order (PO #) / Invoice Number</label>
-                            <input type="text" id="modalPoNumber" placeholder="PO-2024-9104 / INV-8821">
+                            <input type="text" id="modalPoNumber" placeholder="Enter PO or Invoice number">
                         </div>
                     </div>
 
@@ -1033,7 +1033,7 @@ include 'includes/topbar.php';
             <div class="modal-form-group">
                 <label for="manualScanInput">Scan with USB Gun or Type Tag / Serial Number</label>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="manualScanInput" placeholder=". AST2024001 or C02G40PZMD6T">
+                    <input type="text" id="manualScanInput" placeholder="Scan or enter tag / serial number">
                     <button type="button" class="btn-primary" onclick="handleManualScan()">Lookup</button>
                 </div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
@@ -1075,7 +1075,7 @@ include 'includes/topbar.php';
 
                 <div class="modal-form-group">
                     <label for="reassignEmpName">Recipient Employee Name *</label>
-                    <input type="text" id="reassignEmpName" placeholder=". Alex Morgan">
+                    <input type="text" id="reassignEmpName" placeholder="Enter employee name">
                 </div>
 
                 <div class="modal-form-group">
@@ -1092,7 +1092,7 @@ include 'includes/topbar.php';
 
                 <div class="modal-form-group">
                     <label for="reassignEmail">Work Email</label>
-                    <input type="email" id="reassignEmail" placeholder=". alex.morgan@viros.com">
+                    <input type="email" id="reassignEmail" placeholder="Enter work email">
                 </div>
             </div>
             <div class="modal-footer">

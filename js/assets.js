@@ -983,26 +983,57 @@ document.addEventListener('DOMContentLoaded', function () {
         // Pagination Info
         if (paginationInfo) {
             if (total === 0) {
-                paginationInfo.textContent = 'Showing 0 assets';
+                paginationInfo.innerHTML = 'Showing <strong>0</strong> assets';
             } else {
-                paginationInfo.textContent = `Showing ${startIndex + 1} to ${endIndex} of ${total} assets`;
+                paginationInfo.innerHTML = `Showing <strong>${startIndex + 1}</strong> to <strong>${endIndex}</strong> of <strong>${total}</strong> assets`;
             }
         }
 
         // Pagination Controls
         if (paginationControls) {
             let pagHtml = '';
-            pagHtml += `<button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
 
-            for (let p = 1; p <= totalPages; p++) {
-                if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
-                    pagHtml += `<button class="pagination-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
-                } else if (p === currentPage - 2 || p === currentPage + 2) {
-                    pagHtml += `<span style="padding: 0 4px; color: var(--text-muted);">...</span>`;
+            function getPaginationPageList(curr, totalP) {
+                if (totalP <= 7) {
+                    const pages = [];
+                    for (let i = 1; i <= totalP; i++) pages.push(i);
+                    return pages;
                 }
+                if (curr <= 4) {
+                    return [1, 2, 3, 4, 5, '...', totalP];
+                }
+                if (curr >= totalP - 3) {
+                    return [1, '...', totalP - 4, totalP - 3, totalP - 2, totalP - 1, totalP];
+                }
+                return [1, '...', curr - 1, curr, curr + 1, '...', totalP];
             }
 
-            pagHtml += `<button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
+            const isPrevDisabled = currentPage <= 1;
+            pagHtml += `<button type="button" class="pagination-btn ${isPrevDisabled ? 'disabled' : ''}" onclick="${isPrevDisabled ? '' : `goToPage(${currentPage - 1})`}" ${isPrevDisabled ? 'disabled' : ''} aria-label="Previous Page">
+                <svg class="prev-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Prev</span>
+            </button>`;
+
+            const pagesList = getPaginationPageList(currentPage, totalPages);
+            pagesList.forEach(p => {
+                if (p === '...') {
+                    pagHtml += `<span class="pagination-ellipsis">&hellip;</span>`;
+                } else {
+                    const isActive = p === currentPage;
+                    pagHtml += `<button type="button" class="pagination-btn pagination-num ${isActive ? 'active' : ''}" onclick="goToPage(${p})" ${isActive ? 'aria-current="page"' : ''}>${p}</button>`;
+                }
+            });
+
+            const isNextDisabled = currentPage >= totalPages;
+            pagHtml += `<button type="button" class="pagination-btn ${isNextDisabled ? 'disabled' : ''}" onclick="${isNextDisabled ? '' : `goToPage(${currentPage + 1})`}" ${isNextDisabled ? 'disabled' : ''} aria-label="Next Page">
+                <span>Next</span>
+                <svg class="next-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>`;
+
             paginationControls.innerHTML = pagHtml;
         }
 
@@ -1998,9 +2029,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Pagination helper
     window.goToPage = function (pageNum) {
+        const filtered = getFilteredAssets();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        if (pageNum < 1 || pageNum > totalPages || pageNum === currentPage) return;
         currentPage = pageNum;
         renderAssets();
-        window.scrollTo({ top: 300, behavior: 'smooth' });
+        const tableCard = document.querySelector('.asset-table-card') || document.getElementById('assetTableView');
+        if (tableCard) {
+            tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+        }
     };
 
     window.resetAllFilters = function () {
