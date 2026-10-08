@@ -1,0 +1,1026 @@
+/**
+ * Asset Assignment & Allocation Stylesheet
+ * VIROS IT Asset & Service Desk Portal
+ */
+
+/* ==================== KPI METRIC CARDS ==================== */
+.alloc-stat-card {
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.alloc-stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: transparent;
+    transition: background 0.2s;
+}
+
+.alloc-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+}
+
+.alloc-stat-card.card-active::after {
+    background: var(--cyan-primary);
+}
+
+.alloc-stat-card.card-permanent::after {
+    background: #6366f1;
+}
+
+.alloc-stat-card.card-temporary::after {
+    background: #f59e0b;
+}
+
+.alloc-stat-card.card-available::after {
+    background: #10b981;
+}
+
+.alloc-stat-info .stat-lbl {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.alloc-stat-info .stat-val {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.alloc-stat-info .stat-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.alloc-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.alloc-stat-icon.cyan {
+    background: var(--cyan-light);
+    color: var(--cyan-primary);
+}
+
+.alloc-stat-icon.indigo {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+.alloc-stat-icon.amber {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.alloc-stat-icon.emerald {
+    background: #d1fae5;
+    color: #059669;
+}
+
+/* ==================== ALLOCATION TYPE PILLS ==================== */
+.alloc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.alloc-pill.permanent {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+}
+
+.alloc-pill.temporary {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.alloc-pill.remote {
+    background: #ecfeff;
+    color: #0e7490;
+    border: 1px solid #a5f3fc;
+}
+
+.alloc-pill.project {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+/* ==================== CUSTODY STATUS PILLS ==================== */
+.custody-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.custody-badge .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.custody-badge.status-active {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.custody-badge.status-active .dot {
+    background: #10b981;
+}
+
+.custody-badge.status-due-soon {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
+
+.custody-badge.status-due-soon .dot {
+    background: #f97316;
+}
+
+.custody-badge.status-overdue {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.custody-badge.status-overdue .dot {
+    background: #ef4444;
+}
+
+.custody-badge.status-returned {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.custody-badge.status-returned .dot {
+    background: #94a3b8;
+}
+
+/* ==================== CUSTODIAN PROFILE CELL ==================== */
+.custodian-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.custodian-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #0093A7;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13.5px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    box-shadow: 0 2px 5px rgba(0, 25, 56, 0.12);
+}
+
+.custodian-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.custodian-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.emp-code-badge {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.custodian-sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+    white-space: nowrap;
+}
+
+/* ==================== ASSET DETAILS CELL ==================== */
+.alloc-asset-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alloc-asset-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cyan-primary);
+    flex-shrink: 0;
+}
+
+.alloc-asset-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.alloc-asset-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.alloc-asset-name:hover {
+    color: var(--cyan-primary);
+}
+
+.alloc-asset-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+}
+
+/* ==================== ACCESSORY CHIPS ==================== */
+.accessory-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.accessory-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 11px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s;
+}
+
+.accessory-chip:hover {
+    border-color: #94a3b8;
+    background: #f1f5f9;
+}
+
+.accessory-chip.checked {
+    background: #ecfeff;
+    border-color: #0093A7;
+    color: #007A8A;
+    font-weight: 600;
+}
+
+.accessory-chip input[type="checkbox"] {
+    accent-color: var(--cyan-primary);
+    cursor: pointer;
+}
+
+/* ==================== HANDOVER CARD PREVIEW ==================== */
+.preview-summary-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.preview-summary-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.preview-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+}
+
+.preview-item-label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.preview-item-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+/* ==================== HANDOVER SLIP PRINTABLE PREVIEW ==================== */
+.handover-slip-sheet {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 28px 32px;
+    color: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    line-height: 1.5;
+}
+
+.slip-header-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #001938;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+}
+
+.slip-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #001938;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.slip-subtitle {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.slip-section-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #001938;
+    background: #f1f5f9;
+    padding: 4px 8px;
+    border-left: 3px solid var(--cyan-primary);
+    margin: 14px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.slip-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    font-size: 12px;
+}
+
+.slip-grid-item {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #e2e8f0;
+    padding: 3px 0;
+}
+
+.slip-grid-item .label {
+    color: #64748b;
+}
+
+.slip-grid-item .value {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.slip-terms-box {
+    font-size: 11px;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 14px;
+    line-height: 1.4;
+}
+
+.slip-sign-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 26px;
+    padding-top: 10px;
+}
+
+.slip-sign-box {
+    border-top: 1px solid #0f172a;
+    padding-top: 6px;
+    font-size: 11.5px;
+    color: #334155;
+}
+
+/* ==================== ACTION ICON BUTTONS ==================== */
+.action-icon-btn.btn-return:hover {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+
+.action-icon-btn.btn-transfer:hover {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border-color: #ddd6fe;
+}
+
+/* ==================== MODAL BOX SCROLLING & RESPONSIVENESS ==================== */
+.modal-overlay {
+    z-index: 99999;
+}
+
+.modal-box {
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-box form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.modal-box .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+#assignAssetModal .modal-form-group {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#assignAssetModal select,
+#assignAssetModal input:not([type="checkbox"]):not([type="radio"]),
+#assignAssetModal textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#assignAssetModal select {
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+#assignAssetModal .preview-summary-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+#assignAssetModal .preview-summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#assignAssetModal .preview-item-val {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* ==================== MULTI-ASSET BATCH ASSIGNMENT STYLES ==================== */
+.batch-asset-picker-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.batch-asset-picker-row select {
+    flex: 1;
+    min-width: 0;
+}
+
+.btn-add-comp-row,
+.btn-add-asset-batch {
+    height: 38px;
+    width: 38px;
+    min-width: 38px;
+    border: 1px solid var(--cyan-primary, #0093a7);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--cyan-primary, #0093a7);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.btn-add-comp-row:hover,
+.btn-add-asset-batch:hover {
+    background: #007d8e;
+    border-color: #007d8e;
+    transform: scale(1.05);
+}
+
+.asset-count-badge {
+    background: #ecfeff;
+    color: #007A8A;
+    border: 1px solid #a5f3fc;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.batch-asset-list {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 52px;
+}
+
+/* ==================== BATCH ALLOCATION MODAL TABLE STYLING ==================== */
+.batch-table-container {
+    width: 100%;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.batch-modal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.batch-modal-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+}
+
+.batch-modal-table th {
+    padding: 9px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary, #64748b);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    background: #f8fafc;
+    white-space: nowrap;
+}
+
+.batch-modal-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--text-primary, #1e293b);
+    vertical-align: middle;
+}
+
+.batch-modal-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.batch-modal-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.tbl-asset-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tbl-asset-cell .batch-asset-icon {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.tbl-asset-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.tbl-asset-name {
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--navy-primary, #001938);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+}
+
+.tbl-asset-category {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tbl-serial-text {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.batch-modal-table .batch-asset-condition-select {
+    padding: 4px 6px !important;
+    font-size: 11.5px !important;
+    font-weight: 500;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    color: var(--text-primary, #0f172a);
+    cursor: pointer;
+    height: 26px !important;
+    width: 100% !important;
+    max-width: 105px !important;
+    outline: none;
+}
+
+.batch-modal-table .batch-asset-condition-select:focus {
+    border-color: var(--cyan-primary, #0093a7) !important;
+}
+
+.batch-modal-table .btn-remove-batch-asset {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid #fee2e2;
+    background: #fef2f2;
+    color: #ef4444;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 700;
+    transition: all 0.15s;
+    margin: 0 auto;
+}
+
+.batch-modal-table .btn-remove-batch-asset:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #dc2626;
+    transform: scale(1.08);
+}
+
+.batch-asset-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    transition: all 0.15s;
+    animation: fadeInBatchCard 0.2s ease-out;
+}
+
+@keyframes fadeInBatchCard {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.batch-asset-card:hover {
+    border-color: #cbd5e1;
+    background: #ffffff;
+}
+
+.batch-asset-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.batch-asset-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: var(--cyan-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.batch-asset-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.batch-asset-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.batch-asset-title-row .asset-tag-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+    flex-shrink: 0;
+}
+
+.batch-asset-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.batch-asset-meta {
+    font-size: 10.5px;
+    color: #64748b;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.batch-asset-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.batch-asset-condition-select {
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    width: auto !important;
+    max-width: 95px !important;
+    height: 26px !important;
+    cursor: pointer;
+}
+
+.btn-remove-batch-asset {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background: #fee2e2;
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.btn-remove-batch-asset:hover {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.batch-asset-empty {
+    padding: 12px;
+    text-align: center;
+    color: #64748b;
+    font-size: 11.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.batch-asset-empty svg {
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+/* ==================== DYNAMIC MULTI-ACCESSORIES ==================== */
+.acc-picker-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 7px;
+}
+
+.btn-add-acc-batch {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #001938;
+    color: #ffffff;
+    border: 1px solid #001938;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 32px;
+    transition: all 0.2s;
+}
+
+.btn-add-acc-batch:hover {
+    background: var(--cyan-primary);
+    border-color: var(--cyan-primary);
+}
+
+.acc-count-badge {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+}
+
+.active-accessories-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 28px;
+    margin-bottom: 7px;
+}
+
+.active-acc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ecfeff;
+    border: 1px solid #0093A7;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #007685;
+    animation: fadeInAcc 0.15s ease-out;
+}
+
+@keyframes fadeInAcc {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.btn-remove-acc {
+    background: transparent;
+    border: none;
+    color: #0093A7;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: all 0.15s;
+}
+
+.btn-remove-acc:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.acc-suggestions-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+}
+
+.acc-suggest-btn {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: 10.5px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.acc-suggest-btn:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #2563eb;
+}

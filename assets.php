@@ -369,7 +369,6 @@ include 'includes/topbar.php';
                     <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
                 Hardware & IT Asset Management
-                <span class="status-tab-badge" id="headerAssetBadge" style="background: var(--cyan-light); color: var(--cyan-primary); font-size: 13px; font-weight: 700; padding: 3px 10px;"><?php echo $stats['total']; ?> Assets</span>
             </h1>
             <p>Track hardware inventory, warranty lifecycles, user allocations, and asset depreciation across all branch offices.</p>
         </div>
