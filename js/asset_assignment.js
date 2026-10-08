@@ -605,27 +605,68 @@
             }
         }
 
-        // Custody Timeline
+        // Custody Timeline (Dynamic based on real assignment lifecycle)
         const timeWrap = document.getElementById('drawerTimelineWrap');
         if (timeWrap) {
-            timeWrap.innerHTML = `
+            let timelineHtml = '';
+
+            // Event 1: If returned, show return record
+            if (item.custody_status === 'Returned' || item.return_date) {
+                timelineHtml += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot" style="background: #10b981;"></div>
+                        <div class="timeline-date">${escapeHtml(item.return_date || item.assigned_date)}</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title" style="color: #059669; font-weight: 700;">Equipment Returned & Custody Released</div>
+                            <div class="timeline-desc">Assets returned to inventory in ${escapeHtml(item.return_condition || item.condition || 'Good')} condition. ${escapeHtml(item.return_notes || 'Returned back to depot inventory.')}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Event 2: Handover / Deployment Event
+            const totalAssignedText = `${item.total_assets || assetsList.length} Asset(s) and ${item.total_accessories || accList.length} Accessory(ies)`;
+            timelineHtml += `
                 <div class="timeline-item">
                     <div class="timeline-dot green"></div>
                     <div class="timeline-date">${escapeHtml(item.assigned_date)}</div>
                     <div class="timeline-content">
-                        <div class="timeline-title">Handover Completed</div>
-                        <div class="timeline-desc">Allocated to ${escapeHtml(item.employee_name)} as ${escapeHtml(item.allocation_type)}. Handover slip ${escapeHtml(item.slip_no)} verified.</div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-date">Pre-Deployment</div>
-                    <div class="timeline-content">
-                        <div class="timeline-title">Equipment Inspection & Sign-off</div>
-                        <div class="timeline-desc">Quality audit passed. Custodian accepted IT policy.</div>
+                        <div class="timeline-title">Handover & Custody Assigned</div>
+                        <div class="timeline-desc">
+                            Issued to <strong>${escapeHtml(item.employee_name)}</strong> (${escapeHtml(item.emp_code || 'Employee')}) under <strong>${escapeHtml(item.allocation_type || 'Permanent')}</strong> terms. Handover slip <code>${escapeHtml(item.slip_no)}</code> verified by ${escapeHtml(item.handover_by || 'IT Department')}. (${totalAssignedText})
+                        </div>
                     </div>
                 </div>
             `;
+
+            // Event 3: Expected return if temporary loaner
+            if (item.allocation_type === 'Temporary Loaner' && item.expected_return && item.custody_status !== 'Returned') {
+                timelineHtml += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot" style="background: #f59e0b;"></div>
+                        <div class="timeline-date">${escapeHtml(item.expected_return)}</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Expected Custody Return Due</div>
+                            <div class="timeline-desc">Scheduled return date for temporary equipment loaner allocation.</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Event 4: Slip Registration / Creation timestamp
+            const slipCreatedDate = item.created_date || item.assigned_date;
+            timelineHtml += `
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="background: #0284c7;"></div>
+                    <div class="timeline-date">${escapeHtml(slipCreatedDate)}</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Handover Slip Generated</div>
+                        <div class="timeline-desc">Official handover documentation registered in system for ${escapeHtml(item.department || 'General')} department.</div>
+                    </div>
+                </div>
+            `;
+
+            timeWrap.innerHTML = timelineHtml;
         }
 
         // Switch to default tab
