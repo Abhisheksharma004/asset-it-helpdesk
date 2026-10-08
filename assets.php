@@ -43,20 +43,6 @@ if (isset($conn) && $conn !== false) {
     }
 }
 
-if (empty($dynamicPartComponents)) {
-    $dynamicPartComponents = [
-        ['id' => 1, 'name' => 'Crucial 16GB DDR4 3200MHz SO-DIMM', 'category' => 'RAM & Memory Modules', 'serial' => 'CRU-DDR4-88492', 'sku' => 'PRT1026002', 'status' => 'Available'],
-        ['id' => 2, 'name' => 'Kingston Fury Beast 32GB DDR5 5600MHz', 'category' => 'RAM & Memory Modules', 'serial' => 'KNG-DDR5-10293', 'sku' => 'PRT1026003', 'status' => 'Available'],
-        ['id' => 3, 'name' => 'Samsung 980 PRO 1TB PCIe 4.0 NVMe M.2', 'category' => 'Solid State Drives (SSD)', 'serial' => 'SAM-NVME-99103', 'sku' => 'PRT1026005', 'status' => 'Available'],
-        ['id' => 4, 'name' => 'Crucial MX500 500GB 2.5-Inch SATA SSD', 'category' => 'Solid State Drives (SSD)', 'serial' => 'CRU-SATA-44129', 'sku' => 'PRT1026006', 'status' => 'Available'],
-        ['id' => 5, 'name' => 'Seagate IronWolf 4TB NAS Hard Drive', 'category' => 'Hard Disk Drives (HDD)', 'serial' => 'SEA-NAS-77218', 'sku' => 'PRT1026007', 'status' => 'Available'],
-        ['id' => 6, 'name' => 'NVIDIA RTX A2000 12GB Workstation GPU', 'category' => 'Graphics & GPU Cards', 'serial' => 'NV-RTX-55102', 'sku' => 'PRT1026008', 'status' => 'Available'],
-        ['id' => 7, 'name' => 'Intel Core i7-13700 Desktop Processor', 'category' => 'Processors & CPUs', 'serial' => 'INT-I7-33910', 'sku' => 'PRT1026009', 'status' => 'Available'],
-        ['id' => 8, 'name' => 'Dell 58Wh 4-Cell Laptop Replacement Battery', 'category' => 'Laptop Batteries', 'serial' => 'DEL-BAT-22019', 'sku' => 'PRT1026010', 'status' => 'Available'],
-        ['id' => 9, 'name' => 'Corsair RM750x 750W Fully Modular PSU', 'category' => 'Power Supply Units (PSU)', 'serial' => 'COR-750-66014', 'sku' => 'PRT1026011', 'status' => 'Available'],
-        ['id' => 10, 'name' => 'Intel X550-T2 Dual Port 10GbE Network Card', 'category' => 'Network Interface Cards (NIC)', 'serial' => 'INT-NIC-12004', 'sku' => 'PRT1026012', 'status' => 'Available']
-    ];
-}
 // Fetch active vendors / suppliers from master
 $vendorsList = [];
 if (isset($conn) && $conn !== false) {
@@ -70,31 +56,7 @@ if (isset($conn) && $conn !== false) {
     }
 }
 
-// Fallback vendor list if table is empty or offline
-if (empty($vendorsList)) {
-    $fallbackVendors = [
-        'Airtel Enterprise Services',
-        'Amazon Business India',
-        'Apple Business Direct',
-        'Canon India Pvt Ltd',
-        'CDW Logistics',
-        'Cisco Systems India',
-        'Dell Technologies India',
-        'HP India Sales Pvt Ltd',
-        'Lenovo Global Technology',
-        'Microsoft Corporation India',
-        'QuickHeal & Seqrite Antivirus',
-        'Redington India Ltd',
-        'Tata Communications'
-    ];
-    foreach ($fallbackVendors as $idx => $vName) {
-        $vendorsList[] = [
-            'id'          => $idx + 1,
-            'vendor_name' => $vName,
-            'status'      => 'Active'
-        ];
-    }
-}
+
 
 // Fetch dynamic Categories from asset_categories table
 $dbCategories = [];
@@ -106,9 +68,6 @@ if (isset($conn) && $conn !== false) {
         }
         sqlsrv_free_stmt($cStmt);
     }
-}
-if (empty($dbCategories)) {
-    $dbCategories = ['Laptops', 'Desktops', 'Servers', 'Networking', 'Monitors', 'Tablets & Mobile', 'Printers'];
 }
 
 // Fetch dynamic Locations from locations table
@@ -122,13 +81,6 @@ if (isset($conn) && $conn !== false) {
         sqlsrv_free_stmt($lStmt);
     }
 }
-if (empty($dbLocations)) {
-    $dbLocations = [
-        'Corporate HQ - Mumbai', 'Tech Hub - Bangalore', 'Branch Office - Delhi NCR',
-        'Delivery Center - Hyderabad', 'Development Center - Pune', 'Operations Center - Chennai',
-        'Regional Hub - Kolkata', 'Support Center - Ahmedabad', 'HQ - New York', 'Austin Hub', 'London Office', 'Singapore DC'
-    ];
-}
 
 // Fetch dynamic Departments from departments table
 $dbDepartments = [];
@@ -140,9 +92,6 @@ if (isset($conn) && $conn !== false) {
         }
         sqlsrv_free_stmt($dStmt);
     }
-}
-if (empty($dbDepartments)) {
-    $dbDepartments = ['Software Engineering', 'IT Infrastructure', 'Design & Creative', 'Finance', 'Operations', 'Human Resources', 'Executive Management'];
 }
 
 // Fetch active Employees from employees table

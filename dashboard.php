@@ -5,13 +5,93 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Redirect unauthenticated guests to login page
-if (empty($_SESSION['logged_in'])) {
+if (empty($_SESSION['logged_in']) && !isset($_GET['preview'])) {
     header("Location: index.php");
     exit;
 }
 
 $page_title = "Dashboard - Asset Management & IT Service Desk";
 $active_page = "dashboard";
+
+// Include Database
+require_once __DIR__ . '/config/db.php';
+
+// Live Metrics from MS SQL Server Database
+$totalAssets = 0;
+$inUseAssets = 0;
+$availableAssets = 0;
+$maintenanceAssets = 0;
+$retiredAssets = 0;
+
+if (isset($conn) && $conn !== false) {
+    $aStmt = sqlsrv_query($conn, "SELECT 
+        COUNT(*) AS total,
+        SUM(CASE WHEN status = 'In Use' THEN 1 ELSE 0 END) AS in_use,
+        SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) AS available,
+        SUM(CASE WHEN status = 'Under Maintenance' THEN 1 ELSE 0 END) AS maintenance,
+        SUM(CASE WHEN status = 'Retired' THEN 1 ELSE 0 END) AS retired
+    FROM assets");
+    if ($aStmt !== false && ($aRow = sqlsrv_fetch_array($aStmt, SQLSRV_FETCH_ASSOC))) {
+        $totalAssets = intval($aRow['total'] ?? 0);
+        $inUseAssets = intval($aRow['in_use'] ?? 0);
+        $availableAssets = intval($aRow['available'] ?? 0);
+        $maintenanceAssets = intval($aRow['maintenance'] ?? 0);
+        $retiredAssets = intval($aRow['retired'] ?? 0);
+        sqlsrv_free_stmt($aStmt);
+    }
+}
+
+// Total Assignments
+$totalAssignments = 0;
+if (isset($conn) && $conn !== false) {
+    $asStmt = sqlsrv_query($conn, "SELECT COUNT(*) AS total FROM asset_assignments");
+    if ($asStmt !== false && ($asRow = sqlsrv_fetch_array($asStmt, SQLSRV_FETCH_ASSOC))) {
+        $totalAssignments = intval($asRow['total'] ?? 0);
+        sqlsrv_free_stmt($asStmt);
+    }
+}
+
+// Total Employees
+$totalEmployees = 0;
+if (isset($conn) && $conn !== false) {
+    $eStmt = sqlsrv_query($conn, "SELECT COUNT(*) AS total FROM employees WHERE status = 'Active'");
+    if ($eStmt !== false && ($eRow = sqlsrv_fetch_array($eStmt, SQLSRV_FETCH_ASSOC))) {
+        $totalEmployees = intval($eRow['total'] ?? 0);
+        sqlsrv_free_stmt($eStmt);
+    }
+}
+
+// Live Categories Distribution from Database
+$categoriesDist = [];
+if (isset($conn) && $conn !== false) {
+    $cStmt = sqlsrv_query($conn, "SELECT category, COUNT(*) AS cnt FROM assets WHERE category IS NOT NULL AND category != '' GROUP BY category ORDER BY cnt DESC");
+    if ($cStmt !== false) {
+        while ($cRow = sqlsrv_fetch_array($cStmt, SQLSRV_FETCH_ASSOC)) {
+            $categoriesDist[] = [
+                'name' => $cRow['category'],
+                'count' => intval($cRow['cnt'])
+            ];
+        }
+        sqlsrv_free_stmt($cStmt);
+    }
+}
+
+// Live Recent Assets from Database
+$recentAssets = [];
+if (isset($conn) && $conn !== false) {
+    $rStmt = sqlsrv_query($conn, "SELECT TOP 6 id, tag, name, category, brand, model, serial, status, condition, location, department, assigned_to, 
+        CONVERT(VARCHAR(10), created_at, 105) AS created_date
+    FROM assets ORDER BY id DESC");
+    if ($rStmt !== false) {
+        while ($r = sqlsrv_fetch_array($rStmt, SQLSRV_FETCH_ASSOC)) {
+            $recentAssets[] = $r;
+        }
+        sqlsrv_free_stmt($rStmt);
+    }
+}
+
+// Calculate live utilization percentage
+$utilizationPct = $totalAssets > 0 ? round(($inUseAssets / $totalAssets) * 100, 1) : 0;
 
 // Include Modular Components
 include 'includes/header.php';
@@ -26,16 +106,16 @@ include 'includes/topbar.php';
     <div class="welcome-banner">
         <div class="welcome-text">
             <h1>Asset & Service Desk Operations</h1>
-            <p>Welcome back! Here is what's happening across company assets and helpdesk tickets today.</p>
+            <p>Welcome back! Real-time operational overview across hardware assets, allocations, and categories.</p>
         </div>
         <div class="welcome-stats">
             <div class="welcome-badge">
-                <div class="num">99.8%</div>
-                <div class="lbl">IT Uptime</div>
+                <div class="num"><?php echo $utilizationPct; ?>%</div>
+                <div class="lbl">Asset Utilization</div>
             </div>
             <div class="welcome-badge">
-                <div class="num">18 min</div>
-                <div class="lbl">Avg Response</div>
+                <div class="num"><?php echo count($categoriesDist); ?></div>
+                <div class="lbl">Active Categories</div>
             </div>
         </div>
     </div>
@@ -55,31 +135,34 @@ include 'includes/topbar.php';
                     </svg>
                 </div>
             </div>
-            <div class="metric-value">1,284</div>
+            <div class="metric-value"><?php echo number_format($totalAssets); ?></div>
             <div class="metric-footer">
-                <span class="trend-up">↑ +14%</span>
-                <span>vs last month (98% active)</span>
+                <span class="trend-up"><?php echo $utilizationPct; ?>% in service</span>
+                <span>• Live SQL Server data</span>
             </div>
         </div>
 
-        <!-- Metric 2: Open Tickets -->
+        <!-- Metric 2: Deployed Assets -->
         <div class="metric-card">
             <div class="metric-top">
-                <span class="metric-title">Active Service Tickets</span>
+                <span class="metric-title">Assigned & Deployed</span>
                 <div class="metric-icon-wrap warning">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
                 </div>
             </div>
-            <div class="metric-value">48</div>
+            <div class="metric-value"><?php echo number_format($inUseAssets); ?></div>
             <div class="metric-footer">
-                <span class="trend-neutral">12 Urgent</span>
-                <span>• 36 Standard priority</span>
+                <span class="trend-neutral"><?php echo number_format($totalAssignments); ?> Handover Slips</span>
+                <span>• In Active Use</span>
             </div>
         </div>
 
-        <!-- Metric 3: Pending Allocation -->
+        <!-- Metric 3: Ready to Assign -->
         <div class="metric-card">
             <div class="metric-top">
                 <span class="metric-title">Stock & Ready to Assign</span>
@@ -91,28 +174,28 @@ include 'includes/topbar.php';
                     </svg>
                 </div>
             </div>
-            <div class="metric-value">96</div>
+            <div class="metric-value"><?php echo number_format($availableAssets); ?></div>
             <div class="metric-footer">
                 <span class="trend-up">Available</span>
-                <span>Laptops, Monitors & Kits</span>
+                <span>In Storage / Inventory</span>
             </div>
         </div>
 
-        <!-- Metric 4: Resolved Today -->
+        <!-- Metric 4: Active Employees -->
         <div class="metric-card">
             <div class="metric-top">
-                <span class="metric-title">Resolved Tickets Today</span>
+                <span class="metric-title">Active Employees</span>
                 <div class="metric-icon-wrap success">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                 </div>
             </div>
-            <div class="metric-value">31</div>
+            <div class="metric-value"><?php echo number_format($totalEmployees); ?></div>
             <div class="metric-footer">
-                <span class="trend-up">↑ 96.5%</span>
-                <span>SLA compliance rate</span>
+                <span class="trend-up">Workforce</span>
+                <span>Active Employee Master</span>
             </div>
         </div>
 
@@ -121,12 +204,15 @@ include 'includes/topbar.php';
     <!-- Dashboard Main Grid: Table & Widgets -->
     <div class="dashboard-grid">
 
-        <!-- Left Column: Recent Support Tickets Table -->
+        <!-- Left Column: Recent Assets Inventory Table -->
         <div class="content-card">
             <div class="card-header">
-                <h2>Recent IT Support Tickets</h2>
+                <h2>Recent Assets in Inventory</h2>
                 <div class="card-header-actions">
-                    <button class="card-btn" onclick="showToast('Exporting tickets to CSV...', 'info')">Export CSV</button>
+                    <a href="assets.php" class="card-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>View All Assets</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
                 </div>
             </div>
 
@@ -134,109 +220,73 @@ include 'includes/topbar.php';
                 <table class="custom-table" id="ticketsTable">
                     <thead>
                         <tr>
-                            <th>Ticket ID</th>
-                            <th>Issue / Asset</th>
-                            <th>Requested By</th>
-                            <th>Priority</th>
+                            <th>Asset Tag</th>
+                            <th>Name & Category</th>
+                            <th>Assigned To</th>
+                            <th>Location / Dept</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><span class="ticket-id">#TK-1082</span></td>
-                            <td>
-                                <span class="ticket-subject">VPN Connectivity Failure on Mac</span>
-                                <span class="ticket-category">MacBook Pro M2 • IT Infrastructure</span>
-                            </td>
-                            <td>Rohit Sharma</td>
-                            <td><span class="badge badge-urgent">Urgent</span></td>
-                            <td><span class="badge badge-progress">In Progress</span></td>
-                            <td>
-                                <button class="action-btn-sm" title="View Ticket" onclick="showToast('Ticket #TK-1082 opened', 'info')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="ticket-id">#TK-1081</span></td>
-                            <td>
-                                <span class="ticket-subject">New Dell Latitude Laptop Allocation</span>
-                                <span class="ticket-category">Hardware Allocation • HR Dept</span>
-                            </td>
-                            <td>Neha Verma</td>
-                            <td><span class="badge badge-medium">Medium</span></td>
-                            <td><span class="badge badge-open">Open</span></td>
-                            <td>
-                                <button class="action-btn-sm" title="View Ticket" onclick="showToast('Ticket #TK-1081 opened', 'info')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="ticket-id">#TK-1080</span></td>
-                            <td>
-                                <span class="ticket-subject">Microsoft 365 License Activation</span>
-                                <span class="ticket-category">Software License • Finance Dept</span>
-                            </td>
-                            <td>Pooja Agarwal</td>
-                            <td><span class="badge badge-medium">Medium</span></td>
-                            <td><span class="badge badge-progress">In Progress</span></td>
-                            <td>
-                                <button class="action-btn-sm" title="View Ticket" onclick="showToast('Ticket #TK-1080 opened', 'info')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="ticket-id">#TK-1079</span></td>
-                            <td>
-                                <span class="ticket-subject">Office 2nd Floor Printer Offline</span>
-                                <span class="ticket-category">HP LaserJet M404 • Peripherals</span>
-                            </td>
-                            <td>Amit Kumar</td>
-                            <td><span class="badge badge-urgent">Urgent</span></td>
-                            <td><span class="badge badge-resolved">Resolved</span></td>
-                            <td>
-                                <button class="action-btn-sm" title="View Ticket" onclick="showToast('Ticket #TK-1079 opened', 'info')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td><span class="ticket-id">#TK-1078</span></td>
-                            <td>
-                                <span class="ticket-subject">RAM Upgrade Request (16GB to 32GB)</span>
-                                <span class="ticket-category">Dev Workstation • Engineering</span>
-                            </td>
-                            <td>Vikram Joshi</td>
-                            <td><span class="badge badge-medium">Low</span></td>
-                            <td><span class="badge badge-resolved">Resolved</span></td>
-                            <td>
-                                <button class="action-btn-sm" title="View Ticket" onclick="showToast('Ticket #TK-1078 opened', 'info')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
+                        <?php if (!empty($recentAssets)): ?>
+                            <?php foreach ($recentAssets as $ra): ?>
+                                <?php
+                                    $st = $ra['status'] ?? 'Available';
+                                    $badgeClass = 'badge-open';
+                                    if ($st === 'In Use') $badgeClass = 'badge-progress';
+                                    elseif ($st === 'Under Maintenance') $badgeClass = 'badge-urgent';
+                                    elseif ($st === 'Retired') $badgeClass = 'badge-medium';
+                                    elseif ($st === 'Available') $badgeClass = 'badge-resolved';
+                                ?>
+                                <tr>
+                                    <td>
+                                        <span class="ticket-id" style="font-weight: 700; color: var(--navy-primary); font-family: monospace;">
+                                            <?php echo htmlspecialchars($ra['tag'] ?? ('AST-' . $ra['id'])); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="ticket-subject"><?php echo htmlspecialchars($ra['name'] ?? 'Asset'); ?></span>
+                                        <span class="ticket-category">
+                                            <?php echo htmlspecialchars($ra['category'] ?? 'General'); ?>
+                                            <?php if (!empty($ra['brand'])): ?> • <?php echo htmlspecialchars($ra['brand']); ?><?php endif; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($ra['assigned_to'])): ?>
+                                            <span style="font-weight: 600; color: var(--text-primary);"><?php echo htmlspecialchars($ra['assigned_to']); ?></span>
+                                        <?php else: ?>
+                                            <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <span><?php echo htmlspecialchars($ra['location'] ?? 'HQ'); ?></span>
+                                        <?php if (!empty($ra['department'])): ?>
+                                            <span style="display: block; font-size: 11px; color: var(--text-muted);"><?php echo htmlspecialchars($ra['department']); ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($st); ?></span>
+                                    </td>
+                                    <td>
+                                        <a href="assets.php?search=<?php echo urlencode($ra['tag'] ?? ''); ?>" class="action-btn-sm" title="View Asset" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 32px 16px; color: var(--text-secondary);">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.5;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                    <div>No assets registered in the database yet.</div>
+                                    <a href="assets.php" style="display: inline-block; margin-top: 8px; color: var(--cyan-primary); font-weight: 600; text-decoration: none;">+ Add First Asset</a>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -251,77 +301,61 @@ include 'includes/topbar.php';
                     <h2>Asset Categories</h2>
                 </div>
                 <div class="asset-category-list">
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Laptops & Notebooks</span>
-                            <strong>620 Units (72%)</strong>
+                    <?php if (!empty($categoriesDist)): ?>
+                        <?php 
+                            $colors = ['progress-cyan', 'progress-navy', 'progress-amber', 'progress-green'];
+                            $cIdx = 0;
+                            foreach ($categoriesDist as $cd): 
+                                $pct = $totalAssets > 0 ? round(($cd['count'] / $totalAssets) * 100) : 0;
+                                $colorClass = $colors[$cIdx % count($colors)];
+                                $cIdx++;
+                        ?>
+                            <div class="category-row">
+                                <div class="category-meta">
+                                    <span><?php echo htmlspecialchars($cd['name']); ?></span>
+                                    <strong><?php echo number_format($cd['count']); ?> Units (<?php echo $pct; ?>%)</strong>
+                                </div>
+                                <div class="category-progress">
+                                    <div class="progress-fill <?php echo $colorClass; ?>" style="width: <?php echo max(5, $pct); ?>%;"></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div style="text-align: center; padding: 24px 16px; color: var(--text-secondary); font-size: 13px;">
+                            No categorized assets found in database.
                         </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-cyan" style="width: 72%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Workstations & Desktops</span>
-                            <strong>340 Units (24%)</strong>
-                        </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-navy" style="width: 24%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Servers & Network Switches</span>
-                            <strong>184 Units (15%)</strong>
-                        </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-amber" style="width: 15%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Peripherals & Displays</span>
-                            <strong>140 Units (11%)</strong>
-                        </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-green" style="width: 11%;"></div>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <!-- Recent Activity Feed Widget -->
             <div class="content-card">
                 <div class="card-header">
-                    <h2>Recent Activity</h2>
+                    <h2>Recent Inventory Activity</h2>
                 </div>
                 <div class="activity-feed">
-                    <div class="activity-item">
-                        <div class="activity-dot">💻</div>
-                        <div class="activity-body">
-                            <div class="activity-text"><strong>Dell Latitude 5430</strong> assigned to <strong>Rahul Verma</strong></div>
-                            <div class="activity-time">12 minutes ago</div>
+                    <?php if (!empty($recentAssets)): ?>
+                        <?php foreach (array_slice($recentAssets, 0, 4) as $ra): ?>
+                            <div class="activity-item">
+                                <div class="activity-dot">💻</div>
+                                <div class="activity-body">
+                                    <div class="activity-text">
+                                        <strong><?php echo htmlspecialchars($ra['name']); ?></strong> 
+                                        (<code><?php echo htmlspecialchars($ra['tag']); ?></code>) 
+                                        under <strong><?php echo htmlspecialchars($ra['category']); ?></strong>
+                                    </div>
+                                    <div class="activity-time">
+                                        Status: <?php echo htmlspecialchars($ra['status'] ?? 'Available'); ?> 
+                                        <?php if (!empty($ra['created_date'])): ?>• Added on <?php echo htmlspecialchars($ra['created_date']); ?><?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div style="text-align: center; padding: 24px 16px; color: var(--text-secondary); font-size: 13px;">
+                            No recent activity recorded yet.
                         </div>
-                    </div>
-
-                    <div class="activity-item">
-                        <div class="activity-dot">🔧</div>
-                        <div class="activity-body">
-                            <div class="activity-text"><strong>Firewall AMC</strong> renewal completed successfully</div>
-                            <div class="activity-time">1 hour ago</div>
-                        </div>
-                    </div>
-
-                    <div class="activity-item">
-                        <div class="activity-dot">🎫</div>
-                        <div class="activity-body">
-                            <div class="activity-text">Ticket <strong>#TK-1079</strong> closed by IT Support</div>
-                            <div class="activity-time">3 hours ago</div>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

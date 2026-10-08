@@ -44,34 +44,6 @@ if (isset($conn) && $conn !== false) {
     }
 }
 
-if (empty($dynamicCategories)) {
-    $dynamicCategories = [
-        'RAM & Memory Modules',
-        'Solid State Drives (SSD)',
-        'Hard Disk Drives (HDD)',
-        'Graphics & GPU Cards',
-        'Processors & CPUs',
-        'Motherboards & Logic Boards',
-        'Power Supply Units (PSU)',
-        'Laptop Batteries',
-        'Cooling Fans & Heatsinks',
-        'Network Interface Cards (NIC)'
-    ];
-}
-
-if (empty($branchLocations)) {
-    $branchLocations = [
-        'Corporate HQ - Mumbai',
-        'Tech Hub - Bangalore',
-        'Branch Office - Delhi NCR',
-        'Delivery Center - Hyderabad',
-        'Development Center - Pune',
-        'Operations Center - Chennai',
-        'Regional Hub - Kolkata',
-        'Support Center - Ahmedabad',
-        'Disaster Recovery Site - Jaipur'
-    ];
-}
 
 // Fetch initial components from database for real-data rendering
 $initialComponents = [];

@@ -48,21 +48,7 @@ if (isset($conn) && $conn !== false) {
         sqlsrv_free_stmt($locStmt);
     }
 
-    // Fallback default branches if table is empty
-    if (empty($branchLocations)) {
-        $branchLocations = [
-            'Corporate HQ - Mumbai',
-            'Tech Hub - Bangalore',
-            'Branch Office - Delhi NCR',
-            'Delivery Center - Hyderabad',
-            'Development Center - Pune',
-            'Operations Center - Chennai',
-            'Regional Hub - Kolkata',
-            'Support Center - Ahmedabad',
-            'Disaster Recovery Site - Jaipur'
-        ];
-    }
-
+    
     // 3. Fetch Live Stats
     $sQuery = "SELECT 
                 COUNT(*) AS total,
