@@ -112,410 +112,115 @@ if (isset($conn) && $conn !== false) {
         }
         sqlsrv_free_stmt($accStmt);
     }
-    if (empty($availableAccessories)) {
-        // Fallback real accessories master catalogue
-        $availableAccessories = [
-            ['id' => 1, 'sku' => 'ASO1026001', 'name' => 'Logitech MX Master 3S Wireless Mouse', 'category' => 'Keyboards & Mice', 'brand' => 'Logitech', 'model' => 'MX Master 3S', 'in_stock' => 34],
-            ['id' => 2, 'sku' => 'ASO1026002', 'name' => 'Dell Pro Wireless Keyboard & Mouse KM5221W', 'category' => 'Keyboards & Mice', 'brand' => 'Dell', 'model' => 'KM5221W', 'in_stock' => 58],
-            ['id' => 3, 'sku' => 'ASO1026003', 'name' => 'Apple Magic Keyboard with Touch ID', 'category' => 'Keyboards & Mice', 'brand' => 'Apple', 'model' => 'Numeric Keypad', 'in_stock' => 8],
-            ['id' => 4, 'sku' => 'ASO1026004', 'name' => 'Dell Thunderbolt 4 Dock WD22TB4', 'category' => 'Docks & Hubs', 'brand' => 'Dell', 'model' => 'WD22TB4 180W', 'in_stock' => 19],
-            ['id' => 5, 'sku' => 'ASO1026005', 'name' => 'Anker 575 USB-C Docking Station (13-in-1)', 'category' => 'Docks & Hubs', 'brand' => 'Anker', 'model' => 'Triple Display 85W', 'in_stock' => 3],
-            ['id' => 6, 'sku' => 'ASO1026007', 'name' => 'Jabra Evolve2 65 UC Wireless Headset', 'category' => 'Headsets & Audio', 'brand' => 'Jabra', 'model' => 'HSC110W Dual ANC', 'in_stock' => 22],
-            ['id' => 7, 'sku' => 'ASO1026008', 'name' => 'Poly Voyager Focus 2 UC Headset', 'category' => 'Headsets & Audio', 'brand' => 'Poly', 'model' => 'Focus 2 Bluetooth', 'in_stock' => 14],
-            ['id' => 8, 'sku' => 'ASO1026009', 'name' => 'Sony WH-1000XM5 ANC Headphones', 'category' => 'Headsets & Audio', 'brand' => 'Sony', 'model' => 'WH-1000XM5 Black', 'in_stock' => 2],
-            ['id' => 9, 'sku' => 'ASO1026010', 'name' => 'Logitech Brio 4K Ultra HD Webcam', 'category' => 'Webcams & Video', 'brand' => 'Logitech', 'model' => 'Brio 4K HDR', 'in_stock' => 28],
-            ['id' => 10, 'sku' => 'ASO1026011', 'name' => 'Anker PowerConf C300 HD Webcam', 'category' => 'Webcams & Video', 'brand' => 'Anker', 'model' => 'C300 1080p 60fps', 'in_stock' => 21],
-            ['id' => 11, 'sku' => 'ASO1026012', 'name' => 'Apple 96W USB-C Power Adapter', 'category' => 'Chargers & Power Adapters', 'brand' => 'Apple', 'model' => '96W GaN Fast Charger', 'in_stock' => 16],
-            ['id' => 12, 'sku' => 'ASO1026013', 'name' => 'Lenovo 65W USB-C GaN Travel Charger', 'category' => 'Chargers & Power Adapters', 'brand' => 'Lenovo', 'model' => 'ThinkPad 65W AC', 'in_stock' => 35],
-            ['id' => 13, 'sku' => 'ASO1026015', 'name' => 'Belkin USB-C to 4K HDMI Adapter', 'category' => 'Cables & Display Adapters', 'brand' => 'Belkin', 'model' => 'AVC002btBK 4K@60Hz', 'in_stock' => 44],
-            ['id' => 14, 'sku' => 'ASO1026017', 'name' => 'YubiKey 5 NFC Hardware Security Key', 'category' => 'Security Tokens & Smart Keys', 'brand' => 'Yubico', 'model' => 'Y-501 FIDO2', 'in_stock' => 27],
-            ['id' => 15, 'sku' => 'ASO1026018', 'name' => 'Targus 15.6" CityLite Laptop Sleeve', 'category' => 'Bags & Protective Cases', 'brand' => 'Targus', 'model' => 'TSS632GL', 'in_stock' => 42],
-            ['id' => 16, 'sku' => 'ASO1026019', 'name' => 'Kensington ClickSafe Security Cable Lock', 'category' => 'Security & Cable Locks', 'brand' => 'Kensington', 'model' => 'K64637WW', 'in_stock' => 18]
-        ];
-    }
 
-    // 5. Fetch assigned assets to populate live allocations
-    $assignedStmt = sqlsrv_query($conn, "SELECT a.id, a.tag, a.name, a.category, a.brand, a.model, a.serial, 
-                                                a.status, a.condition, a.location, a.department, a.assigned_to,
-                                                a.processor, a.ram, a.storage,
-                                                CONVERT(VARCHAR(10), a.created_at, 120) AS assigned_date_raw,
-                                                CONVERT(VARCHAR(10), a.created_at, 105) AS assigned_date
-                                         FROM assets a
-                                         WHERE a.assigned_to IS NOT NULL AND a.assigned_to <> ''
-                                         ORDER BY a.id DESC");
+    // 5. Fetch live assignments directly from real asset_assignments table in database
+    $assignedStmt = sqlsrv_query($conn, "SELECT id, slip_no, asset_id, asset_tag, asset_name, category, brand, model, serial, specs,
+                                                employee_id, employee_name, emp_code, employee_email, department, designation, location,
+                                                CONVERT(VARCHAR(10), assigned_date, 120) AS assigned_date,
+                                                allocation_type,
+                                                CONVERT(VARCHAR(10), expected_return, 120) AS expected_return,
+                                                CONVERT(VARCHAR(10), return_date, 120) AS return_date,
+                                                custody_status, condition, return_condition,
+                                                total_assets, total_accessories, assets_json, accessories_json,
+                                                handover_by, agreement_signed, notes, return_notes
+                                         FROM asset_assignments
+                                         ORDER BY id DESC");
     if ($assignedStmt !== false) {
-        $idx = 100;
         while ($row = sqlsrv_fetch_array($assignedStmt, SQLSRV_FETCH_ASSOC)) {
-            $assignedName = trim($row['assigned_to']);
-            // Try matching with employees
-            $matchedEmp = null;
-            foreach ($employeesList as $emp) {
-                if (strcasecmp($emp['name'], $assignedName) === 0) {
-                    $matchedEmp = $emp;
-                    break;
+            // Assets decode
+            $assetsList = [];
+            if (!empty($row['assets_json'])) {
+                $decodedAssets = json_decode($row['assets_json'], true);
+                if (is_array($decodedAssets)) {
+                    $assetsList = $decodedAssets;
+                }
+            }
+            if (empty($assetsList) && !empty($row['asset_name'])) {
+                $assetsList[] = [
+                    'id'        => intval($row['asset_id']),
+                    'tag'       => $row['asset_tag'] ?? 'AST-000',
+                    'name'      => $row['asset_name'],
+                    'category'  => $row['category'] ?? 'Hardware',
+                    'brand'     => $row['brand'] ?? '',
+                    'model'     => $row['model'] ?? '',
+                    'serial'    => $row['serial'] ?? '—',
+                    'specs'     => $row['specs'] ?? '',
+                    'condition' => $row['condition'] ?? 'Good'
+                ];
+            }
+
+            // Accessories decode
+            $accList = [];
+            if (!empty($row['accessories_json'])) {
+                $decodedAcc = json_decode($row['accessories_json'], true);
+                if (is_array($decodedAcc)) {
+                    $accList = $decodedAcc;
                 }
             }
 
-            $empCode = $matchedEmp ? $matchedEmp['emp_code'] : ('EMP-' . (1000 + $idx));
-            $empDept = $matchedEmp ? $matchedEmp['department'] : ($row['department'] ?: 'Engineering');
-            $empDesig = $matchedEmp ? $matchedEmp['designation'] : 'Team Member';
-            $empEmail = $matchedEmp ? $matchedEmp['email'] : (strtolower(str_replace(' ', '.', $assignedName)) . '@viros.com');
+            $totalAssets = intval($row['total_assets']);
+            if ($totalAssets <= 0) {
+                $totalAssets = count($assetsList);
+            }
 
-            // Default allocation types based on device/tag
-            $allocType = 'Permanent';
-            $expReturn = null;
-            $custodyStatus = 'Active';
-
-            if (stripos($row['name'], 'iPad') !== false || stripos($row['category'], 'Tablet') !== false) {
-                $allocType = 'Temporary Loaner';
-                $expReturn = date('Y-m-d', strtotime('+14 days'));
-                $custodyStatus = 'Due Soon';
-            } elseif (stripos($row['department'], 'Sales') !== false || stripos($row['model'], 'Cellular') !== false) {
-                $allocType = 'Remote / WFH';
+            $totalAccessories = intval($row['total_accessories']);
+            if ($totalAccessories <= 0) {
+                $tCount = 0;
+                foreach ($accList as $ac) {
+                    $tCount += isset($ac['qty']) ? intval($ac['qty']) : 1;
+                }
+                $totalAccessories = $tCount;
             }
 
             $initialAssignments[] = [
-                'id'              => intval($row['id']),
-                'asset_id'        => intval($row['id']),
-                'slip_no'         => 'SLIP-2026-' . str_pad($row['id'], 4, '0', STR_PAD_LEFT),
-                'asset_tag'       => $row['tag'],
-                'asset_name'      => $row['name'],
-                'category'        => $row['category'],
-                'brand'           => $row['brand'],
-                'model'           => $row['model'] ?? '',
-                'serial'          => $row['serial'] ?? '—',
-                'specs'           => trim(($row['processor'] ?? '') . ' ' . ($row['ram'] ?? '') . ' ' . ($row['storage'] ?? '')),
-                'employee_name'   => $assignedName,
-                'emp_code'        => $empCode,
-                'employee_email'  => $empEmail,
-                'department'      => $empDept,
-                'designation'     => $empDesig,
-                'location'        => $row['location'] ?: 'Corporate HQ - Mumbai',
-                'assigned_date'   => $row['assigned_date_raw'] ?: '2026-08-15',
-                'allocation_type' => $allocType,
-                'expected_return' => $expReturn,
-                'custody_status'  => $custodyStatus,
-                'condition'       => $row['condition'] ?: 'Excellent',
-                'accessories'     => ['Power Adapter & Cable', 'Laptop Sleeve Bag', 'Wireless Mouse'],
-                'handover_by'     => 'Abhishek Sharma (IT Admin)',
-                'agreement_signed'=> true,
-                'notes'           => 'Device physically verified and allocated in working condition.'
+                'id'                => intval($row['id']),
+                'slip_no'           => $row['slip_no'],
+                'employee_id'       => $row['employee_id'] ? intval($row['employee_id']) : null,
+                'employee_name'     => $row['employee_name'],
+                'emp_code'          => $row['emp_code'] ?? 'EMP-0000',
+                'employee_email'    => $row['employee_email'] ?? '',
+                'department'        => $row['department'] ?? 'General',
+                'designation'       => $row['designation'] ?? 'Staff',
+                'location'          => $row['location'] ?? 'Corporate HQ',
+                'assigned_date'     => $row['assigned_date'],
+                'allocation_type'   => $row['allocation_type'],
+                'expected_return'   => $row['expected_return'],
+                'return_date'       => $row['return_date'],
+                'custody_status'    => $row['custody_status'],
+                'condition'         => $row['condition'] ?? 'Good',
+                'total_assets'      => $totalAssets,
+                'total_accessories' => $totalAccessories,
+                'assets'            => $assetsList,
+                'accessories'       => $accList,
+                'handover_by'       => $row['handover_by'] ?? 'IT Administrator',
+                'agreement_signed'  => (bool)$row['agreement_signed'],
+                'notes'             => $row['notes'] ?? '',
+                'return_notes'      => $row['return_notes'] ?? ''
             ];
-            $idx++;
         }
         sqlsrv_free_stmt($assignedStmt);
     }
 }
 
-// Fallback seed data if DB table has no assignments yet (to guarantee rich UI demonstration)
-if (empty($initialAssignments)) {
-    $initialAssignments = [
-        [
-            'id'              => 1,
-            'asset_id'        => 1,
-            'slip_no'         => 'SLIP-2026-0001',
-            'asset_tag'       => 'AST2024001',
-            'asset_name'      => 'MacBook Pro 16" M3 Max',
-            'category'        => 'Laptops',
-            'brand'           => 'Apple',
-            'model'           => 'MacBook Pro 16 (Space Black)',
-            'serial'          => 'C02G40PZMD6T',
-            'specs'           => 'Apple M3 Max 16-Core • 64 GB Unified • 1 TB NVMe SSD',
-            'employee_name'   => 'Marcus Vance',
-            'emp_code'        => 'EMP-1001',
-            'employee_email'  => 'marcus.vance@viros.com',
-            'department'      => 'Engineering',
-            'designation'     => 'VP of Engineering',
-            'location'        => 'Corporate HQ - Mumbai',
-            'assigned_date'   => '2026-01-15',
-            'allocation_type' => 'Permanent',
-            'expected_return' => null,
-            'custody_status'  => 'Active',
-            'condition'       => 'Brand New',
-            'accessories'     => ['140W USB-C Power Adapter', 'MagSafe 3 Cable', 'Tumi Laptop Backpack', 'Magic Mouse 2'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'Executive allocation. Inspected and verified.'
-        ],
-        [
-            'id'              => 2,
-            'asset_id'        => 2,
-            'slip_no'         => 'SLIP-2026-0002',
-            'asset_tag'       => 'AST2024002',
-            'asset_name'      => 'Dell XPS 15 9530',
-            'category'        => 'Laptops',
-            'brand'           => 'Dell',
-            'model'           => 'XPS 15 (OLED Touch)',
-            'serial'          => 'DELL-984210-X',
-            'specs'           => 'Intel Core i9-13900H • 32 GB DDR5 • RTX 4070',
-            'employee_name'   => 'Sophia Chen',
-            'emp_code'        => 'EMP-1002',
-            'employee_email'  => 'sophia.chen@viros.com',
-            'department'      => 'Cloud Operations',
-            'designation'     => 'Senior DevOps Engineer',
-            'location'        => 'Tech Hub - Bangalore',
-            'assigned_date'   => '2026-03-10',
-            'allocation_type' => 'Remote / WFH',
-            'expected_return' => null,
-            'custody_status'  => 'Active',
-            'condition'       => 'Excellent',
-            'accessories'     => ['130W Type-C AC Adapter', 'Dell Pro Wireless Headset', 'Laptop Stand'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'Remote deployment package. Shipped via secure courier.'
-        ],
-        [
-            'id'              => 3,
-            'asset_id'        => 4,
-            'slip_no'         => 'SLIP-2026-0004',
-            'asset_tag'       => 'AST2024004',
-            'asset_name'      => 'Lenovo ThinkPad X1 Carbon Gen 11',
-            'category'        => 'Laptops',
-            'brand'           => 'Lenovo',
-            'model'           => 'ThinkPad X1 Carbon',
-            'serial'          => 'PF-39X1-LNV',
-            'specs'           => 'Intel Core i7-1365U vPro • 32 GB LPDDR5 • 512 GB SSD',
-            'employee_name'   => 'Sarah Jenkins',
-            'emp_code'        => 'EMP-1004',
-            'employee_email'  => 'sarah.jenkins@viros.com',
-            'department'      => 'Engineering',
-            'designation'     => 'Enterprise Architect',
-            'location'        => 'Branch Office - Delhi NCR',
-            'assigned_date'   => '2026-05-18',
-            'allocation_type' => 'Permanent',
-            'expected_return' => null,
-            'custody_status'  => 'Active',
-            'condition'       => 'Excellent',
-            'accessories'     => ['65W Slim Tip Charger', 'ThinkPad Pouch', 'HDMI Cable'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'Permanent handover.'
-        ],
-        [
-            'id'              => 4,
-            'asset_id'        => 9,
-            'slip_no'         => 'SLIP-2026-0009',
-            'asset_tag'       => 'AST2024009',
-            'asset_name'      => 'Apple iPad Pro 12.9" M2 Cellular',
-            'category'        => 'Tablets & Mobile',
-            'brand'           => 'Apple',
-            'model'           => 'iPad Pro 12.9 (Wi-Fi + 5G)',
-            'serial'          => 'DMPF7829Q921',
-            'specs'           => 'Apple M2 • 16 GB Unified • 256 GB Liquid Retina XDR',
-            'employee_name'   => 'Aarav Patel',
-            'emp_code'        => 'EMP-1008',
-            'employee_email'  => 'aarav.patel@viros.com',
-            'department'      => 'Product Management',
-            'designation'     => 'Lead Product Manager',
-            'location'        => 'Corporate HQ - Mumbai',
-            'assigned_date'   => '2026-09-22',
-            'allocation_type' => 'Temporary Loaner',
-            'expected_return' => '2026-10-22',
-            'custody_status'  => 'Due Soon',
-            'condition'       => 'Excellent',
-            'accessories'     => ['Apple Pencil 2nd Gen', 'Magic Keyboard Case', '20W USB-C Adapter'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'Client demo sprint loaner. Return required on completion.'
-        ],
-        [
-            'id'              => 5,
-            'asset_id'        => 6,
-            'slip_no'         => 'SLIP-2026-0006',
-            'asset_tag'       => 'AST2024006',
-            'asset_name'      => 'Apple iMac 24" M3',
-            'category'        => 'Desktops',
-            'brand'           => 'Apple',
-            'model'           => 'iMac 24 (4.5K Retina Display)',
-            'serial'          => 'C02K98LLM3',
-            'specs'           => 'Apple M3 8-Core • 24 GB Unified • 512 GB SSD',
-            'employee_name'   => 'Elena Rostova',
-            'emp_code'        => 'EMP-1006',
-            'employee_email'  => 'elena.rostova@viros.com',
-            'department'      => 'Design & Creative',
-            'designation'     => 'Senior UI/UX Designer',
-            'location'        => 'Corporate HQ - Mumbai',
-            'assigned_date'   => '2026-02-25',
-            'allocation_type' => 'Permanent',
-            'expected_return' => null,
-            'custody_status'  => 'Active',
-            'condition'       => 'Excellent',
-            'accessories'     => ['Magic Keyboard with Touch ID', 'Magic Trackpad', 'Power Cord & Adapter'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'Assigned to Design Studio Desk 14.'
-        ],
-        [
-            'id'              => 6,
-            'asset_id'        => 8,
-            'slip_no'         => 'SLIP-2026-0008',
-            'asset_tag'       => 'AST2024008',
-            'asset_name'      => 'HP EliteBook 840 G10',
-            'category'        => 'Laptops',
-            'brand'           => 'HP',
-            'model'           => 'EliteBook 840 G10 Wolf Security',
-            'serial'          => '5CG3290ABC',
-            'specs'           => 'Intel Core i7-1355U • 16 GB DDR5 • 512 GB NVMe',
-            'employee_name'   => 'David Kim',
-            'emp_code'        => 'EMP-1007',
-            'employee_email'  => 'david.kim@viros.com',
-            'department'      => 'Cybersecurity & Compliance',
-            'designation'     => 'Information Security Officer',
-            'location'        => 'Delivery Center - Hyderabad',
-            'assigned_date'   => '2026-04-12',
-            'allocation_type' => 'Permanent',
-            'expected_return' => null,
-            'custody_status'  => 'Active',
-            'condition'       => 'Good',
-            'accessories'     => ['HP 65W USB-C Adapter', 'HP Carrying Bag', 'YubiKey 5 NFC'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'Secured Wolf Pro Security installation enabled.'
-        ],
-        [
-            'id'              => 7,
-            'asset_id'        => 10,
-            'slip_no'         => 'SLIP-2026-0010',
-            'asset_tag'       => 'AST2024010',
-            'asset_name'      => 'Lenovo ThinkPad T14 Gen 4',
-            'category'        => 'Laptops',
-            'brand'           => 'Lenovo',
-            'model'           => 'ThinkPad T14 AMD Edition',
-            'serial'          => 'PF-478K20-LNV',
-            'specs'           => 'AMD Ryzen 7 PRO 7840U • 32 GB LPDDR5X • 1 TB SSD',
-            'employee_name'   => 'Liam Gallagher',
-            'emp_code'        => 'EMP-1010',
-            'employee_email'  => 'liam.gallagher@viros.com',
-            'department'      => 'Engineering',
-            'designation'     => 'Lead Frontend Architect',
-            'location'        => 'Development Center - Pune',
-            'assigned_date'   => '2026-06-01',
-            'allocation_type' => 'Project Deployment',
-            'expected_return' => '2026-12-31',
-            'custody_status'  => 'Active',
-            'condition'       => 'Brand New',
-            'accessories'     => ['65W GaN Charger', 'ThinkPad Sleeve', 'USB-C Multiport Hub'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'Project Phoenix Core deployment.'
-        ],
-        [
-            'id'              => 8,
-            'asset_id'        => 13,
-            'slip_no'         => 'SLIP-2026-0013',
-            'asset_tag'       => 'AST2024013',
-            'asset_name'      => 'Apple MacBook Air 15" M2',
-            'category'        => 'Laptops',
-            'brand'           => 'Apple',
-            'model'           => 'MacBook Air 15 (Midnight)',
-            'serial'          => 'C02HQ81LMD91',
-            'specs'           => 'Apple M2 8-Core • 16 GB Unified • 512 GB SSD',
-            'employee_name'   => 'Priya Sharma',
-            'emp_code'        => 'EMP-1013',
-            'employee_email'  => 'priya.sharma@viros.com',
-            'department'      => 'Human Resources',
-            'designation'     => 'Senior HR Business Partner',
-            'location'        => 'Corporate HQ - Mumbai',
-            'assigned_date'   => '2026-07-15',
-            'allocation_type' => 'Permanent',
-            'expected_return' => null,
-            'custody_status'  => 'Active',
-            'condition'       => 'Brand New',
-            'accessories'     => ['35W Dual USB-C Adapter', 'MagSafe Cable', 'Midnight Leather Sleeve'],
-            'handover_by'     => 'Abhishek Sharma (IT Lead)',
-            'agreement_signed'=> true,
-            'notes'           => 'HR management machine.'
-        ]
-    ];
-}
-
-// Fallback available assets for dropdown
-if (empty($availableAssets)) {
-    $availableAssets = [
-        [
-            'id'        => 5,
-            'tag'       => 'AST2024005',
-            'name'      => 'Cisco Catalyst 9300 48-Port PoE+',
-            'category'  => 'Networking',
-            'brand'     => 'Cisco',
-            'model'     => 'C9300-48P-A',
-            'serial'    => 'FOC2408W0AB',
-            'condition' => 'Excellent',
-            'location'  => 'Storage Depot (Rack B-01)',
-            'specs'     => '48x 1G PoE+ (437W) • Modular Uplinks'
-        ],
-        [
-            'id'        => 14,
-            'tag'       => 'AST2024014',
-            'name'      => 'Microsoft Surface Pro 9',
-            'category'  => 'Tablets & Mobile',
-            'brand'     => 'Microsoft',
-            'model'     => 'Surface Pro 9 (Platinum)',
-            'serial'    => '029384729153',
-            'condition' => 'Good',
-            'location'  => 'Storage Depot (Shelf 3)',
-            'specs'     => 'Intel Core i7-1255U • 16 GB RAM • 256 GB SSD'
-        ],
-        [
-            'id'        => 15,
-            'tag'       => 'AST2024015',
-            'name'      => 'Dell Latitude 5420',
-            'category'  => 'Laptops',
-            'brand'     => 'Dell',
-            'model'     => 'Latitude 5420 Business',
-            'serial'    => 'DELL-5420-OLD',
-            'condition' => 'Good',
-            'location'  => 'Storage Depot (Shelf 1)',
-            'specs'     => 'Intel Core i5-1145G7 • 16 GB DDR4 • 256 GB SSD'
-        ],
-        [
-            'id'        => 16,
-            'tag'       => 'AST2026015',
-            'name'      => 'Dell Latitude 5420 (Secondary)',
-            'category'  => 'Laptops',
-            'brand'     => 'Dell',
-            'model'     => 'Latitude 5420 Enterprise',
-            'serial'    => 'DELL-5420-REV2',
-            'condition' => 'Brand New',
-            'location'  => 'Storage Depot (Shelf 1)',
-            'specs'     => 'Intel Core i5-1145G7 • 16 GB DDR4 • 512 GB SSD'
-        ]
-    ];
-}
-
-// Fallback employees list
-if (empty($employeesList)) {
-    $employeesList = [
-        ['id' => 1, 'emp_code' => 'EMP-1001', 'name' => 'Marcus Vance', 'email' => 'marcus.vance@viros.com', 'designation' => 'VP of Engineering', 'department' => 'Engineering', 'location' => 'Corporate HQ - Mumbai'],
-        ['id' => 2, 'emp_code' => 'EMP-1002', 'name' => 'Sophia Chen', 'email' => 'sophia.chen@viros.com', 'designation' => 'Senior DevOps Engineer', 'department' => 'Cloud Operations', 'location' => 'Tech Hub - Bangalore'],
-        ['id' => 3, 'emp_code' => 'EMP-1003', 'name' => 'Vikram Malhotra', 'email' => 'vikram.malhotra@viros.com', 'designation' => 'Infrastructure Manager', 'department' => 'IT Infrastructure', 'location' => 'Corporate HQ - Mumbai'],
-        ['id' => 4, 'emp_code' => 'EMP-1004', 'name' => 'Sarah Jenkins', 'email' => 'sarah.jenkins@viros.com', 'designation' => 'Enterprise Architect', 'department' => 'Engineering', 'location' => 'Branch Office - Delhi NCR'],
-        ['id' => 5, 'emp_code' => 'EMP-1005', 'name' => 'Rohan Mehta', 'email' => 'rohan.mehta@viros.com', 'designation' => 'Full Stack Developer', 'department' => 'Engineering', 'location' => 'Development Center - Pune'],
-        ['id' => 6, 'emp_code' => 'EMP-1006', 'name' => 'Elena Rostova', 'email' => 'elena.rostova@viros.com', 'designation' => 'Senior UI/UX Designer', 'department' => 'Design & Creative', 'location' => 'Corporate HQ - Mumbai'],
-        ['id' => 7, 'emp_code' => 'EMP-1007', 'name' => 'David Kim', 'email' => 'david.kim@viros.com', 'designation' => 'Information Security Officer', 'department' => 'Cybersecurity & Compliance', 'location' => 'Delivery Center - Hyderabad'],
-        ['id' => 8, 'emp_code' => 'EMP-1008', 'name' => 'Aarav Patel', 'email' => 'aarav.patel@viros.com', 'designation' => 'Lead Product Manager', 'department' => 'Product Management', 'location' => 'Corporate HQ - Mumbai'],
-        ['id' => 9, 'emp_code' => 'EMP-1009', 'name' => 'Ananya Sen', 'email' => 'ananya.sen@viros.com', 'designation' => 'Financial Analyst', 'department' => 'Finance & Accounts', 'location' => 'Corporate HQ - Mumbai'],
-        ['id' => 10, 'emp_code' => 'EMP-1010', 'name' => 'Liam Gallagher', 'email' => 'liam.gallagher@viros.com', 'designation' => 'Lead Frontend Architect', 'department' => 'Engineering', 'location' => 'Development Center - Pune'],
-        ['id' => 11, 'emp_code' => 'EMP-1011', 'name' => 'Kavita Nair', 'email' => 'kavita.nair@viros.com', 'designation' => 'Network Engineer', 'department' => 'IT Infrastructure', 'location' => 'Operations Center - Chennai'],
-        ['id' => 12, 'emp_code' => 'EMP-1012', 'name' => 'Priya Sharma', 'email' => 'priya.sharma@viros.com', 'designation' => 'Senior HR Business Partner', 'department' => 'Human Resources', 'location' => 'Corporate HQ - Mumbai']
-    ];
-}
-
-if (empty($departmentsList)) {
-    $departmentsList = ['Engineering', 'Cloud Operations', 'IT Infrastructure', 'Design & Creative', 'Product Management', 'Cybersecurity & Compliance', 'Human Resources', 'Finance & Accounts'];
-}
-
+// Live assignments, assets, and employees are sourced directly from database tables
 // Compute live metrics
 $stats = [
-    'total'         => count($initialAssignments),
-    'permanent'     => 0,
-    'temporary'     => 0,
-    'remote'        => 0,
-    'due_soon'      => 0,
-    'available'     => count($availableAssets)
+    'total'             => count($initialAssignments),
+    'permanent'         => 0,
+    'temporary'         => 0,
+    'remote'            => 0,
+    'due_soon'          => 0,
+    'total_assets'      => 0,
+    'total_accessories' => 0,
+    'available'         => count($availableAssets)
 ];
 
 foreach ($initialAssignments as $item) {
+    if ($item['custody_status'] !== 'Returned') {
+        $stats['total_assets'] += $item['total_assets'];
+        $stats['total_accessories'] += $item['total_accessories'];
+    }
+
     $type = $item['allocation_type'];
     if ($type === 'Permanent') {
         $stats['permanent']++;
@@ -575,36 +280,53 @@ include 'includes/topbar.php';
     </div>
 
     <!-- KPI Metric Stat Cards -->
-    <div class="asset-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));">
+    <div class="asset-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));">
         <!-- Total Active Allocations -->
-        <div class="alloc-stat-card card-active" data-filter-tab="all" title="View all active allocations">
+        <div class="alloc-stat-card card-active" data-filter-tab="all" title="View all active handover slips">
             <div class="alloc-stat-info">
-                <div class="stat-lbl">Active In Custody</div>
+                <div class="stat-lbl">Active Handover Slips</div>
                 <div class="stat-val" id="kpiTotalAllocated"><?php echo $stats['total']; ?></div>
                 <div class="stat-sub">
-                    <span style="color: #10b981; font-weight: 600;">●</span> Total deployed hardware fleet
+                    <span style="color: #10b981; font-weight: 600;">●</span> Active custodian agreements
                 </div>
             </div>
             <div class="alloc-stat-icon cyan">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Total Assets Deployed -->
+        <div class="alloc-stat-card card-permanent" title="Total hardware assets allocated to staff">
+            <div class="alloc-stat-info">
+                <div class="stat-lbl">Deployed Assets</div>
+                <div class="stat-val" id="kpiDeployedAssets" style="color: #4f46e5;"><?php echo $stats['total_assets']; ?></div>
+                <div class="stat-sub">Hardware units with staff</div>
+            </div>
+            <div class="alloc-stat-icon indigo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2"></rect>
                     <line x1="8" y1="21" x2="16" y2="21"></line>
                     <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
             </div>
         </div>
 
-        <!-- Permanent Handover -->
-        <div class="alloc-stat-card card-permanent" data-filter-tab="permanent" title="Filter permanent staff equipment">
+        <!-- Total Accessories Deployed -->
+        <div class="alloc-stat-card" style="border-left: 4px solid #059669;" title="Total accessories deployed to employees">
             <div class="alloc-stat-info">
-                <div class="stat-lbl">Permanent Handover</div>
-                <div class="stat-val" id="kpiPermanentAllocated" style="color: #4f46e5;"><?php echo $stats['permanent']; ?></div>
-                <div class="stat-sub">Regular employee workstations</div>
+                <div class="stat-lbl">Deployed Accessories</div>
+                <div class="stat-val" id="kpiDeployedAccessories" style="color: #059669;"><?php echo $stats['total_accessories']; ?></div>
+                <div class="stat-sub">Peripherals & cables allocated</div>
             </div>
-            <div class="alloc-stat-icon indigo">
+            <div class="alloc-stat-icon emerald">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
+                    <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                 </svg>
             </div>
         </div>
@@ -612,7 +334,7 @@ include 'includes/topbar.php';
         <!-- Temporary / Loaner Devices -->
         <div class="alloc-stat-card card-temporary" data-filter-tab="temporary" title="Filter temporary loaners & project devices">
             <div class="alloc-stat-info">
-                <div class="stat-lbl">Temporary Loaners</div>
+                <div class="stat-lbl">Loaners / Due Soon</div>
                 <div class="stat-val" id="kpiTemporaryAllocated" style="color: #d97706;"><?php echo $stats['temporary']; ?></div>
                 <div class="stat-sub">
                     <span style="color: #ea580c; font-weight: 600;"><?php echo $stats['due_soon']; ?> Due / Overdue</span>
@@ -630,10 +352,10 @@ include 'includes/topbar.php';
         <div class="alloc-stat-card card-available" id="cardAvailableInStock" title="View available unallocated hardware">
             <div class="alloc-stat-info">
                 <div class="stat-lbl">Ready to Assign</div>
-                <div class="stat-val" id="kpiAvailableAssets" style="color: #059669;"><?php echo $stats['available']; ?></div>
+                <div class="stat-val" id="kpiAvailableAssets" style="color: #0891b2;"><?php echo $stats['available']; ?></div>
                 <div class="stat-sub">In stock in IT storage depot</div>
             </div>
-            <div class="alloc-stat-icon emerald">
+            <div class="alloc-stat-icon cyan">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                     <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
@@ -722,15 +444,16 @@ include 'includes/topbar.php';
             <table class="asset-data-table">
                 <thead>
                     <tr>
-                        <th style="width: 40px;">
+                        <th style="width: 36px;">
                             <input type="checkbox" class="custom-checkbox" id="selectAllAlloc">
                         </th>
-                        <th>Asset & Hardware Info</th>
-                        <th>Custodian / Employee</th>
-                        <th>Allocation Terms</th>
-                        <th>Expected Return</th>
-                        <th>Custody Status</th>
-                        <th style="text-align: right; padding-right: 18px;">Actions</th>
+                        <th style="min-width: 130px;">Handover Slip</th>
+                        <th style="min-width: 220px;">Custodian / Employee</th>
+                        <th style="min-width: 230px;">Assigned Assets (Hardware)</th>
+                        <th style="min-width: 210px;">Assigned Accessories</th>
+                        <th style="min-width: 140px;">Allocation Terms</th>
+                        <th style="min-width: 120px;">Custody Status</th>
+                        <th style="text-align: right; padding-right: 18px; min-width: 120px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="allocationsTbody">
@@ -748,6 +471,9 @@ include 'includes/topbar.php';
                         } elseif ($row['custody_status'] === 'Overdue') {
                             $custodyBadge = 'status-overdue';
                             $statusText = 'Overdue';
+                        } elseif ($row['custody_status'] === 'Returned') {
+                            $custodyBadge = 'status-returned';
+                            $statusText = 'Returned';
                         }
                     ?>
                         <tr data-id="<?php echo $row['id']; ?>">
@@ -755,23 +481,14 @@ include 'includes/topbar.php';
                                 <input type="checkbox" class="custom-checkbox row-select-checkbox" value="<?php echo $row['id']; ?>">
                             </td>
                             <td>
-                                <div class="alloc-asset-cell">
-                                    <div class="alloc-asset-icon">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                            <line x1="8" y1="21" x2="16" y2="21"></line>
-                                            <line x1="12" y1="17" x2="12" y2="21"></line>
-                                        </svg>
-                                    </div>
-                                    <div class="alloc-asset-details">
-                                        <span class="alloc-asset-name" onclick="openAssignmentDrawer(<?php echo $row['id']; ?>)">
-                                            <?php echo htmlspecialchars($row['asset_name']); ?>
-                                        </span>
-                                        <div class="alloc-asset-meta">
-                                            <span class="asset-tag-badge" onclick="openAssignmentDrawer(<?php echo $row['id']; ?>)"><?php echo htmlspecialchars($row['asset_tag']); ?></span>
-                                            <span class="category-pill" style="font-size: 10.5px; padding: 1px 6px;"><?php echo htmlspecialchars($row['category']); ?></span>
-                                            <span class="serial-badge" style="font-size: 10.5px; padding: 1px 6px;">SN: <?php echo htmlspecialchars($row['serial']); ?></span>
-                                        </div>
+                                <div class="slip-cell">
+                                    <span class="slip-badge" onclick="openAssignmentDrawer(<?php echo $row['id']; ?>)">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                        <?php echo htmlspecialchars($row['slip_no']); ?>
+                                    </span>
+                                    <div class="slip-date">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                        <?php echo htmlspecialchars($row['assigned_date']); ?>
                                     </div>
                                 </div>
                             </td>
@@ -799,28 +516,76 @@ include 'includes/topbar.php';
                                 </div>
                             </td>
                             <td>
+                                <div>
+                                    <div class="count-pill-wrap">
+                                        <?php if ($row['total_assets'] > 0): ?>
+                                            <span class="kitna-badge asset-kitna-badge">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                                <strong><?php echo $row['total_assets']; ?> <?php echo $row['total_assets'] === 1 ? 'Asset' : 'Assets'; ?></strong>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="kitna-badge zero-kitna-badge">0 Assets</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="chips-compact-list">
+                                        <?php 
+                                            $displayAssets = array_slice($row['assets'], 0, 2);
+                                            foreach ($displayAssets as $ast): 
+                                        ?>
+                                            <span class="chip-device" title="<?php echo htmlspecialchars($ast['name']); ?> (SN: <?php echo htmlspecialchars($ast['serial'] ?? '—'); ?>)">
+                                                <span class="chip-tag"><?php echo htmlspecialchars($ast['tag']); ?></span>
+                                                <span class="chip-device-name"><?php echo htmlspecialchars($ast['name']); ?></span>
+                                            </span>
+                                        <?php endforeach; ?>
+                                        <?php if (count($row['assets']) > 2): ?>
+                                            <span class="chip-more-count" onclick="openAssignmentDrawer(<?php echo $row['id']; ?>)">+<?php echo count($row['assets']) - 2; ?> more device(s)</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="count-pill-wrap">
+                                        <?php if ($row['total_accessories'] > 0): ?>
+                                            <span class="kitna-badge acc-kitna-badge">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                                <strong><?php echo $row['total_accessories']; ?> <?php echo $row['total_accessories'] === 1 ? 'Accessory' : 'Accessories'; ?></strong>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="kitna-badge zero-kitna-badge">0 Accessories</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="chips-compact-list">
+                                        <?php 
+                                            $displayAcc = array_slice($row['accessories'], 0, 2);
+                                            foreach ($displayAcc as $acc): 
+                                                $accName = is_array($acc) ? ($acc['name'] ?? 'Item') : $acc;
+                                                $accQty = is_array($acc) && !empty($acc['qty']) ? intval($acc['qty']) : 1;
+                                        ?>
+                                            <span class="chip-acc-tag" title="<?php echo htmlspecialchars($accName); ?>">
+                                                <span><?php echo htmlspecialchars($accName); ?></span>
+                                                <span class="chip-acc-qty"><?php echo $accQty; ?></span>
+                                            </span>
+                                        <?php endforeach; ?>
+                                        <?php if (count($row['accessories']) > 2): ?>
+                                            <span class="chip-more-count" onclick="openAssignmentDrawer(<?php echo $row['id']; ?>)">+<?php echo count($row['accessories']) - 2; ?> more item(s)</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
                                 <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-start;">
                                     <span class="alloc-pill <?php echo $typePill; ?>">
                                         <?php echo htmlspecialchars($row['allocation_type']); ?>
                                     </span>
-                                    <span style="font-size: 11.5px; color: var(--text-muted);">
-                                        Assigned: <?php echo htmlspecialchars($row['assigned_date']); ?>
-                                    </span>
+                                    <?php if (!empty($row['expected_return'])): ?>
+                                        <span style="font-size: 11px; color: #ea580c; font-weight: 600;">
+                                            Exp: <?php echo htmlspecialchars($row['expected_return']); ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span style="font-size: 11px; color: var(--text-muted);">Permanent</span>
+                                    <?php endif; ?>
                                 </div>
-                            </td>
-                            <td>
-                                <?php if (!empty($row['expected_return'])): ?>
-                                    <div style="display: flex; flex-direction: column; gap: 2px;">
-                                        <span style="font-size: 12.5px; font-weight: 600; color: #b45309;">
-                                            <?php echo htmlspecialchars($row['expected_return']); ?>
-                                        </span>
-                                        <span style="font-size: 11px; color: #ea580c;">
-                                            Exp. Return
-                                        </span>
-                                    </div>
-                                <?php else: ?>
-                                    <span style="font-size: 12px; color: var(--text-muted);">— Permanent</span>
-                                <?php endif; ?>
                             </td>
                             <td>
                                 <div class="custody-badge <?php echo $custodyBadge; ?>">
@@ -828,7 +593,7 @@ include 'includes/topbar.php';
                                     <span><?php echo $statusText; ?></span>
                                 </div>
                                 <?php if (!empty($row['agreement_signed'])): ?>
-                                    <div style="font-size: 10.5px; color: #16a34a; margin-top: 3px; display: flex; align-items: center; gap: 3px;">
+                                    <div class="slip-signed-note">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                         <span>Slip Verified</span>
                                     </div>
@@ -852,6 +617,18 @@ include 'includes/topbar.php';
                             </td>
                         </tr>
                     <?php endforeach; ?>
+                    <?php if (empty($initialAssignments)): ?>
+                        <tr>
+                            <td colspan="8">
+                                <div class="table-empty-state" style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
+                                    <div style="font-size: 32px; margin-bottom: 8px; opacity: 0.7;">📦</div>
+                                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">No Allocations Found</div>
+                                    <div style="font-size: 12.5px; margin-top: 4px;">No active asset assignments have been created yet.</div>
+                                    <button type="button" class="btn-primary" style="margin-top: 14px; padding: 7px 16px; font-size: 13px;" onclick="document.getElementById('openAssignModalBtn')?.click()">Assign New Asset</button>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -869,11 +646,11 @@ include 'includes/topbar.php';
         <div class="drawer-header-left">
             <div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span class="asset-tag-badge" id="drawerTagBadge" style="font-size: 12px; font-weight: 700;">AST-2024-001</span>
+                    <span class="asset-tag-badge" id="drawerTagBadge" style="font-size: 12px; font-weight: 700;">-</span>
                     <span class="custody-badge status-active" id="drawerStatusBadge"><span class="dot"></span>In Custody</span>
-                    <span class="emp-code-badge" id="drawerSlipNo">SLIP-2026-0001</span>
+                    <span class="emp-code-badge" id="drawerSlipNo">-</span>
                 </div>
-                <h3 id="drawerAssetName" style="margin-top: 4px;">MacBook Pro 16" M3 Max</h3>
+                <h3 id="drawerAssetName" style="margin-top: 4px;">-</h3>
             </div>
         </div>
         <button type="button" class="drawer-close-btn" id="closeAssignmentDrawerBtn" title="Close Drawer">&times;</button>
@@ -908,11 +685,11 @@ include 'includes/topbar.php';
                 </div>
                 <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="custodian-avatar" id="drawerCustAvatar" style="width: 44px; height: 44px; font-size: 15px;">MV</div>
+                        <div class="custodian-avatar" id="drawerCustAvatar" style="width: 44px; height: 44px; font-size: 15px;">--</div>
                         <div>
-                            <div style="font-size: 14.5px; font-weight: 700; color: var(--text-primary);" id="drawerCustName">Marcus Vance</div>
-                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 1px;" id="drawerCustMeta">VP of Engineering • Engineering</div>
-                            <div style="font-size: 11.5px; color: var(--cyan-primary); margin-top: 2px;" id="drawerCustEmail">marcus.vance@viros.com</div>
+                            <div style="font-size: 14.5px; font-weight: 700; color: var(--text-primary);" id="drawerCustName">-</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 1px;" id="drawerCustMeta">-</div>
+                            <div style="font-size: 11.5px; color: var(--cyan-primary); margin-top: 2px;" id="drawerCustEmail">-</div>
                         </div>
                     </div>
                     <button type="button" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="if(window.activeAllocId) openTransferModal(window.activeAllocId)">
@@ -930,28 +707,39 @@ include 'includes/topbar.php';
                 <div class="drawer-spec-grid">
                     <div class="drawer-spec-item">
                         <div class="label">Allocation Type</div>
-                        <div class="value" id="drawerAllocType">Permanent</div>
+                        <div class="value" id="drawerAllocType">-</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Handover Date</div>
-                        <div class="value" id="drawerAssignedDate">2026-01-15</div>
+                        <div class="value" id="drawerAssignedDate">-</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Expected Return</div>
-                        <div class="value" id="drawerExpectedReturn">— Permanent</div>
+                        <div class="value" id="drawerExpectedReturn">-</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Initial Condition</div>
-                        <div class="value" id="drawerCondition">Brand New</div>
+                        <div class="value" id="drawerCondition">-</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Assigned Branch</div>
-                        <div class="value" id="drawerLocation">Corporate HQ - Mumbai</div>
+                        <div class="value" id="drawerLocation">-</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Issued By</div>
-                        <div class="value" id="drawerHandoverBy">Abhishek Sharma (IT Lead)</div>
+                        <div class="value" id="drawerHandoverBy">-</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Allocated Hardware Assets Checklist -->
+            <div class="drawer-section">
+                <div class="drawer-section-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    Allocated Hardware Devices (<span id="drawerAssetCount">0</span>)
+                </div>
+                <div id="drawerAssetsWrap" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
@@ -1261,8 +1049,8 @@ include 'includes/topbar.php';
                 
                 <div class="preview-summary-card" style="margin-bottom: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span class="asset-tag-badge" id="returnTagText">AST-2024-001</span>
-                        <span class="emp-code-badge" id="returnEmpCodeText">EMP-1001</span>
+                        <span class="asset-tag-badge" id="returnTagText">-</span>
+                        <span class="emp-code-badge" id="returnEmpCodeText">-</span>
                     </div>
                     <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);" id="returnAssetNameText">-</div>
                     <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
@@ -1331,7 +1119,7 @@ include 'includes/topbar.php';
                 
                 <div class="preview-summary-card" style="margin-bottom: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span class="asset-tag-badge" id="transferTagText">AST-2024-001</span>
+                        <span class="asset-tag-badge" id="transferTagText">-</span>
                         <span style="font-size: 11px; color: var(--text-muted);">Current Custodian</span>
                     </div>
                     <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);" id="transferAssetNameText">-</div>
@@ -1403,7 +1191,7 @@ include 'includes/topbar.php';
                         <div class="slip-subtitle">IT Asset Handover & Custodian Agreement Slip</div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-family: monospace; font-weight: 700; font-size: 13px; color: var(--cyan-primary);" id="slipNumber">SLIP-2026-0001</div>
+                        <div style="font-family: monospace; font-weight: 700; font-size: 13px; color: var(--cyan-primary);" id="slipNumber">-</div>
                         <div style="font-size: 11px; color: #64748b;" id="slipDate">Date: <?php echo date('d-M-Y'); ?></div>
                     </div>
                 </div>
@@ -1413,57 +1201,56 @@ include 'includes/topbar.php';
                 <div class="slip-grid-2">
                     <div class="slip-grid-item">
                         <span class="label">Employee Name:</span>
-                        <span class="value" id="slipEmpName">Marcus Vance</span>
+                        <span class="value" id="slipEmpName">-</span>
                     </div>
                     <div class="slip-grid-item">
                         <span class="label">Employee ID:</span>
-                        <span class="value" id="slipEmpCode">EMP-1001</span>
+                        <span class="value" id="slipEmpCode">-</span>
                     </div>
                     <div class="slip-grid-item">
                         <span class="label">Department:</span>
-                        <span class="value" id="slipEmpDept">Engineering</span>
+                        <span class="value" id="slipEmpDept">-</span>
                     </div>
                     <div class="slip-grid-item">
                         <span class="label">Designation:</span>
-                        <span class="value" id="slipEmpDesig">VP of Engineering</span>
+                        <span class="value" id="slipEmpDesig">-</span>
                     </div>
                 </div>
 
                 <!-- Hardware Info -->
-                <div class="slip-section-title">2. Hardware Equipment Specifications</div>
-                <div class="slip-grid-2">
-                    <div class="slip-grid-item">
-                        <span class="label">Asset Tag:</span>
-                        <span class="value" id="slipAssetTag" style="color: var(--cyan-primary);">AST-2024-001</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Category:</span>
-                        <span class="value" id="slipAssetCat">Laptops</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Make & Model:</span>
-                        <span class="value" id="slipAssetModel">MacBook Pro 16" M3 Max</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Serial Number:</span>
-                        <span class="value" id="slipAssetSerial">C02G40PZMD6T</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Allocation Type:</span>
-                        <span class="value" id="slipAllocType">Permanent</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Handover Condition:</span>
-                        <span class="value" id="slipCondition">Brand New</span>
-                    </div>
+                <div class="slip-section-title">2. Hardware Equipment Specifications (<span id="slipAssetCount">0</span>)</div>
+                <div id="slipAssetsContainer" style="margin-bottom: 12px;">
+                    <table class="slip-items-table" style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; text-align: left; border-bottom: 1px solid #cbd5e1;">
+                                <th style="padding: 6px 8px;">Asset Tag</th>
+                                <th style="padding: 6px 8px;">Device Name</th>
+                                <th style="padding: 6px 8px;">Category</th>
+                                <th style="padding: 6px 8px;">Serial No</th>
+                                <th style="padding: 6px 8px;">Condition</th>
+                            </tr>
+                        </thead>
+                        <tbody id="slipAssetsTbody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Peripherals Included -->
-                <div class="slip-section-title">3. Included Peripherals & Accessories</div>
-                <div id="slipAccessoriesList" style="font-size: 11.5px; color: #334155; padding-left: 14px;">
-                    • Power Adapter & USB-C Cable<br>
-                    • Laptop Carrying Case / Backpack<br>
-                    • Wireless Optical Mouse
+                <div class="slip-section-title">3. Included Peripherals & Accessories (<span id="slipAccCount">0</span>)</div>
+                <div id="slipAccessoriesContainer" style="margin-bottom: 14px;">
+                    <table class="slip-items-table" style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; text-align: left; border-bottom: 1px solid #cbd5e1;">
+                                <th style="padding: 6px 8px;">Accessory Item</th>
+                                <th style="padding: 6px 8px;">SKU / Code</th>
+                                <th style="padding: 6px 8px; text-align: center;">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="slipAccTbody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Legal Terms -->

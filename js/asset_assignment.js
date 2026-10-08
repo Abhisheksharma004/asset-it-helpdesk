@@ -161,13 +161,13 @@
         tbody.innerHTML = '';
 
         if (tableCountText) {
-            tableCountText.textContent = `Showing ${list.length} of ${assignments.length} allocations`;
+            tableCountText.textContent = `Showing ${list.length} of ${assignments.length} handover slips`;
         }
 
         if (list.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7">
+                    <td colspan="8">
                         <div class="table-empty-state" style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
                             <div style="font-size: 32px; margin-bottom: 8px; opacity: 0.7;">📦</div>
                             <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">No Allocations Found</div>
@@ -203,6 +203,11 @@
                 statusText = 'Returned';
             }
 
+            const assetsList = Array.isArray(item.assets) ? item.assets : [];
+            const accList = Array.isArray(item.accessories) ? item.accessories : [];
+            const totalAssets = item.total_assets || assetsList.length;
+            const totalAcc = item.total_accessories || accList.length;
+
             const tr = document.createElement('tr');
             tr.setAttribute('data-id', item.id);
             tr.innerHTML = `
@@ -210,23 +215,14 @@
                     <input type="checkbox" class="custom-checkbox row-select-checkbox" value="${item.id}">
                 </td>
                 <td>
-                    <div class="alloc-asset-cell">
-                        <div class="alloc-asset-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="2" y="3" width="20" height="14" rx="2"></rect>
-                                <line x1="8" y1="21" x2="16" y2="21"></line>
-                                <line x1="12" y1="17" x2="12" y2="21"></line>
-                            </svg>
-                        </div>
-                        <div class="alloc-asset-details">
-                            <span class="alloc-asset-name" onclick="openAssignmentDrawer(${item.id})">
-                                ${escapeHtml(item.asset_name)}
-                            </span>
-                            <div class="alloc-asset-meta">
-                                <span class="asset-tag-badge" onclick="openAssignmentDrawer(${item.id})">${escapeHtml(item.asset_tag)}</span>
-                                <span class="category-pill" style="font-size: 10.5px; padding: 1px 6px;">${escapeHtml(item.category)}</span>
-                                <span class="serial-badge" style="font-size: 10.5px; padding: 1px 6px;">SN: ${escapeHtml(item.serial)}</span>
-                            </div>
+                    <div class="slip-cell">
+                        <span class="slip-badge" onclick="openAssignmentDrawer(${item.id})">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                            ${escapeHtml(item.slip_no || ('SLIP-2026-' + item.id))}
+                        </span>
+                        <div class="slip-date">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            ${escapeHtml(item.assigned_date)}
                         </div>
                     </div>
                 </td>
@@ -247,28 +243,72 @@
                     </div>
                 </td>
                 <td>
+                    <div>
+                        <div class="count-pill-wrap">
+                            ${totalAssets > 0 ? `
+                                <span class="kitna-badge asset-kitna-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                    <strong>${totalAssets} ${totalAssets === 1 ? 'Asset' : 'Assets'}</strong>
+                                </span>
+                            ` : `
+                                <span class="kitna-badge zero-kitna-badge">0 Assets</span>
+                            `}
+                        </div>
+                        <div class="chips-compact-list">
+                            ${assetsList.slice(0, 2).map(a => `
+                                <span class="chip-device" title="${escapeHtml(a.name)} (SN: ${escapeHtml(a.serial || '—')})">
+                                    <span class="chip-tag">${escapeHtml(a.tag)}</span>
+                                    <span class="chip-device-name">${escapeHtml(a.name)}</span>
+                                </span>
+                            `).join('')}
+                            ${assetsList.length > 2 ? `
+                                <span class="chip-more-count" onclick="openAssignmentDrawer(${item.id})">+${assetsList.length - 2} more device(s)</span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <div class="count-pill-wrap">
+                            ${totalAcc > 0 ? `
+                                <span class="kitna-badge acc-kitna-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                    <strong>${totalAcc} ${totalAcc === 1 ? 'Accessory' : 'Accessories'}</strong>
+                                </span>
+                            ` : `
+                                <span class="kitna-badge zero-kitna-badge">0 Accessories</span>
+                            `}
+                        </div>
+                        <div class="chips-compact-list">
+                            ${accList.slice(0, 2).map(ac => {
+                                const acName = typeof ac === 'string' ? ac : (ac.name || 'Item');
+                                const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                                return `
+                                    <span class="chip-acc-tag" title="${escapeHtml(acName)}">
+                                        <span>${escapeHtml(acName)}</span>
+                                        <span class="chip-acc-qty">${escapeHtml(acQty)}</span>
+                                    </span>
+                                `;
+                            }).join('')}
+                            ${accList.length > 2 ? `
+                                <span class="chip-more-count" onclick="openAssignmentDrawer(${item.id})">+${accList.length - 2} more item(s)</span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td>
                     <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-start;">
                         <span class="alloc-pill ${typePill}">
                             ${escapeHtml(item.allocation_type)}
                         </span>
-                        <span style="font-size: 11.5px; color: var(--text-muted);">
-                            Assigned: ${escapeHtml(item.assigned_date)}
-                        </span>
+                        ${item.expected_return ? `
+                            <span style="font-size: 11px; color: #ea580c; font-weight: 600;">
+                                Exp: ${escapeHtml(item.expected_return)}
+                            </span>
+                        ` : `
+                            <span style="font-size: 11px; color: var(--text-muted);">Permanent</span>
+                        `}
                     </div>
-                </td>
-                <td>
-                    ${item.expected_return ? `
-                        <div style="display: flex; flex-direction: column; gap: 2px;">
-                            <span style="font-size: 12.5px; font-weight: 600; color: #b45309;">
-                                ${escapeHtml(item.expected_return)}
-                            </span>
-                            <span style="font-size: 11px; color: #ea580c;">
-                                Exp. Return
-                            </span>
-                        </div>
-                    ` : `
-                        <span style="font-size: 12px; color: var(--text-muted);">— Permanent</span>
-                    `}
                 </td>
                 <td>
                     <div class="custody-badge ${custodyBadge}">
@@ -276,7 +316,7 @@
                         <span>${statusText}</span>
                     </div>
                     ${item.agreement_signed ? `
-                        <div style="font-size: 10.5px; color: #16a34a; margin-top: 3px; display: flex; align-items: center; gap: 3px;">
+                        <div class="slip-signed-note">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                             <span>Slip Verified</span>
                         </div>
@@ -309,8 +349,15 @@
         let temporary = 0;
         let remote = 0;
         let dueSoon = 0;
+        let totalAssetsCount = 0;
+        let totalAccCount = 0;
 
         assignments.forEach(a => {
+            if (a.custody_status !== 'Returned') {
+                totalAssetsCount += a.total_assets || (Array.isArray(a.assets) ? a.assets.length : 0);
+                totalAccCount += a.total_accessories || (Array.isArray(a.accessories) ? a.accessories.length : 0);
+            }
+
             if (a.allocation_type === 'Permanent') permanent++;
             else if (a.allocation_type === 'Temporary Loaner') temporary++;
             else if (a.allocation_type === 'Remote / WFH') remote++;
@@ -322,12 +369,14 @@
 
         // KPI elements
         const kpiTotal = document.getElementById('kpiTotalAllocated');
-        const kpiPermanent = document.getElementById('kpiPermanentAllocated');
+        const kpiDeployedAssets = document.getElementById('kpiDeployedAssets');
+        const kpiDeployedAccessories = document.getElementById('kpiDeployedAccessories');
         const kpiTemporary = document.getElementById('kpiTemporaryAllocated');
         const kpiAvailable = document.getElementById('kpiAvailableAssets');
 
         if (kpiTotal) kpiTotal.textContent = total;
-        if (kpiPermanent) kpiPermanent.textContent = permanent;
+        if (kpiDeployedAssets) kpiDeployedAssets.textContent = totalAssetsCount;
+        if (kpiDeployedAccessories) kpiDeployedAccessories.textContent = totalAccCount;
         if (kpiTemporary) kpiTemporary.textContent = temporary;
         if (kpiAvailable) kpiAvailable.textContent = availableAssets.length;
 
@@ -356,11 +405,14 @@
         activeAllocId = item.id;
         window.activeAllocId = item.id;
 
+        const assetsList = Array.isArray(item.assets) ? item.assets : [];
+        const accList = Array.isArray(item.accessories) ? item.accessories : [];
+
         // Header
         const tagEl = document.getElementById('drawerTagBadge');
-        if (tagEl) tagEl.textContent = item.asset_tag;
+        if (tagEl) tagEl.textContent = assetsList.length > 0 ? assetsList[0].tag : 'SLIP';
         const nameEl = document.getElementById('drawerAssetName');
-        if (nameEl) nameEl.textContent = item.asset_name;
+        if (nameEl) nameEl.textContent = assetsList.length > 0 ? assetsList.map(a => a.name).join(', ') : (item.asset_name || 'Equipment Allocation');
         const slipEl = document.getElementById('drawerSlipNo');
         if (slipEl) slipEl.textContent = item.slip_no || 'SLIP-2026-' + item.id;
 
@@ -407,27 +459,60 @@
         setVal('drawerCondition', item.condition);
         setVal('drawerLocation', item.location);
         setVal('drawerHandoverBy', item.handover_by || 'IT Lead');
-        setVal('drawerNotes', item.notes || 'Asset verified and allocated in good physical condition.');
+        setVal('drawerNotes', item.notes || 'Equipment verified and allocated in good physical condition.');
 
-        // Device Specs Tab
-        setVal('specTag', item.asset_tag);
-        setVal('specCategory', item.category);
-        setVal('specBrand', item.brand);
-        setVal('specModel', item.model);
-        setVal('specSerial', item.serial);
-        setVal('specDetails', item.specs || 'N/A');
+        // Allocated Hardware Devices List
+        const assetsWrap = document.getElementById('drawerAssetsWrap');
+        const countBadge = document.getElementById('drawerAssetCount');
+        if (countBadge) countBadge.textContent = assetsList.length;
+        if (assetsWrap) {
+            if (assetsList.length === 0) {
+                assetsWrap.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No hardware devices assigned under this slip.</div>';
+            } else {
+                assetsWrap.innerHTML = assetsList.map(a => `
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10.5px; flex-shrink: 0; font-family: monospace;">
+                                ${escapeHtml(a.tag || 'AST')}
+                            </div>
+                            <div style="min-width: 0;">
+                                <div style="font-weight: 700; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(a.name)}</div>
+                                <div style="font-size: 11.5px; color: var(--text-muted);">${escapeHtml(a.category || 'Hardware')} • SN: <span style="font-family: monospace;">${escapeHtml(a.serial || '—')}</span></div>
+                            </div>
+                        </div>
+                        <span style="font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">${escapeHtml(a.condition || 'Good')}</span>
+                    </div>
+                `).join('');
+            }
+        }
 
         // Accessories Chips
         const accWrap = document.getElementById('drawerAccessoriesWrap');
         if (accWrap) {
-            const accList = Array.isArray(item.accessories) ? item.accessories : ['Power Adapter & Cable', 'Laptop Bag'];
-            accWrap.innerHTML = accList.map(a => `
-                <div class="accessory-chip checked" style="cursor: default;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>${escapeHtml(a)}</span>
-                </div>
-            `).join('');
+            if (accList.length === 0) {
+                accWrap.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No accessories assigned under this slip.</div>';
+            } else {
+                accWrap.innerHTML = accList.map(ac => {
+                    const acName = typeof ac === 'string' ? ac : (ac.name || 'Item');
+                    const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                    return `
+                        <div class="accessory-chip checked" style="cursor: default;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span>${escapeHtml(acName)} <strong>(x${escapeHtml(acQty)})</strong></span>
+                        </div>
+                    `;
+                }).join('');
+            }
         }
+
+        // Device Specs Tab (First or primary device)
+        const primary = assetsList[0] || {};
+        setVal('specTag', primary.tag || item.asset_tag || '—');
+        setVal('specCategory', primary.category || item.category || '—');
+        setVal('specBrand', primary.brand || item.brand || '—');
+        setVal('specModel', primary.model || item.model || '—');
+        setVal('specSerial', primary.serial || item.serial || '—');
+        setVal('specDetails', primary.specs || item.specs || 'N/A');
 
         // Custody Timeline
         const timeWrap = document.getElementById('drawerTimelineWrap');
@@ -438,15 +523,15 @@
                     <div class="timeline-date">${escapeHtml(item.assigned_date)}</div>
                     <div class="timeline-content">
                         <div class="timeline-title">Handover Completed</div>
-                        <div class="timeline-desc">Issued to ${escapeHtml(item.employee_name)} as ${escapeHtml(item.allocation_type)}. Handover slip verified.</div>
+                        <div class="timeline-desc">Allocated to ${escapeHtml(item.employee_name)} as ${escapeHtml(item.allocation_type)}. Handover slip ${escapeHtml(item.slip_no)} verified.</div>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot"></div>
                     <div class="timeline-date">Pre-Deployment</div>
                     <div class="timeline-content">
-                        <div class="timeline-title">Physical Inspection & Pre-Configuration</div>
-                        <div class="timeline-desc">Quality audit passed (${escapeHtml(item.condition)}). Pre-installed corporate security policies.</div>
+                        <div class="timeline-title">Equipment Inspection & Sign-off</div>
+                        <div class="timeline-desc">Quality audit passed. Custodian accepted IT policy.</div>
                     </div>
                 </div>
             `;
@@ -949,69 +1034,94 @@
                 : ['Power Adapter & Cable'];
 
             const assetSelect = document.getElementById('assignAssetSelect');
-            let firstNewId = null;
+            const submitBtn = document.getElementById('submitAssignBtn');
+            const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `Saving Allocation...`;
+            }
 
-            // Process each selected device
-            batchSelectedAssets.forEach((assetItem, index) => {
-                const newId = Date.now() + index;
-                if (!firstNewId) firstNewId = newId;
+            const payload = {
+                action: 'assign',
+                employee_id: parseInt(empSelect.value, 10) || null,
+                employee_name: empOpt.dataset.name,
+                emp_code: empOpt.dataset.code,
+                employee_email: empOpt.dataset.email,
+                department: empOpt.dataset.dept,
+                designation: empOpt.dataset.desig,
+                location: location,
+                allocation_type: allocType,
+                handover_date: handoverDate,
+                expected_return: expectedReturn,
+                notes: notes,
+                agreement_signed: 1,
+                assets: batchSelectedAssets.map(a => ({
+                    id: a.id,
+                    tag: a.tag,
+                    name: a.name,
+                    condition: a.condition || 'Brand New'
+                })),
+                accessories: batchSelectedAccessories.map(acc => ({
+                    id: acc.id,
+                    sku: acc.sku,
+                    name: acc.name,
+                    category: acc.category,
+                    qty: acc.qty || 1
+                }))
+            };
 
-                const newSlipNo = 'SLIP-2026-' + String(assignments.length + 1).padStart(4, '0');
+            fetch('api/asset_assignment.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.data) {
+                    const rec = Array.isArray(res.data) ? res.data[0] : res.data;
+                    assignments.unshift(rec);
 
-                const newRecord = {
-                    id: newId,
-                    asset_id: assetItem.id,
-                    slip_no: newSlipNo,
-                    asset_tag: assetItem.tag,
-                    asset_name: assetItem.name,
-                    category: assetItem.category,
-                    brand: assetItem.brand || '',
-                    model: assetItem.name,
-                    serial: assetItem.serial || 'N/A',
-                    specs: assetItem.specs || '',
-                    employee_name: empOpt.dataset.name,
-                    emp_code: empOpt.dataset.code,
-                    employee_email: empOpt.dataset.email,
-                    department: empOpt.dataset.dept,
-                    designation: empOpt.dataset.desig,
-                    location: location,
-                    assigned_date: handoverDate,
-                    allocation_type: allocType,
-                    expected_return: expectedReturn,
-                    custody_status: (allocType === 'Temporary Loaner') ? 'Due Soon' : 'Active',
-                    condition: assetItem.condition || 'Brand New',
-                    accessories: accessories.length > 0 ? accessories : ['Power Adapter & Cable'],
-                    handover_by: 'Abhishek Sharma (IT Admin)',
-                    agreement_signed: true,
-                    notes: notes || 'Equipment physically handed over and tested in presence of custodian.'
-                };
+                    if (Array.isArray(rec.assets)) {
+                        rec.assets.forEach(ast => {
+                            availableAssets = availableAssets.filter(a => a.id !== ast.id);
+                            if (assetSelect) {
+                                const selOpt = assetSelect.querySelector(`option[value="${ast.id}"]`);
+                                if (selOpt) selOpt.remove();
+                            }
+                        });
+                    }
 
-                // Add to assignments array
-                assignments.unshift(newRecord);
+                    batchSelectedAssets = [];
+                    batchSelectedAccessories = [];
+                    renderBatchAssets();
+                    renderBatchAccessories();
 
-                // Remove from available assets list and dropdown
-                availableAssets = availableAssets.filter(a => a.id !== assetItem.id);
-                if (assetSelect) {
-                    const selOpt = assetSelect.querySelector(`option[value="${assetItem.id}"]`);
-                    if (selOpt) selOpt.remove();
+                    closeModal(assignModal);
+                    renderTable();
+                    updateKPIs();
+
+                    showNotification(res.message || `Successfully allocated equipment under slip ${rec.slip_no}!`, 'success');
+
+                    const slipIdToOpen = res.new_id || rec.id;
+                    if (slipIdToOpen) {
+                        setTimeout(() => {
+                            openSlipModal(slipIdToOpen);
+                        }, 300);
+                    }
+                } else {
+                    showNotification(res.message || 'Failed to complete assignment.', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error('Assign error:', err);
+                showNotification('Network/server error while saving assignment.', 'danger');
+            })
+            .finally(() => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
                 }
             });
-
-            const totalAllocated = batchSelectedAssets.length;
-            batchSelectedAssets = [];
-
-            closeModal(assignModal);
-            renderTable();
-            updateKPIs();
-
-            showNotification(`Successfully allocated ${totalAllocated} asset(s) to ${empOpt.dataset.name}!`, 'success');
-
-            // Open digital handover slip automatically for immediate viewing/print
-            if (firstNewId) {
-                setTimeout(() => {
-                    openSlipModal(firstNewId);
-                }, 300);
-            }
         });
     }
 
@@ -1044,34 +1154,65 @@
 
             const retCondition = document.getElementById('returnCondition').value;
             const retShelf = document.getElementById('returnStorageLocation').value;
+            const retDate = document.getElementById('returnDate') ? document.getElementById('returnDate').value : new Date().toISOString().split('T')[0];
+            const retNotes = `Returned condition: ${retCondition}, placed in ${retShelf}.`;
 
-            item.custody_status = 'Returned';
-            item.notes += ` [Returned on ${new Date().toLocaleDateString('en-IN')}: Condition ${retCondition}, placed in ${retShelf}].`;
+            const retBtn = returnForm.querySelector('button[type="submit"]');
+            if (retBtn) retBtn.disabled = true;
 
-            // Add back to available assets if not damaged
-            if (retCondition !== 'Damaged') {
-                availableAssets.push({
-                    id: item.asset_id,
-                    tag: item.asset_tag,
-                    name: item.asset_name,
-                    category: item.category,
-                    brand: item.brand,
-                    model: item.model,
-                    serial: item.serial,
-                    condition: retCondition,
-                    location: retShelf,
-                    specs: item.specs
-                });
-            }
+            fetch('api/asset_assignment.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'return',
+                    alloc_id: id,
+                    return_date: retDate,
+                    return_condition: retCondition,
+                    return_notes: retNotes
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    item.custody_status = 'Returned';
+                    item.return_date = retDate;
+                    item.condition = retCondition;
+                    item.notes += ` [${retNotes}]`;
 
-            closeModal(returnModal);
-            if (window.activeAllocId === id) {
-                closeAssignmentDrawer();
-            }
+                    if (retCondition !== 'Damaged') {
+                        availableAssets.push({
+                            id: item.asset_id,
+                            tag: item.asset_tag,
+                            name: item.asset_name,
+                            category: item.category,
+                            brand: item.brand,
+                            model: item.model,
+                            serial: item.serial,
+                            condition: retCondition,
+                            location: retShelf,
+                            specs: item.specs
+                        });
+                    }
 
-            renderTable();
-            updateKPIs();
-            showNotification(`Asset ${item.asset_tag} checked-in back to inventory successfully!`, 'success');
+                    closeModal(returnModal);
+                    if (window.activeAllocId === id) {
+                        closeAssignmentDrawer();
+                    }
+
+                    renderTable();
+                    updateKPIs();
+                    showNotification(res.message || `Asset ${item.asset_tag} checked-in back to inventory successfully!`, 'success');
+                } else {
+                    showNotification(res.message || 'Failed to process return.', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error('Return error:', err);
+                showNotification('Network error while returning asset.', 'danger');
+            })
+            .finally(() => {
+                if (retBtn) retBtn.disabled = false;
+            });
         });
     }
 
@@ -1098,28 +1239,86 @@
 
             const newEmpSelect = document.getElementById('transferNewEmpSelect');
             const newEmpOpt = newEmpSelect.options[newEmpSelect.selectedIndex];
-            if (!newEmpSelect.value) {
+            if (!newEmpSelect.value || !newEmpOpt) {
                 showNotification('Please select a new custodian employee.', 'danger');
                 return;
             }
 
             const transferReason = document.getElementById('transferReason').value;
             const effDate = document.getElementById('transferEffectiveDate').value;
-            const oldName = item.employee_name;
+            const newDept = newEmpOpt.dataset.dept || item.department;
 
-            item.employee_name = newEmpOpt.dataset.name;
-            item.emp_code = newEmpOpt.dataset.code;
-            item.department = newEmpOpt.dataset.dept;
-            item.assigned_date = effDate;
-            item.notes += ` [Custody transferred from ${oldName} to ${item.employee_name} on ${effDate} for ${transferReason}].`;
+            const trBtn = transferForm.querySelector('button[type="submit"]');
+            if (trBtn) trBtn.disabled = true;
 
-            closeModal(transferModal);
-            if (window.activeAllocId === id) {
-                openAssignmentDrawer(id);
-            }
+            fetch('api/asset_assignment.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'transfer',
+                    alloc_id: id,
+                    new_employee_id: parseInt(newEmpSelect.value, 10) || null,
+                    new_employee_name: newEmpOpt.dataset.name,
+                    new_emp_code: newEmpOpt.dataset.code,
+                    new_dept: newDept,
+                    transfer_date: effDate,
+                    transfer_notes: transferReason
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    const oldName = item.employee_name;
+                    item.custody_status = 'Transferred';
+                    item.notes += ` [Custody transferred from ${oldName} to ${newEmpOpt.dataset.name} on ${effDate} for ${transferReason}].`;
 
-            renderTable();
-            showNotification(`Custody of ${item.asset_tag} successfully transferred to ${item.employee_name}!`, 'success');
+                    assignments.unshift({
+                        id: res.new_id || Date.now(),
+                        slip_no: res.new_slip || ('SLIP-2026-' + String(assignments.length + 1).padStart(4, '0')),
+                        asset_id: item.asset_id,
+                        asset_tag: item.asset_tag,
+                        asset_name: item.asset_name,
+                        category: item.category,
+                        brand: item.brand,
+                        model: item.model,
+                        serial: item.serial,
+                        specs: item.specs,
+                        employee_name: newEmpOpt.dataset.name,
+                        emp_code: newEmpOpt.dataset.code,
+                        employee_email: newEmpOpt.dataset.email || '',
+                        department: newDept,
+                        designation: newEmpOpt.dataset.desig || 'Team Member',
+                        location: item.location,
+                        assigned_date: effDate,
+                        allocation_type: item.allocation_type,
+                        expected_return: item.expected_return,
+                        custody_status: 'Active',
+                        condition: item.condition,
+                        accessories: item.accessories,
+                        handover_by: 'IT Administrator (Transfer)',
+                        agreement_signed: true,
+                        notes: `Transferred custody from ${oldName}. Reason: ${transferReason}`
+                    });
+
+                    closeModal(transferModal);
+                    if (window.activeAllocId === id) {
+                        openAssignmentDrawer(res.new_id || id);
+                    }
+
+                    renderTable();
+                    updateKPIs();
+                    showNotification(res.message || `Custody of ${item.asset_tag} successfully transferred to ${newEmpOpt.dataset.name}!`, 'success');
+                } else {
+                    showNotification(res.message || 'Transfer failed.', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error('Transfer error:', err);
+                showNotification('Network error while transferring asset.', 'danger');
+            })
+            .finally(() => {
+                if (trBtn) trBtn.disabled = false;
+            });
         });
     }
 
