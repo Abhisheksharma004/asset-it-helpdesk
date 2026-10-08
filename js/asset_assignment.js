@@ -1454,41 +1454,30 @@
         });
     }
 
-    // --- Handover Slip Modal (Table Format) ---
-    window.openSlipModal = function (id) {
+    // --- Direct Browser Print Handover Slip (Simple Table Format - No On-Screen Modal) ---
+    function directPrintSlip(id) {
         const item = assignments.find(a => a.id === id);
-        if (!item) return;
+        if (!item) {
+            showNotification('Record not found for printing.', 'warning');
+            return;
+        }
 
         const slipNo = item.slip_no || ('SLIP-2026-' + String(item.id).padStart(4, '0'));
         const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const empName = escapeHtml(item.employee_name || '—');
+        const empCode = escapeHtml(item.emp_code || '—');
+        const empDept = escapeHtml(item.department || '—');
+        const empDesig = escapeHtml(item.designation || 'Staff');
+        const empEmail = escapeHtml(item.employee_email || '—');
+        const empLoc = escapeHtml(item.location || 'Headquarters');
+        const allocType = escapeHtml(item.allocation_type || 'Permanent');
+        const assignedDate = escapeHtml(item.assigned_date || todayStr);
+        const expectedReturn = escapeHtml(item.expected_return || 'Permanent');
+        const handoverBy = escapeHtml(item.handover_by || 'IT Administrator');
+        const notes = escapeHtml(item.notes || 'Equipment verified and allocated in good physical condition. Custodian agreed to corporate IT acceptable use policy.');
+        const custodyStatus = escapeHtml(item.custody_status || 'Active');
 
-        const setTxt = (elId, val) => {
-            const el = document.getElementById(elId);
-            if (el) el.textContent = val !== undefined && val !== null && val !== '' ? val : '—';
-        };
-
-        // 1. Header Information
-        setTxt('slipNumber', slipNo);
-        setTxt('slipDate', item.assigned_date || todayStr);
-        setTxt('slipAllocType', item.allocation_type || 'Permanent');
-
-        const statusEl = document.getElementById('slipCustodyStatus');
-        if (statusEl) {
-            const st = item.custody_status || 'In Custody';
-            statusEl.textContent = st;
-            statusEl.style.color = (st === 'Returned') ? '#dc2626' : (st === 'Overdue' || st === 'Due Soon') ? '#ea580c' : '#166534';
-        }
-
-        // 2. Custodian / Employee Information
-        setTxt('slipEmpName', item.employee_name);
-        setTxt('slipEmpCode', item.emp_code);
-        setTxt('slipEmpDesig', item.designation || 'Staff');
-        setTxt('slipEmpDept', item.department);
-        setTxt('slipEmpEmail', item.employee_email);
-        setTxt('slipEmpLocation', item.location || 'Headquarters');
-        setTxt('slipSignEmpName', (item.employee_name || 'Custodian') + ' (' + (item.emp_code || 'EMP') + ')');
-
-        // 3. Hardware Assets Table
+        // Hardware Devices
         let assetsList = Array.isArray(item.assets) ? [...item.assets] : [];
         if (assetsList.length === 0 && (item.asset_tag || item.asset_name)) {
             assetsList.push({
@@ -1503,165 +1492,360 @@
             });
         }
 
-        setTxt('slipAssetCount', String(assetsList.length));
-
-        const assetsTbody = document.getElementById('slipAssetsTbody');
-        if (assetsTbody) {
-            if (assetsList.length === 0) {
-                assetsTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 12px; font-style: italic; border: 1px solid #cbd5e1;">No hardware devices assigned under this slip.</td></tr>`;
-            } else {
-                assetsTbody.innerHTML = assetsList.map((ast, idx) => {
-                    const brandModel = [ast.brand, ast.model].filter(Boolean).join(' ') || '—';
-                    return `
-                        <tr>
-                            <td style="text-align: center; font-weight: 600; padding: 6px 8px; border: 1px solid #cbd5e1; background: #fafafa;">${idx + 1}</td>
-                            <td style="font-family: monospace; font-weight: 700; color: #0284c7; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.tag || '—')}</td>
-                            <td style="font-weight: 600; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">
-                                ${escapeHtml(ast.name || 'Device')}
-                                ${ast.specs ? `<div style="font-size: 10px; color: #64748b; font-weight: normal; margin-top: 2px;">${escapeHtml(ast.specs)}</div>` : ''}
-                            </td>
-                            <td style="color: #334155; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.category || 'Hardware')}</td>
-                            <td style="color: #334155; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(brandModel)}</td>
-                            <td style="font-family: monospace; font-size: 11px; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.serial || '—')}</td>
-                            <td style="text-align: center; font-weight: 600; color: #166534; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.condition || 'Good')}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
+        let assetsRows = '';
+        if (assetsList.length === 0) {
+            assetsRows = `<tr><td colspan="7" style="text-align: center; padding: 8px; color: #555; font-style: italic;">No hardware devices assigned under this slip.</td></tr>`;
+        } else {
+            assetsRows = assetsList.map((ast, idx) => {
+                const bm = [ast.brand, ast.model].filter(Boolean).join(' ') || '—';
+                return `
+                    <tr>
+                        <td style="text-align: center; width: 32px;">${idx + 1}</td>
+                        <td style="font-family: monospace; font-weight: bold; width: 100px;">${escapeHtml(ast.tag || '—')}</td>
+                        <td>
+                            <strong>${escapeHtml(ast.name || 'Device')}</strong>
+                            ${ast.specs ? `<div style="font-size: 9.5px; color: #555; margin-top: 1px;">${escapeHtml(ast.specs)}</div>` : ''}
+                        </td>
+                        <td style="width: 95px;">${escapeHtml(ast.category || 'Hardware')}</td>
+                        <td style="width: 110px;">${escapeHtml(bm)}</td>
+                        <td style="font-family: monospace; width: 110px;">${escapeHtml(ast.serial || '—')}</td>
+                        <td style="text-align: center; width: 80px;">${escapeHtml(ast.condition || 'Good')}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        // 4. Accessories Table
+        // Accessories
         let accList = Array.isArray(item.accessories) ? [...item.accessories] : [];
-        setTxt('slipAccCount', String(accList.length));
-
-        const accTbody = document.getElementById('slipAccTbody');
-        if (accTbody) {
-            if (accList.length === 0) {
-                accTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 10px; font-style: italic; border: 1px solid #cbd5e1;">No accessories assigned under this slip.</td></tr>`;
-            } else {
-                accTbody.innerHTML = accList.map((ac, idx) => {
-                    const acName = typeof ac === 'string' ? ac : (ac.name || 'Accessory Item');
-                    const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
-                    const acCategory = (typeof ac === 'object' && ac.category) ? ac.category : 'Standard Accessory';
-                    const acCondition = (typeof ac === 'object' && ac.condition) ? ac.condition : 'Good';
-                    return `
-                        <tr>
-                            <td style="text-align: center; font-weight: 600; padding: 6px 8px; border: 1px solid #cbd5e1; background: #fafafa;">${idx + 1}</td>
-                            <td style="font-weight: 600; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(acName)}</td>
-                            <td style="color: #475569; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(acCategory)}</td>
-                            <td style="text-align: center; font-weight: 700; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(String(acQty))}</td>
-                            <td style="text-align: center; font-weight: 600; color: #166534; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(acCondition)}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
+        let accRows = '';
+        if (accList.length === 0) {
+            accRows = `<tr><td colspan="5" style="text-align: center; padding: 8px; color: #555; font-style: italic;">No accessories assigned under this slip.</td></tr>`;
+        } else {
+            accRows = accList.map((ac, idx) => {
+                const acName = typeof ac === 'string' ? ac : (ac.name || 'Accessory Item');
+                const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                const acCategory = (typeof ac === 'object' && ac.category) ? ac.category : 'Standard Accessory';
+                const acCondition = (typeof ac === 'object' && ac.condition) ? ac.condition : 'Good';
+                return `
+                    <tr>
+                        <td style="text-align: center; width: 32px;">${idx + 1}</td>
+                        <td><strong>${escapeHtml(acName)}</strong></td>
+                        <td style="width: 180px;">${escapeHtml(acCategory)}</td>
+                        <td style="text-align: center; width: 60px; font-weight: bold;">${escapeHtml(String(acQty))}</td>
+                        <td style="text-align: center; width: 85px;">${escapeHtml(acCondition)}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        // 5. Terms & Scope
-        setTxt('slipTermsAllocType', item.allocation_type || 'Permanent');
-        setTxt('slipTermsAssignedDate', item.assigned_date || todayStr);
-        setTxt('slipTermsExpectedReturn', item.expected_return || 'Permanent (No fixed return date)');
-        setTxt('slipTermsIssuedBy', item.handover_by || 'IT Asset Administrator');
-        setTxt('slipTermsNotes', item.notes || 'Equipment verified and allocated in good physical condition. Custodian agreed to corporate IT acceptable use policy.');
+        const printHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Equipment Handover Slip - ${slipNo}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #0f172a;
+            background: #ffffff;
+        }
+        .slip-container {
+            width: 100%;
+            margin: 0 auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 9px;
+            page-break-inside: avoid;
+        }
+        th, td {
+            border: 1px solid #334155;
+            padding: 5px 8px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            text-align: left;
+            font-size: 10.5px;
+            color: #0f172a;
+        }
+        .header-tbl {
+            border: none !important;
+            margin-bottom: 14px;
+        }
+        .header-tbl td {
+            border: none !important;
+            padding: 4px 8px;
+        }
+        .header-logo {
+            width: 20%;
+            text-align: left;
+            vertical-align: middle;
+            border: none !important;
+        }
+        .header-title {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #001938;
+            text-transform: uppercase;
+        }
+        .header-title .sub {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #475569;
+            margin-top: 2px;
+        }
+        .header-title .doc-name {
+            font-size: 13px;
+            font-weight: 800;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            border-top: 1.5px solid #001938;
+            padding-top: 2px;
+            color: #0093A7;
+        }
+        .header-meta {
+            width: 28%;
+            border: none !important;
+            font-size: 10.5px;
+            line-height: 1.55;
+            vertical-align: middle;
+            text-align: right;
+            background: transparent !important;
+        }
+        .sec-title {
+            background: #f1f5f9;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border: 1px solid #334155;
+            border-bottom: none;
+            margin-top: 9px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
+        }
+        .lbl {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #334155;
+            width: 18%;
+        }
+        .val {
+            color: #0f172a;
+            width: 32%;
+        }
+        .declaration-box {
+            border: 1px solid #334155;
+            padding: 7px 10px;
+            font-size: 10px;
+            color: #334155;
+            background: #f8fafc;
+            margin-top: 9px;
+            line-height: 1.45;
+        }
+        .signatures-tbl {
+            border: 1px solid #334155;
+            border-top: none;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        .signatures-tbl td {
+            border: none;
+            padding: 38px 14px 10px;
+            vertical-align: bottom;
+            width: 50%;
+        }
+        .sig-line {
+            border-top: 1.5px solid #0f172a;
+            padding-top: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .sig-sub {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slip-container">
+        <!-- Document Header Table -->
+        <table class="header-tbl">
+            <tr>
+                <td class="header-logo">
+                    <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 44px; max-width: 100px; object-fit: contain;">
+                </td>
+                <td class="header-title">
+                    <h1>VIROS PORTAL</h1>
+                    <div class="sub">IT Asset Management & Helpdesk</div>
+                    <div class="doc-name">EQUIPMENT HANDOVER & CUSTODY SLIP</div>
+                </td>
+                <td class="header-meta">
+                    <div><strong>Slip No:</strong> ${slipNo}</div>
+                    <div><strong>Date:</strong> ${assignedDate}</div>
+                    <div><strong>Type:</strong> ${allocType}</div>
+                    <div><strong>Status:</strong> ${custodyStatus}</div>
+                </td>
+            </tr>
+        </table>
 
-        openModal(slipModal);
-    };
+        <!-- 1. Custodian / Employee Information -->
+        <div class="sec-title">1. Custodian / Employee Information</div>
+        <table>
+            <tr>
+                <td class="lbl">Employee Name</td>
+                <td class="val"><strong>${empName}</strong></td>
+                <td class="lbl">Employee ID</td>
+                <td class="val" style="font-family: monospace; font-weight: 700;">${empCode}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Designation</td>
+                <td class="val">${empDesig}</td>
+                <td class="lbl">Department</td>
+                <td class="val">${empDept}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Email Address</td>
+                <td class="val">${empEmail}</td>
+                <td class="lbl">Branch / Location</td>
+                <td class="val">${empLoc}</td>
+            </tr>
+        </table>
 
-    // --- Dedicated Print Handover Slip Receipt ---
-    window.printSlipReceipt = function () {
-        const slipEl = document.getElementById('handoverSlipContent');
-        if (!slipEl) return;
+        <!-- 2. Assigned Hardware Assets -->
+        <div class="sec-title">2. Assigned Hardware Assets (${assetsList.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 32px; text-align: center;">#</th>
+                    <th style="width: 100px;">Asset Tag</th>
+                    <th>Device Name & Specs</th>
+                    <th style="width: 95px;">Category</th>
+                    <th style="width: 110px;">Brand & Model</th>
+                    <th style="width: 110px;">Serial Number</th>
+                    <th style="width: 80px; text-align: center;">Condition</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${assetsRows}
+            </tbody>
+        </table>
 
-        // Try clean printable popup
-        const printWindow = window.open('', '_blank', 'width=880,height=900');
-        if (!printWindow) {
-            window.print();
-            return;
+        <!-- 3. Assigned Accessories -->
+        <div class="sec-title">3. Assigned Accessories & Peripherals (${accList.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 32px; text-align: center;">#</th>
+                    <th>Accessory Item</th>
+                    <th style="width: 180px;">Category / Classification</th>
+                    <th style="width: 60px; text-align: center;">Qty</th>
+                    <th style="width: 85px; text-align: center;">Condition</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${accRows}
+            </tbody>
+        </table>
+
+        <!-- 4. Handover Terms & Scope -->
+        <div class="sec-title">4. Handover Terms & Authorization</div>
+        <table>
+            <tr>
+                <td class="lbl">Allocation Type</td>
+                <td class="val">${allocType}</td>
+                <td class="lbl">Handover Date</td>
+                <td class="val">${assignedDate}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Expected Return</td>
+                <td class="val">${expectedReturn}</td>
+                <td class="lbl">Issued By</td>
+                <td class="val">${handoverBy}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Remarks / Notes</td>
+                <td class="val" colspan="3">${notes}</td>
+            </tr>
+        </table>
+
+        <!-- 5. Declaration & Signatures -->
+        <div class="declaration-box">
+            <strong>Declaration & Acceptance:</strong> I hereby acknowledge receipt of the hardware and accessories listed above in sound physical and working condition. I agree to abide by the company IT Acceptable Use Policy and accept full responsibility for their care and custody.
+        </div>
+        <table class="signatures-tbl">
+            <tr>
+                <td>
+                    <div class="sig-line">Employee / Custodian Signature</div>
+                    <div class="sig-sub">${empName} (${empCode}) &bull; Date: _____________</div>
+                </td>
+                <td style="text-align: right;">
+                    <div class="sig-line">Authorized IT Official / Seal</div>
+                    <div class="sig-sub">IT Asset Management Dept &bull; Date: _____________</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>`;
+
+        // Direct Browser Print via hidden iframe (No on-screen modal)
+        let printIframe = document.getElementById('slipPrintIframe');
+        if (!printIframe) {
+            printIframe = document.createElement('iframe');
+            printIframe.id = 'slipPrintIframe';
+            printIframe.style.position = 'fixed';
+            printIframe.style.right = '0';
+            printIframe.style.bottom = '0';
+            printIframe.style.width = '0';
+            printIframe.style.height = '0';
+            printIframe.style.border = '0';
+            printIframe.style.visibility = 'hidden';
+            document.body.appendChild(printIframe);
         }
 
-        const slipHtml = slipEl.outerHTML;
-        printWindow.document.open();
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <title>Equipment Handover & Custody Slip</title>
-                <style>
-                    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    body {
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                        color: #0f172a;
-                        background: #ffffff;
-                        margin: 0;
-                        padding: 10mm 14mm;
-                        line-height: 1.45;
-                        font-size: 11.5px;
-                    }
-                    @page {
-                        size: A4 portrait;
-                        margin: 8mm 12mm;
-                    }
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        page-break-inside: avoid;
-                    }
-                    .slip-doc-table td, .slip-doc-table th {
-                        border: 1px solid #cbd5e1;
-                        padding: 6px 8px;
-                    }
-                    .slip-header-table {
-                        border: 2px solid #001938 !important;
-                        margin-bottom: 12px;
-                    }
-                    .slip-table-heading {
-                        font-size: 11.5px;
-                        font-weight: 700;
-                        color: #001938;
-                        background: #f1f5f9 !important;
-                        padding: 5px 10px;
-                        margin: 12px 0 0;
-                        text-transform: uppercase;
-                        border: 1px solid #cbd5e1;
-                        border-bottom: none;
-                        border-left: 3px solid #0093A7 !important;
-                    }
-                    .slip-lbl {
-                        background: #f8fafc !important;
-                        font-weight: 600;
-                        color: #475569;
-                    }
-                    .slip-val {
-                        color: #0f172a;
-                    }
-                    .slip-th-row th {
-                        background: #f1f5f9 !important;
-                        color: #001938 !important;
-                    }
-                    .slip-sign-table {
-                        margin-top: 14px;
-                        border: 1px solid #94a3b8 !important;
-                    }
-                    @media print {
-                        body { padding: 0; }
-                    }
-                </style>
-            </head>
-            <body>
-                ${slipHtml}
-                <script>
-                    window.onload = function() {
-                        setTimeout(function() {
-                            window.print();
-                        }, 250);
-                    };
-                </scr` + `ipt>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-    };
+        const frameDoc = printIframe.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(printHtml);
+        frameDoc.close();
+
+        // Directly open the browser's native print modal
+        setTimeout(() => {
+            printIframe.contentWindow.focus();
+            printIframe.contentWindow.print();
+        }, 200);
+    }
+
+    // Expose functions globally
+    window.directPrintSlip = directPrintSlip;
+    window.openSlipModal = directPrintSlip;
+    window.printSlipReceipt = directPrintSlip;
 
     // =========================================================================
     // 5. Event Listeners & Initialization

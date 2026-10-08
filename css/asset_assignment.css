@@ -410,11 +410,11 @@
 }
 
 .slip-header-table {
-    border: 2px solid #001938 !important;
+    border: none !important;
 }
 
 .slip-header-table td {
-    border: none;
+    border: none !important;
 }
 
 .slip-table-heading {
