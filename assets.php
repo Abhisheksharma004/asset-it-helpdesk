@@ -299,8 +299,8 @@ $statsReserved = 0;
 $statsRetired = 0;
 $statsExpiring = 0;
 $statsTotalValue = 0;
-$refDate = new DateTime();
-$thirtyDaysLater = (new DateTime())->modify('+30 days');
+$refDate = (new DateTime())->setTime(0, 0, 0);
+$thirtyDaysLater = (new DateTime())->modify('+30 days')->setTime(23, 59, 59);
 
 foreach ($dbAssets as $a) {
     $st = $a['status'] ?? '';
@@ -316,6 +316,7 @@ foreach ($dbAssets as $a) {
     if (!empty($a['financials']['warrantyExpiry'])) {
         try {
             $wDate = new DateTime($a['financials']['warrantyExpiry']);
+            $wDate->setTime(0, 0, 0);
             if ($wDate >= $refDate && $wDate <= $thirtyDaysLater) {
                 $statsExpiring++;
             }
@@ -475,7 +476,7 @@ include 'includes/topbar.php';
         </div>
 
         <!-- Expiring Warranty -->
-        <div class="asset-stat-card card-expiring">
+        <div class="asset-stat-card card-expiring" style="cursor: pointer;" title="Click to filter assets with warranty expiring within 30 days">
             <div class="asset-stat-info">
                 <div class="stat-lbl">Warranty Expiring</div>
                 <div class="stat-val" id="statExpiringAssets" style="color: #ea580c;"><?php echo $stats['expiring_soon']; ?></div>
@@ -525,6 +526,10 @@ include 'includes/topbar.php';
         <button type="button" class="status-tab-btn" data-status="maintenance">
             Under Maintenance
             <span class="status-tab-badge" id="tabBadgeMaint"><?php echo $stats['maintenance']; ?></span>
+        </button>
+        <button type="button" class="status-tab-btn" data-status="expiring" title="Assets with warranty expiring in next 30 days">
+            Warranty Expiring
+            <span class="status-tab-badge" id="tabBadgeExpiring" style="background: #ea580c; color: #fff;"><?php echo $stats['expiring_soon']; ?></span>
         </button>
         <button type="button" class="status-tab-btn" data-status="reserved">
             Reserved
@@ -986,8 +991,8 @@ include 'includes/topbar.php';
                     </div>
 
                     <div class="modal-form-group">
-                        <label for="modalSerial">Serial Number (S/N) *</label>
-                        <input type="text" id="modalSerial" placeholder="Enter serial number" required>
+                        <label for="modalSerial">Serial Number (S/N)</label>
+                        <input type="text" id="modalSerial" placeholder="Enter serial number">
                     </div>
                 </div>
 
@@ -996,11 +1001,11 @@ include 'includes/topbar.php';
                     <div class="form-grid-2">
                         <div class="modal-form-group">
                             <label for="modalProcessor">Processor / CPU</label>
-                            <input type="text" id="modalProcessor" placeholder="Enter processor (e.g. Intel i5 / i7)">
+                            <input type="text" id="modalProcessor" placeholder="Enter processor">
                         </div>
                         <div class="modal-form-group">
                             <label for="modalRam">Installed RAM</label>
-                            <input type="text" id="modalRam" placeholder="Enter RAM (e.g. 16 GB)">
+                            <input type="text" id="modalRam" placeholder="Enter RAM">
                         </div>
                     </div>
 

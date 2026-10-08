@@ -675,18 +675,45 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function parseDateSafe(dateStr) {
+        if (!dateStr) return null;
+        if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+        const str = String(dateStr).trim();
+        // Check YYYY-MM-DD or YYYY/MM/DD
+        const isoMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        if (isoMatch) {
+            return new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
+        }
+        // Check DD-MM-YYYY or DD/MM/YYYY
+        const dmyMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+        if (dmyMatch) {
+            return new Date(parseInt(dmyMatch[3], 10), parseInt(dmyMatch[2], 10) - 1, parseInt(dmyMatch[1], 10));
+        }
+        const d = new Date(str);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
     function getWarrantyBadge(expiryDateStr) {
         if (!expiryDateStr) return `<span class="warranty-pill">N/A</span>`;
-        const expiry = new Date(expiryDateStr);
-        const today = new Date('2024-10-03'); // Reference date
-        const diffDays = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
+        const expiry = parseDateSafe(expiryDateStr);
+        if (!expiry) return `<span class="warranty-pill">N/A</span>`;
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfExpiry = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate());
+        const diffDays = Math.round((startOfExpiry - startOfToday) / (1000 * 60 * 60 * 24));
+
+        const formattedDate = expiry.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
         if (diffDays < 0) {
-            return `<span class="warranty-pill warranty-expired">Expired</span>`;
+            const daysAgo = Math.abs(diffDays);
+            return `<span class="warranty-pill warranty-expired" title="Expired on ${formattedDate} (${daysAgo}d ago)">Expired</span>`;
+        } else if (diffDays === 0) {
+            return `<span class="warranty-pill warranty-expiring" title="Expires today (${formattedDate})">Expires Today</span>`;
         } else if (diffDays <= 30) {
-            return `<span class="warranty-pill warranty-expiring">Expiring (${diffDays}d)</span>`;
+            return `<span class="warranty-pill warranty-expiring" title="Expires on ${formattedDate} (${diffDays}d remaining)">Expiring (${diffDays}d)</span>`;
         } else {
-            return `<span class="warranty-pill warranty-active">Active (${diffDays}d)</span>`;
+            return `<span class="warranty-pill warranty-active" title="Valid until ${formattedDate} (${diffDays}d remaining)">Active (${diffDays}d)</span>`;
         }
     }
 
@@ -717,6 +744,16 @@ document.addEventListener('DOMContentLoaded', function () {
             if (currentFilterStatus === 'maintenance' && item.status !== 'Under Maintenance') return false;
             if (currentFilterStatus === 'reserved' && item.status !== 'Reserved') return false;
             if (currentFilterStatus === 'retired' && item.status !== 'Retired') return false;
+            if (currentFilterStatus === 'expiring') {
+                if (!item.financials || !item.financials.warrantyExpiry) return false;
+                const exp = parseDateSafe(item.financials.warrantyExpiry);
+                if (!exp) return false;
+                const now = new Date();
+                const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const startExp = new Date(exp.getFullYear(), exp.getMonth(), exp.getDate());
+                const diff = Math.round((startExp - startToday) / (1000 * 60 * 60 * 24));
+                if (diff < 0 || diff > 30) return false;
+            }
 
             // Category Filter
             if (currentCategoryFilter !== 'all' && item.category !== currentCategoryFilter) return false;
@@ -760,6 +797,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let totalValue = 0;
 
         const refDate = new Date();
+        const startToday = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
 
         assetsData.forEach(a => {
             if (a.status === 'In Use') inUse++;
@@ -773,10 +811,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (a.financials && a.financials.warrantyExpiry) {
-                const exp = new Date(a.financials.warrantyExpiry);
-                const diff = (exp - refDate) / (1000 * 60 * 60 * 24);
-                if (diff >= 0 && diff <= 30) {
-                    expiringSoon++;
+                const exp = parseDateSafe(a.financials.warrantyExpiry);
+                if (exp) {
+                    const startExp = new Date(exp.getFullYear(), exp.getMonth(), exp.getDate());
+                    const diff = Math.round((startExp - startToday) / (1000 * 60 * 60 * 24));
+                    if (diff >= 0 && diff <= 30) {
+                        expiringSoon++;
+                    }
                 }
             }
         });
@@ -803,6 +844,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tabInUseBadge = document.getElementById('tabBadgeInUse');
         const tabAvailBadge = document.getElementById('tabBadgeAvail');
         const tabMaintBadge = document.getElementById('tabBadgeMaint');
+        const tabExpiringBadge = document.getElementById('tabBadgeExpiring');
         const tabResBadge = document.getElementById('tabBadgeRes');
         const tabRetBadge = document.getElementById('tabBadgeRet');
 
@@ -810,6 +852,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (tabInUseBadge) tabInUseBadge.textContent = inUse;
         if (tabAvailBadge) tabAvailBadge.textContent = available;
         if (tabMaintBadge) tabMaintBadge.textContent = maintenance;
+        if (tabExpiringBadge) tabExpiringBadge.textContent = expiringSoon;
         if (tabResBadge) tabResBadge.textContent = reserved;
         if (tabRetBadge) tabRetBadge.textContent = retired;
     }
@@ -2002,8 +2045,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const location = document.getElementById('modalLocation').value;
             const department = document.getElementById('modalDepartment').value;
 
-            if (!name || !serial) {
-                if (typeof showToast === 'function') showToast('Please complete required fields (Asset Name, Serial Number)', 'danger');
+            if (!name) {
+                if (typeof showToast === 'function') showToast('Please complete required fields (Asset Name)', 'danger');
                 return;
             }
 
@@ -2840,6 +2883,31 @@ document.addEventListener('DOMContentLoaded', function () {
             renderAssets();
         });
     });
+
+    const cardExpiring = document.querySelector('.card-expiring');
+    if (cardExpiring) {
+        cardExpiring.addEventListener('click', function () {
+            const expTab = document.querySelector('.status-tab-btn[data-status="expiring"]');
+            if (expTab) {
+                if (currentFilterStatus === 'expiring') {
+                    const allTab = document.querySelector('.status-tab-btn[data-status="all"]');
+                    if (allTab) allTab.click();
+                } else {
+                    expTab.click();
+                }
+            } else {
+                if (currentFilterStatus === 'expiring') {
+                    currentFilterStatus = 'all';
+                    statusTabBtns.forEach(b => b.classList.toggle('active', b.dataset.status === 'all'));
+                } else {
+                    currentFilterStatus = 'expiring';
+                    statusTabBtns.forEach(b => b.classList.remove('active'));
+                }
+                currentPage = 1;
+                renderAssets();
+            }
+        });
+    }
 
     // View Switcher (Table vs Grid)
     if (viewTableBtn && viewGridBtn) {

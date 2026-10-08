@@ -49,7 +49,7 @@ BEGIN
         category NVARCHAR(100) NOT NULL,
         brand NVARCHAR(100) NOT NULL,
         model NVARCHAR(150) NULL,
-        serial NVARCHAR(100) NOT NULL,
+        serial NVARCHAR(100) NULL,
         status NVARCHAR(50) NOT NULL DEFAULT 'Available',
         condition NVARCHAR(50) NOT NULL DEFAULT 'Good',
         location NVARCHAR(150) NULL,
@@ -81,8 +81,9 @@ BEGIN
 END";
 
 sqlsrv_query($conn, $tableSetupSql);
-// Auto-clean legacy columns if they exist
+// Auto-clean legacy columns if they exist and ensure serial column is nullable
 if (isset($conn) && $conn !== false) {
+    @sqlsrv_query($conn, "ALTER TABLE assets ALTER COLUMN serial NVARCHAR(100) NULL");
     $chkLegacy = sqlsrv_query($conn, "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='assets' AND COLUMN_NAME='assigned_name'");
     if ($chkLegacy && sqlsrv_fetch_array($chkLegacy, SQLSRV_FETCH_ASSOC)) {
         sqlsrv_query($conn, "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='assets' AND COLUMN_NAME='assigned_to') ALTER TABLE assets ADD assigned_to NVARCHAR(150) NULL");
@@ -987,9 +988,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // Expiring within 30 days calculation
-    $today = date('Y-m-d');
-    $next30 = date('Y-m-d', strtotime('+30 days'));
-    $expStmt = sqlsrv_query($conn, "SELECT COUNT(*) AS expiring FROM assets WHERE warranty_expiry IS NOT NULL AND warranty_expiry >= ? AND warranty_expiry <= ?", [$today, $next30]);
+    $expStmt = sqlsrv_query($conn, "SELECT COUNT(*) AS expiring FROM assets WHERE warranty_expiry IS NOT NULL AND warranty_expiry <> '' AND TRY_CAST(warranty_expiry AS DATE) >= CAST(GETDATE() AS DATE) AND TRY_CAST(warranty_expiry AS DATE) <= DATEADD(day, 30, CAST(GETDATE() AS DATE))");
     if ($expStmt !== false) {
         if ($eRow = sqlsrv_fetch_array($expStmt, SQLSRV_FETCH_ASSOC)) {
             $stats['expiring_soon'] = intval($eRow['expiring'] ?? 0);
@@ -1127,9 +1126,9 @@ switch ($action) {
         $location = trim($input['location'] ?? '');
         $department = trim($input['department'] ?? '');
 
-        if (empty($name) || empty($serial)) {
+        if (empty($name)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Asset Name and Serial Number are required.']);
+            echo json_encode(['success' => false, 'message' => 'Asset Name is required.']);
             exit;
         }
 
@@ -1219,9 +1218,9 @@ switch ($action) {
         $location = trim($input['location'] ?? '');
         $department = trim($input['department'] ?? '');
 
-        if (empty($name) || empty($serial)) {
+        if (empty($name)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Asset Name and Serial Number are required.']);
+            echo json_encode(['success' => false, 'message' => 'Asset Name is required.']);
             exit;
         }
 
