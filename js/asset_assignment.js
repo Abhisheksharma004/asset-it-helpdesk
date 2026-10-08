@@ -1593,10 +1593,16 @@
             padding: 4px 8px;
         }
         .header-logo {
-            width: 20%;
+            width: 22%;
             text-align: left;
             vertical-align: middle;
             border: none !important;
+        }
+        .header-logo img {
+            max-height: 72px;
+            max-width: 170px;
+            object-fit: contain;
+            display: block;
         }
         .header-title {
             text-align: center;
@@ -1699,7 +1705,7 @@
         <table class="header-tbl">
             <tr>
                 <td class="header-logo">
-                    <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 44px; max-width: 100px; object-fit: contain;">
+                    <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 72px; max-width: 170px; object-fit: contain;">
                 </td>
                 <td class="header-title">
                     <h1>VIROS PORTAL</h1>
