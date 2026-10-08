@@ -382,100 +382,148 @@
     margin-top: 2px;
 }
 
-/* ==================== HANDOVER SLIP PRINTABLE PREVIEW ==================== */
+/* ==================== HANDOVER SLIP PRINTABLE PREVIEW (TABLE FORMAT) ==================== */
 .handover-slip-sheet {
     background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
-    padding: 28px 32px;
+    padding: 24px 28px;
     color: #0f172a;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-    line-height: 1.5;
+    line-height: 1.45;
 }
 
-.slip-header-brand {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 2px solid #001938;
-    padding-bottom: 14px;
-    margin-bottom: 18px;
+.slip-doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+    font-size: 11.5px;
+    background: #ffffff;
 }
 
-.slip-title {
-    font-size: 18px;
-    font-weight: 800;
-    color: #001938;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.slip-doc-table th,
+.slip-doc-table td {
+    border: 1px solid #cbd5e1;
+    padding: 6px 10px;
+    vertical-align: middle;
 }
 
-.slip-subtitle {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 2px;
+.slip-header-table {
+    border: 2px solid #001938 !important;
 }
 
-.slip-section-title {
-    font-size: 12.5px;
+.slip-header-table td {
+    border: none;
+}
+
+.slip-table-heading {
+    font-size: 11.5px;
     font-weight: 700;
     color: #001938;
     background: #f1f5f9;
-    padding: 4px 8px;
-    border-left: 3px solid var(--cyan-primary);
-    margin: 14px 0 8px;
+    padding: 5px 10px;
+    margin: 12px 0 0;
     text-transform: uppercase;
     letter-spacing: 0.3px;
+    border: 1px solid #cbd5e1;
+    border-bottom: none;
+    border-left: 3px solid var(--cyan-primary);
 }
 
-.slip-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px 16px;
-    font-size: 12px;
-}
-
-.slip-grid-item {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px dashed #e2e8f0;
-    padding: 3px 0;
-}
-
-.slip-grid-item .label {
-    color: #64748b;
-}
-
-.slip-grid-item .value {
+.slip-lbl {
+    background: #f8fafc;
     font-weight: 600;
+    color: #475569;
+}
+
+.slip-val {
     color: #0f172a;
 }
 
-.slip-terms-box {
+.slip-th-row th {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: #001938;
+    text-align: left;
     font-size: 11px;
-    color: #475569;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 10px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+}
+
+.slip-sign-table {
     margin-top: 14px;
-    line-height: 1.4;
+    border: 1px solid #94a3b8 !important;
 }
 
-.slip-sign-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-top: 26px;
-    padding-top: 10px;
-}
-
-.slip-sign-box {
-    border-top: 1px solid #0f172a;
-    padding-top: 6px;
-    font-size: 11.5px;
-    color: #334155;
+/* Print Rules for Handover Slip (A4 Portrait) */
+@media print {
+    body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    body * {
+        visibility: hidden !important;
+    }
+    #slipModal,
+    #slipModal .modal-box,
+    #handoverSlipContent,
+    #handoverSlipContent * {
+        visibility: visible !important;
+    }
+    #slipModal {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+        z-index: 999999 !important;
+    }
+    #slipModal .modal-box {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+    }
+    #slipModal .modal-header,
+    #slipModal .modal-footer {
+        display: none !important;
+    }
+    #slipModal .modal-body {
+        padding: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    #handoverSlipContent {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 8mm 10mm !important;
+        margin: 0 !important;
+        font-size: 11pt !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    @page {
+        size: A4 portrait;
+        margin: 8mm;
+    }
 }
 
 /* ==================== ACTION ICON BUTTONS ==================== */

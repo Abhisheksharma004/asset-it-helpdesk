@@ -1454,33 +1454,213 @@
         });
     }
 
-    // --- Handover Slip Modal ---
+    // --- Handover Slip Modal (Table Format) ---
     window.openSlipModal = function (id) {
         const item = assignments.find(a => a.id === id);
         if (!item) return;
 
-        document.getElementById('slipNumber').textContent = item.slip_no || 'SLIP-2026-' + item.id;
-        document.getElementById('slipDate').textContent = 'Date: ' + new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const slipNo = item.slip_no || ('SLIP-2026-' + String(item.id).padStart(4, '0'));
+        const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-        document.getElementById('slipEmpName').textContent = item.employee_name;
-        document.getElementById('slipEmpCode').textContent = item.emp_code;
-        document.getElementById('slipEmpDept').textContent = item.department;
-        document.getElementById('slipEmpDesig').textContent = item.designation;
+        const setTxt = (elId, val) => {
+            const el = document.getElementById(elId);
+            if (el) el.textContent = val !== undefined && val !== null && val !== '' ? val : '—';
+        };
 
-        document.getElementById('slipAssetTag').textContent = item.asset_tag;
-        document.getElementById('slipAssetCat').textContent = item.category;
-        document.getElementById('slipAssetModel').textContent = item.asset_name;
-        document.getElementById('slipAssetSerial').textContent = item.serial;
-        document.getElementById('slipAllocType').textContent = item.allocation_type;
-        document.getElementById('slipCondition').textContent = item.condition;
+        // 1. Header Information
+        setTxt('slipNumber', slipNo);
+        setTxt('slipDate', item.assigned_date || todayStr);
+        setTxt('slipAllocType', item.allocation_type || 'Permanent');
 
-        const accWrap = document.getElementById('slipAccessoriesList');
-        if (accWrap) {
-            const accList = Array.isArray(item.accessories) ? item.accessories : ['Power Adapter & Cable', 'Laptop Bag'];
-            accWrap.innerHTML = accList.map(a => `• ${escapeHtml(a)}`).join('<br>');
+        const statusEl = document.getElementById('slipCustodyStatus');
+        if (statusEl) {
+            const st = item.custody_status || 'In Custody';
+            statusEl.textContent = st;
+            statusEl.style.color = (st === 'Returned') ? '#dc2626' : (st === 'Overdue' || st === 'Due Soon') ? '#ea580c' : '#166534';
         }
 
+        // 2. Custodian / Employee Information
+        setTxt('slipEmpName', item.employee_name);
+        setTxt('slipEmpCode', item.emp_code);
+        setTxt('slipEmpDesig', item.designation || 'Staff');
+        setTxt('slipEmpDept', item.department);
+        setTxt('slipEmpEmail', item.employee_email);
+        setTxt('slipEmpLocation', item.location || 'Headquarters');
+        setTxt('slipSignEmpName', (item.employee_name || 'Custodian') + ' (' + (item.emp_code || 'EMP') + ')');
+
+        // 3. Hardware Assets Table
+        let assetsList = Array.isArray(item.assets) ? [...item.assets] : [];
+        if (assetsList.length === 0 && (item.asset_tag || item.asset_name)) {
+            assetsList.push({
+                tag: item.asset_tag,
+                name: item.asset_name,
+                category: item.category || 'Hardware',
+                brand: item.brand || '',
+                model: item.model || '',
+                serial: item.serial || '',
+                specs: item.specs || '',
+                condition: item.condition || 'Good'
+            });
+        }
+
+        setTxt('slipAssetCount', String(assetsList.length));
+
+        const assetsTbody = document.getElementById('slipAssetsTbody');
+        if (assetsTbody) {
+            if (assetsList.length === 0) {
+                assetsTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 12px; font-style: italic; border: 1px solid #cbd5e1;">No hardware devices assigned under this slip.</td></tr>`;
+            } else {
+                assetsTbody.innerHTML = assetsList.map((ast, idx) => {
+                    const brandModel = [ast.brand, ast.model].filter(Boolean).join(' ') || '—';
+                    return `
+                        <tr>
+                            <td style="text-align: center; font-weight: 600; padding: 6px 8px; border: 1px solid #cbd5e1; background: #fafafa;">${idx + 1}</td>
+                            <td style="font-family: monospace; font-weight: 700; color: #0284c7; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.tag || '—')}</td>
+                            <td style="font-weight: 600; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">
+                                ${escapeHtml(ast.name || 'Device')}
+                                ${ast.specs ? `<div style="font-size: 10px; color: #64748b; font-weight: normal; margin-top: 2px;">${escapeHtml(ast.specs)}</div>` : ''}
+                            </td>
+                            <td style="color: #334155; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.category || 'Hardware')}</td>
+                            <td style="color: #334155; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(brandModel)}</td>
+                            <td style="font-family: monospace; font-size: 11px; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.serial || '—')}</td>
+                            <td style="text-align: center; font-weight: 600; color: #166534; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(ast.condition || 'Good')}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 4. Accessories Table
+        let accList = Array.isArray(item.accessories) ? [...item.accessories] : [];
+        setTxt('slipAccCount', String(accList.length));
+
+        const accTbody = document.getElementById('slipAccTbody');
+        if (accTbody) {
+            if (accList.length === 0) {
+                accTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 10px; font-style: italic; border: 1px solid #cbd5e1;">No accessories assigned under this slip.</td></tr>`;
+            } else {
+                accTbody.innerHTML = accList.map((ac, idx) => {
+                    const acName = typeof ac === 'string' ? ac : (ac.name || 'Accessory Item');
+                    const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                    const acCategory = (typeof ac === 'object' && ac.category) ? ac.category : 'Standard Accessory';
+                    const acCondition = (typeof ac === 'object' && ac.condition) ? ac.condition : 'Good';
+                    return `
+                        <tr>
+                            <td style="text-align: center; font-weight: 600; padding: 6px 8px; border: 1px solid #cbd5e1; background: #fafafa;">${idx + 1}</td>
+                            <td style="font-weight: 600; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(acName)}</td>
+                            <td style="color: #475569; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(acCategory)}</td>
+                            <td style="text-align: center; font-weight: 700; color: #0f172a; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(String(acQty))}</td>
+                            <td style="text-align: center; font-weight: 600; color: #166534; padding: 6px 8px; border: 1px solid #cbd5e1;">${escapeHtml(acCondition)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 5. Terms & Scope
+        setTxt('slipTermsAllocType', item.allocation_type || 'Permanent');
+        setTxt('slipTermsAssignedDate', item.assigned_date || todayStr);
+        setTxt('slipTermsExpectedReturn', item.expected_return || 'Permanent (No fixed return date)');
+        setTxt('slipTermsIssuedBy', item.handover_by || 'IT Asset Administrator');
+        setTxt('slipTermsNotes', item.notes || 'Equipment verified and allocated in good physical condition. Custodian agreed to corporate IT acceptable use policy.');
+
         openModal(slipModal);
+    };
+
+    // --- Dedicated Print Handover Slip Receipt ---
+    window.printSlipReceipt = function () {
+        const slipEl = document.getElementById('handoverSlipContent');
+        if (!slipEl) return;
+
+        // Try clean printable popup
+        const printWindow = window.open('', '_blank', 'width=880,height=900');
+        if (!printWindow) {
+            window.print();
+            return;
+        }
+
+        const slipHtml = slipEl.outerHTML;
+        printWindow.document.open();
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>Equipment Handover & Custody Slip</title>
+                <style>
+                    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                        color: #0f172a;
+                        background: #ffffff;
+                        margin: 0;
+                        padding: 10mm 14mm;
+                        line-height: 1.45;
+                        font-size: 11.5px;
+                    }
+                    @page {
+                        size: A4 portrait;
+                        margin: 8mm 12mm;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        page-break-inside: avoid;
+                    }
+                    .slip-doc-table td, .slip-doc-table th {
+                        border: 1px solid #cbd5e1;
+                        padding: 6px 8px;
+                    }
+                    .slip-header-table {
+                        border: 2px solid #001938 !important;
+                        margin-bottom: 12px;
+                    }
+                    .slip-table-heading {
+                        font-size: 11.5px;
+                        font-weight: 700;
+                        color: #001938;
+                        background: #f1f5f9 !important;
+                        padding: 5px 10px;
+                        margin: 12px 0 0;
+                        text-transform: uppercase;
+                        border: 1px solid #cbd5e1;
+                        border-bottom: none;
+                        border-left: 3px solid #0093A7 !important;
+                    }
+                    .slip-lbl {
+                        background: #f8fafc !important;
+                        font-weight: 600;
+                        color: #475569;
+                    }
+                    .slip-val {
+                        color: #0f172a;
+                    }
+                    .slip-th-row th {
+                        background: #f1f5f9 !important;
+                        color: #001938 !important;
+                    }
+                    .slip-sign-table {
+                        margin-top: 14px;
+                        border: 1px solid #94a3b8 !important;
+                    }
+                    @media print {
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${slipHtml}
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.print();
+                        }, 250);
+                    };
+                </scr` + `ipt>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
     };
 
     // =========================================================================
@@ -1695,6 +1875,7 @@
         openReturn: openReturnModal,
         openTransfer: openTransferModal,
         openSlip: openSlipModal,
+        printSlip: printSlipReceipt,
         openView: openAssignmentDrawer,
         reload: renderTable
     };

@@ -1170,106 +1170,158 @@ include 'includes/topbar.php';
      MODAL 4: PRINTABLE HANDOVER SLIP RECEIPT
      ========================================================================= -->
 <div class="modal-overlay" id="slipModal">
-    <div class="modal-box" style="max-width: 680px;">
-        <div class="modal-header">
+    <div class="modal-box" style="max-width: 820px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal-header" style="flex-shrink: 0;">
             <h3>Equipment Handover Slip</h3>
             <button type="button" class="modal-close-btn" id="closeSlipModalBtn">&times;</button>
         </div>
-        <div class="modal-body" style="max-height: 72vh; overflow-y: auto;">
-            <div class="handover-slip-sheet" id="handoverSlipContent">
-                <!-- Header -->
-                <div class="slip-header-brand">
-                    <div>
-                        <div class="slip-title">VIROS PORTAL</div>
-                        <div class="slip-subtitle">IT Asset Handover & Custodian Agreement Slip</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-family: monospace; font-weight: 700; font-size: 13px; color: var(--cyan-primary);" id="slipNumber">-</div>
-                        <div style="font-size: 11px; color: #64748b;" id="slipDate">Date: <?php echo date('d-M-Y'); ?></div>
-                    </div>
-                </div>
+        <div class="modal-body" style="flex: 1 1 auto; overflow-y: auto; padding: 20px;">
+            <div class="handover-slip-sheet" id="handoverSlipContent" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 24px 28px; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.45;">
+                
+                <!-- 1. Document Header Table -->
+                <table class="slip-doc-table slip-header-table" style="width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 2px solid #001938;">
+                    <tr>
+                        <td style="width: 22%; text-align: center; vertical-align: middle; padding: 12px; border-right: 1px solid #cbd5e1;">
+                            <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 48px; max-width: 110px; object-fit: contain;">
+                        </td>
+                        <td style="text-align: center; vertical-align: middle; padding: 12px;">
+                            <div style="font-size: 18px; font-weight: 800; color: #001938; letter-spacing: 0.5px; text-transform: uppercase;">VIROS PORTAL</div>
+                            <div style="font-size: 12px; font-weight: 600; color: #475569; margin-top: 2px;">IT Asset Management & Helpdesk</div>
+                            <div style="font-size: 13px; font-weight: 800; color: var(--cyan-primary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #cbd5e1; display: inline-block; padding-top: 3px;">
+                                EQUIPMENT HANDOVER & CUSTODY SLIP
+                            </div>
+                        </td>
+                        <td style="width: 30%; vertical-align: middle; font-size: 11.5px; line-height: 1.6; background: #f8fafc; border-left: 1px solid #cbd5e1; padding: 10px 14px;">
+                            <div><strong>Slip No:</strong> <span id="slipNumber" style="font-family: monospace; font-weight: 700; color: var(--cyan-primary);">-</span></div>
+                            <div><strong>Handover Date:</strong> <span id="slipDate">-</span></div>
+                            <div><strong>Allocation Type:</strong> <span id="slipAllocType" style="font-weight: 600;">-</span></div>
+                            <div><strong>Custody Status:</strong> <span id="slipCustodyStatus" style="font-weight: 700; color: #166534;">In Custody</span></div>
+                        </td>
+                    </tr>
+                </table>
 
-                <!-- Custodian Info -->
-                <div class="slip-section-title">1. Custodian Details</div>
-                <div class="slip-grid-2">
-                    <div class="slip-grid-item">
-                        <span class="label">Employee Name:</span>
-                        <span class="value" id="slipEmpName">-</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Employee ID:</span>
-                        <span class="value" id="slipEmpCode">-</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Department:</span>
-                        <span class="value" id="slipEmpDept">-</span>
-                    </div>
-                    <div class="slip-grid-item">
-                        <span class="label">Designation:</span>
-                        <span class="value" id="slipEmpDesig">-</span>
-                    </div>
+                <!-- 2. Custodian / Employee Details Table -->
+                <div class="slip-table-heading" style="font-size: 11.5px; font-weight: 700; color: #001938; background: #f1f5f9; padding: 5px 10px; margin: 12px 0 0; text-transform: uppercase; border: 1px solid #cbd5e1; border-bottom: none; border-left: 3px solid var(--cyan-primary);">
+                    1. Custodian / Employee Information
                 </div>
+                <table class="slip-doc-table" style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11.5px;">
+                    <tr>
+                        <td class="slip-lbl" style="width: 18%; background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Employee Name</td>
+                        <td class="slip-val" style="width: 32%; font-weight: 700; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipEmpName">-</td>
+                        <td class="slip-lbl" style="width: 18%; background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Employee ID</td>
+                        <td class="slip-val" style="width: 32%; font-family: monospace; font-weight: 700; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipEmpCode">-</td>
+                    </tr>
+                    <tr>
+                        <td class="slip-lbl" style="background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Designation</td>
+                        <td class="slip-val" style="font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipEmpDesig">-</td>
+                        <td class="slip-lbl" style="background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Department</td>
+                        <td class="slip-val" style="font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipEmpDept">-</td>
+                    </tr>
+                    <tr>
+                        <td class="slip-lbl" style="background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Email Address</td>
+                        <td class="slip-val" style="font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipEmpEmail">-</td>
+                        <td class="slip-lbl" style="background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Branch / Location</td>
+                        <td class="slip-val" style="font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipEmpLocation">-</td>
+                    </tr>
+                </table>
 
-                <!-- Hardware Info -->
-                <div class="slip-section-title">2. Hardware Equipment Specifications (<span id="slipAssetCount">0</span>)</div>
-                <div id="slipAssetsContainer" style="margin-bottom: 12px;">
-                    <table class="slip-items-table" style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
-                        <thead>
-                            <tr style="background: #f1f5f9; text-align: left; border-bottom: 1px solid #cbd5e1;">
-                                <th style="padding: 6px 8px;">Asset Tag</th>
-                                <th style="padding: 6px 8px;">Device Name</th>
-                                <th style="padding: 6px 8px;">Category</th>
-                                <th style="padding: 6px 8px;">Serial No</th>
-                                <th style="padding: 6px 8px;">Condition</th>
-                            </tr>
-                        </thead>
-                        <tbody id="slipAssetsTbody">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
+                <!-- 3. Assigned Hardware Assets Table -->
+                <div class="slip-table-heading" style="font-size: 11.5px; font-weight: 700; color: #001938; background: #f1f5f9; padding: 5px 10px; margin: 12px 0 0; text-transform: uppercase; border: 1px solid #cbd5e1; border-bottom: none; border-left: 3px solid var(--cyan-primary);">
+                    2. Assigned Hardware Assets Details (<span id="slipAssetCount">0</span>)
                 </div>
+                <table class="slip-doc-table" id="slipAssetsTable" style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11.5px;">
+                    <thead>
+                        <tr class="slip-th-row" style="background: #f1f5f9;">
+                            <th style="width: 38px; text-align: center; padding: 6px 8px; border: 1px solid #cbd5e1;">#</th>
+                            <th style="width: 105px; padding: 6px 8px; border: 1px solid #cbd5e1;">Asset Tag</th>
+                            <th style="padding: 6px 8px; border: 1px solid #cbd5e1;">Asset / Device Name</th>
+                            <th style="width: 105px; padding: 6px 8px; border: 1px solid #cbd5e1;">Category</th>
+                            <th style="width: 115px; padding: 6px 8px; border: 1px solid #cbd5e1;">Brand & Model</th>
+                            <th style="width: 120px; padding: 6px 8px; border: 1px solid #cbd5e1;">Serial Number</th>
+                            <th style="width: 75px; text-align: center; padding: 6px 8px; border: 1px solid #cbd5e1;">Condition</th>
+                        </tr>
+                    </thead>
+                    <tbody id="slipAssetsTbody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
 
-                <!-- Peripherals Included -->
-                <div class="slip-section-title">3. Included Peripherals & Accessories (<span id="slipAccCount">0</span>)</div>
-                <div id="slipAccessoriesContainer" style="margin-bottom: 14px;">
-                    <table class="slip-items-table" style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
-                        <thead>
-                            <tr style="background: #f1f5f9; text-align: left; border-bottom: 1px solid #cbd5e1;">
-                                <th style="padding: 6px 8px;">Accessory Item</th>
-                                <th style="padding: 6px 8px;">SKU / Code</th>
-                                <th style="padding: 6px 8px; text-align: center;">Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody id="slipAccTbody">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
+                <!-- 4. Assigned Accessories Table -->
+                <div class="slip-table-heading" style="font-size: 11.5px; font-weight: 700; color: #001938; background: #f1f5f9; padding: 5px 10px; margin: 12px 0 0; text-transform: uppercase; border: 1px solid #cbd5e1; border-bottom: none; border-left: 3px solid var(--cyan-primary);">
+                    3. Assigned Accessories & Peripherals (<span id="slipAccCount">0</span>)
                 </div>
+                <table class="slip-doc-table" id="slipAccessoriesTable" style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11.5px;">
+                    <thead>
+                        <tr class="slip-th-row" style="background: #f1f5f9;">
+                            <th style="width: 38px; text-align: center; padding: 6px 8px; border: 1px solid #cbd5e1;">#</th>
+                            <th style="padding: 6px 8px; border: 1px solid #cbd5e1;">Accessory Item</th>
+                            <th style="width: 160px; padding: 6px 8px; border: 1px solid #cbd5e1;">Category / Classification</th>
+                            <th style="width: 65px; text-align: center; padding: 6px 8px; border: 1px solid #cbd5e1;">Qty</th>
+                            <th style="width: 90px; text-align: center; padding: 6px 8px; border: 1px solid #cbd5e1;">Condition</th>
+                        </tr>
+                    </thead>
+                    <tbody id="slipAccTbody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
 
-                <!-- Legal Terms -->
-                <div class="slip-terms-box">
-                    <strong>Terms of Custody:</strong> The undersigned employee acknowledges receiving the equipment listed above in clean, working condition. The employee accepts full responsibility for reasonable care and custody of the equipment for official duties, and agrees to promptly report any loss, damage, or malfunction to IT Helpdesk.
+                <!-- 5. Handover Terms & Scope Table -->
+                <div class="slip-table-heading" style="font-size: 11.5px; font-weight: 700; color: #001938; background: #f1f5f9; padding: 5px 10px; margin: 12px 0 0; text-transform: uppercase; border: 1px solid #cbd5e1; border-bottom: none; border-left: 3px solid var(--cyan-primary);">
+                    4. Handover Terms & Authorization
                 </div>
+                <table class="slip-doc-table" style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11.5px;">
+                    <tr>
+                        <td class="slip-lbl" style="width: 20%; background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Allocation Type</td>
+                        <td class="slip-val" style="width: 30%; font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipTermsAllocType">-</td>
+                        <td class="slip-lbl" style="width: 20%; background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Handover Date</td>
+                        <td class="slip-val" style="width: 30%; font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipTermsAssignedDate">-</td>
+                    </tr>
+                    <tr>
+                        <td class="slip-lbl" style="background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Expected Return</td>
+                        <td class="slip-val" style="font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipTermsExpectedReturn">-</td>
+                        <td class="slip-lbl" style="background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Issued By (IT Official)</td>
+                        <td class="slip-val" style="font-weight: 600; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1;" id="slipTermsIssuedBy">-</td>
+                    </tr>
+                    <tr>
+                        <td class="slip-lbl" style="background: #f8fafc; font-weight: 600; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">Agreement & Notes</td>
+                        <td class="slip-val" colspan="3" id="slipTermsNotes" style="font-size: 11px; line-height: 1.45; color: #475569; padding: 6px 10px; border: 1px solid #cbd5e1;">
+                            Equipment verified and allocated in good physical condition. Custodian agreed to corporate IT acceptable use policy.
+                        </td>
+                    </tr>
+                </table>
 
-                <!-- Signatures -->
-                <div class="slip-sign-row">
-                    <div class="slip-sign-box">
-                        <div style="height: 35px;"></div>
-                        <div><strong>Custodian Signature</strong></div>
-                        <div style="font-size: 10.5px; color: #64748b;">(Employee Name / Date)</div>
-                    </div>
-                    <div class="slip-sign-box">
-                        <div style="height: 35px;"></div>
-                        <div><strong>Authorized IT Official</strong></div>
-                        <div style="font-size: 10.5px; color: #64748b;">(IT Asset Management Seal / Sign)</div>
-                    </div>
-                </div>
+                <!-- 6. Custody Declaration & Signatures Table -->
+                <table class="slip-doc-table slip-sign-table" style="width: 100%; border-collapse: collapse; margin-top: 14px; border: 1px solid #94a3b8;">
+                    <tr>
+                        <td colspan="2" style="font-size: 10.5px; color: #475569; padding: 8px 12px; background: #f8fafc; line-height: 1.45; border-bottom: 1px solid #94a3b8;">
+                            <strong>Declaration & Acceptance:</strong> I hereby acknowledge receipt of the hardware and accessories listed above in sound physical and working condition. I agree to abide by the company IT Acceptable Use Policy and accept full responsibility for their care and custody.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 50%; padding: 36px 16px 10px; vertical-align: bottom; border-right: 1px solid #cbd5e1;">
+                            <div style="border-top: 1.5px solid #001938; padding-top: 5px; font-size: 11.5px; font-weight: 700; color: #001938;">
+                                Employee / Custodian Signature
+                            </div>
+                            <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;" id="slipSignEmpName">
+                                Signature & Date
+                            </div>
+                        </td>
+                        <td style="width: 50%; padding: 36px 16px 10px; vertical-align: bottom; text-align: right;">
+                            <div style="border-top: 1.5px solid #001938; padding-top: 5px; font-size: 11.5px; font-weight: 700; color: #001938;">
+                                Authorized IT Official / Seal
+                            </div>
+                            <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">
+                                IT Asset Management Dept
+                            </div>
+                        </td>
+                    </tr>
+                </table>
 
             </div>
         </div>
-        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+        <div class="modal-footer" style="flex-shrink: 0; display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid #e2e8f0; background: #ffffff;">
             <button type="button" class="btn-secondary" id="closeSlipBtn">Close</button>
-            <button type="button" class="btn-primary" onclick="window.print()">
+            <button type="button" class="btn-primary" onclick="printSlipReceipt()" style="display: inline-flex; align-items: center; gap: 6px;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Print Handover Slip
             </button>
