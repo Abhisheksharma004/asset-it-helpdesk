@@ -35,7 +35,6 @@
     const addModal = document.getElementById('addComponentModal');
     const editModal = document.getElementById('editComponentModal');
     const deleteModal = document.getElementById('deleteComponentModal');
-    const installModal = document.getElementById('installModal');
     const importModal = document.getElementById('importModal');
 
     const openAddModalBtn = document.getElementById('openAddModalBtn');
@@ -54,18 +53,8 @@
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
     const deleteComponentName = document.getElementById('deleteComponentName');
     let componentToDeleteId = null;
-
-    const detachModal = document.getElementById('detachComponentModal');
-    const closeDetachModalBtn = document.getElementById('closeDetachModalBtn');
-    const cancelDetachModalBtn = document.getElementById('cancelDetachModalBtn');
-    const confirmDetachBtn = document.getElementById('confirmDetachBtn');
-    const detachComponentName = document.getElementById('detachComponentName');
-    const detachTargetAsset = document.getElementById('detachTargetAsset');
-    let componentToDetachId = null;
-
-    const closeInstallModalBtn = document.getElementById('closeInstallModalBtn');
-    const cancelInstallBtn = document.getElementById('cancelInstallBtn');
-    const installForm = document.getElementById('installForm');
+    let activeDrawerCompId = null;
+    window.activeDrawerCompId = null;
 
     const openImportModalBtn = document.getElementById('openImportModalBtn');
     const closeImportModalBtn = document.getElementById('closeImportModalBtn');
@@ -149,6 +138,14 @@
                     components = data.components;
                     renderTable();
                     if (data.stats) updateStats(data.stats);
+                    if (window.activeDrawerCompId) {
+                        const currentItem = components.find(c => c.id === window.activeDrawerCompId);
+                        if (currentItem && typeof window.openComponentDrawer === 'function') {
+                            window.openComponentDrawer(window.activeDrawerCompId);
+                        } else if (typeof window.closeComponentDrawer === 'function') {
+                            window.closeComponentDrawer();
+                        }
+                    }
                     if (typeof callback === 'function') callback();
                 }
             })
@@ -364,22 +361,6 @@
             confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
         }
 
-        // Detach Modal
-        if (closeDetachModalBtn) closeDetachModalBtn.addEventListener('click', () => closeModal(detachModal));
-        if (cancelDetachModalBtn) cancelDetachModalBtn.addEventListener('click', () => closeModal(detachModal));
-
-        if (confirmDetachBtn) {
-            confirmDetachBtn.addEventListener('click', handleConfirmDetach);
-        }
-
-        // Install Modal
-        if (closeInstallModalBtn) closeInstallModalBtn.addEventListener('click', () => closeModal(installModal));
-        if (cancelInstallBtn) cancelInstallBtn.addEventListener('click', () => closeModal(installModal));
-
-        if (installForm) {
-            installForm.addEventListener('submit', handleConfirmInstall);
-        }
-
         // Import Modal
         if (openImportModalBtn) {
             openImportModalBtn.addEventListener('click', function () {
@@ -438,22 +419,58 @@
             exportCompBtn.addEventListener('click', handleExportCsv);
         }
 
+        // Slide-over Drawer Events
+        const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+        const drawerBackdrop = document.getElementById('drawerBackdrop');
+        if (closeDrawerBtn) {
+            closeDrawerBtn.addEventListener('click', function () {
+                if (typeof window.closeComponentDrawer === 'function') {
+                    window.closeComponentDrawer();
+                }
+            });
+        }
+        if (drawerBackdrop) {
+            drawerBackdrop.addEventListener('click', function () {
+                if (typeof window.closeComponentDrawer === 'function') {
+                    window.closeComponentDrawer();
+                }
+            });
+        }
+
+        const componentDrawer = document.getElementById('componentDrawer');
+        if (componentDrawer) {
+            componentDrawer.querySelectorAll('.drawer-tab').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    if (typeof window.switchComponentDrawerTab === 'function') {
+                        window.switchComponentDrawerTab(this.dataset.tab);
+                    }
+                });
+            });
+        }
+
         // Close on Escape or click outside
+        const labelModal = document.getElementById('labelModal');
         window.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeModal(addModal);
                 closeModal(editModal);
                 closeModal(deleteModal);
-                closeModal(detachModal);
-                closeModal(installModal);
                 closeModal(importModal);
+                if (typeof window.closeLabelModal === 'function') window.closeLabelModal();
+                if (typeof window.closeComponentDrawer === 'function') window.closeComponentDrawer();
             }
         });
 
-        [addModal, editModal, deleteModal, detachModal, installModal, importModal].forEach(modal => {
+        [addModal, editModal, deleteModal, importModal, labelModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
-                    if (e.target === modal) closeModal(modal);
+                    if (e.target === modal) {
+                        if (modal === labelModal && typeof window.closeLabelModal === 'function') {
+                            window.closeLabelModal();
+                        } else {
+                            closeModal(modal);
+                        }
+                    }
                 });
             }
         });
@@ -529,22 +546,6 @@
                 assetCol = `<span style="color: #ea580c; font-size: 12px; font-weight: 500;">In Service Depot</span>`;
             }
 
-            // Action Buttons
-            let installOrDetachBtn = '';
-            if (item.status === 'Available') {
-                installOrDetachBtn = `
-                    <button class="action-icon-btn btn-view" title="Install into Host Asset" onclick="window.compMgr.openInstall(${item.id})">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-                    </button>
-                `;
-            } else if (item.status === 'Installed') {
-                installOrDetachBtn = `
-                    <button class="action-icon-btn btn-detach" title="Detach from Asset & Return to Stock" onclick="window.compMgr.detachItem(${item.id})">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                `;
-            }
-
             const locParts = [];
             if (item.branch_location) locParts.push(escapeHtml(item.branch_location));
             if (item.location) locParts.push(escapeHtml(item.location));
@@ -554,14 +555,14 @@
             tr.setAttribute('data-id', item.id);
             tr.innerHTML = `
                 <td style="white-space: nowrap;">
-                    <span class="asset-tag-badge" title="Part SKU Tag">${escapeHtml(item.sku)}</span>
+                    <span class="asset-tag-badge" onclick="openComponentDrawer(${item.id})" style="cursor: pointer;" title="View component details">${escapeHtml(item.sku)}</span>
                 </td>
                 <td style="white-space: nowrap;">
-                    <span class="serial-badge">${escapeHtml(item.serial || '—')}</span>
+                    <span class="serial-badge" onclick="openComponentDrawer(${item.id})" style="cursor: pointer;" title="View component details">${escapeHtml(item.serial || '—')}</span>
                 </td>
                 <td>
                     <div class="asset-details-wrap">
-                        <span class="asset-name-title" onclick="window.compMgr.openEdit(${item.id})">${escapeHtml(item.name)}</span>
+                        <span class="asset-name-title" onclick="openComponentDrawer(${item.id})" style="cursor: pointer;">${escapeHtml(item.name)}</span>
                         <span class="asset-spec-sub">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                             ${locText}
@@ -577,7 +578,12 @@
                 <td>${statusBadge}</td>
                 <td>
                     <div class="action-buttons-wrap" style="justify-content: flex-end; padding-right: 6px;">
-                        ${installOrDetachBtn}
+                        <button class="action-icon-btn btn-view" title="View Details" onclick="openComponentDrawer(${item.id})">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                        <button class="action-icon-btn btn-qr" title="Print Barcode / QR Label" onclick="openLabelModal(${item.id})">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        </button>
                         <button class="action-icon-btn btn-edit" title="Edit Component" onclick="window.compMgr.openEdit(${item.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
@@ -743,119 +749,6 @@
         });
     }
 
-    // Install / Allocate to Asset
-    function openInstallModal(id) {
-        const item = components.find(c => c.id === id);
-        if (!item || item.status !== 'Available') {
-            showNotification('Only available parts in stock can be installed into assets.', 'warning');
-            return;
-        }
-
-        document.getElementById('installCompId').value = item.id;
-        document.getElementById('installCompName').textContent = item.name;
-        document.getElementById('installCompSku').textContent = item.sku;
-        document.getElementById('installCompSerial').textContent = item.serial || 'No Serial';
-
-        const dateInput = document.getElementById('installDate');
-        dateInput.value = new Date().toISOString().split('T')[0];
-
-        openModal(installModal);
-    }
-
-    function handleConfirmInstall(e) {
-        e.preventDefault();
-        const id = parseInt(document.getElementById('installCompId').value, 10);
-        const targetAsset = document.getElementById('installTargetAsset').value;
-        const technician = document.getElementById('installedBy').value;
-        const installDate = document.getElementById('installDate').value;
-
-        fetch(getApiUrl(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'install',
-                id: id,
-                target_asset: targetAsset,
-                technician: technician,
-                install_date: installDate
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                closeModal(installModal);
-                showNotification(data.message || `Component installed into ${targetAsset}.`, 'success');
-                loadComponents();
-            } else {
-                showNotification(data.message || 'Failed to install component.', 'error');
-            }
-        })
-        .catch(err => {
-            showNotification('Server error while installing component.', 'error');
-            console.error(err);
-        });
-    }
-
-    // Detach Item Modal - Opens confirmation modal (same as delete)
-    function openDetachModal(id) {
-        const item = components.find(c => c.id === id);
-        if (!item) return;
-
-        componentToDetachId = item.id;
-        if (detachComponentName) {
-            detachComponentName.textContent = `"${item.name}" (${item.sku})`;
-        }
-        if (detachTargetAsset) {
-            detachTargetAsset.textContent = item.installedAsset || 'Host Asset';
-        }
-        openModal(detachModal);
-    }
-
-    // Handle Confirm Detach - Detaches and returns to stock
-    function handleConfirmDetach() {
-        if (!componentToDetachId) return;
-
-        const item = components.find(c => c.id === componentToDetachId);
-        const itemName = item ? item.name : 'Component';
-
-        if (confirmDetachBtn) {
-            confirmDetachBtn.disabled = true;
-            confirmDetachBtn.textContent = 'Detaching...';
-        }
-
-        fetch(getApiUrl(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'detach',
-                id: componentToDetachId
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (confirmDetachBtn) {
-                confirmDetachBtn.disabled = false;
-                confirmDetachBtn.textContent = 'Yes, Detach Component';
-            }
-            if (data.success) {
-                showNotification(data.message || `Component "${itemName}" returned to available stock.`, 'info');
-                closeModal(detachModal);
-                componentToDetachId = null;
-                loadComponents();
-            } else {
-                showNotification(data.message || 'Failed to detach component.', 'error');
-            }
-        })
-        .catch(err => {
-            if (confirmDetachBtn) {
-                confirmDetachBtn.disabled = false;
-                confirmDetachBtn.textContent = 'Yes, Detach Component';
-            }
-            showNotification('Server error while detaching component.', 'error');
-            console.error(err);
-        });
-    }
-
     // Edit Item Modal - Populates and opens dedicated Edit modal
     function openEditModal(id) {
         const item = components.find(c => c.id === id);
@@ -932,6 +825,9 @@
             if (data.success) {
                 showNotification(data.message || 'Component removed from database successfully.', 'success');
                 closeModal(deleteModal);
+                if (window.activeDrawerCompId === componentToDeleteId && typeof window.closeComponentDrawer === 'function') {
+                    window.closeComponentDrawer();
+                }
                 componentToDeleteId = null;
                 loadComponents();
             } else {
@@ -1148,12 +1044,403 @@
         }
     }
 
+    // =========================================================================
+    // Component Slide-Over Drawer
+    // =========================================================================
+
+    window.openComponentDrawer = function (id) {
+        const parsedId = parseInt(id, 10);
+        const comp = components.find(c => c.id === id || c.id === parsedId || c.sku === id);
+        if (!comp) return;
+
+        activeDrawerCompId = comp.id;
+        window.activeDrawerCompId = comp.id;
+
+        // Drawer Header Info
+        const skuEl = document.getElementById('drawerCompSku');
+        if (skuEl) skuEl.textContent = comp.sku || '-';
+
+        const serialEl = document.getElementById('drawerCompSerial');
+        if (serialEl) serialEl.textContent = comp.serial ? 'SN: ' + comp.serial : 'SN: N/A';
+
+        const nameEl = document.getElementById('drawerCompName');
+        if (nameEl) nameEl.textContent = comp.name || 'Component';
+
+        const statusEl = document.getElementById('drawerCompStatus');
+        if (statusEl) {
+            if (comp.status === 'Available') {
+                statusEl.innerHTML = `<span class="asset-status-badge status-available"><span class="dot"></span>Available</span>`;
+            } else if (comp.status === 'Installed') {
+                statusEl.innerHTML = `<span class="asset-status-badge status-in-use"><span class="dot"></span>Installed</span>`;
+            } else if (comp.status === 'Under Repair') {
+                statusEl.innerHTML = `<span class="asset-status-badge status-maintenance"><span class="dot"></span>Under Repair</span>`;
+            } else {
+                statusEl.innerHTML = `<span class="asset-status-badge status-retired" style="background:#fef2f2; color:#b91c1c;"><span class="dot" style="background:#ef4444;"></span>Defective</span>`;
+            }
+        }
+
+        // Populate Specs Tab
+        const setVal = (elId, val) => {
+            const el = document.getElementById(elId);
+            if (el) el.textContent = val || '—';
+        };
+
+        setVal('specCompSku', comp.sku);
+        setVal('specCompCategory', comp.category);
+        setVal('specCompBrand', comp.brand);
+        setVal('specCompModel', comp.model);
+        setVal('specCompSerial', comp.serial);
+        setVal('specCompStatusText', comp.status);
+        setVal('specCompSpecs', comp.specs);
+        setVal('specCompBranch', comp.branch_location);
+        setVal('specCompLocation', comp.location);
+        setVal('specCompCreatedDate', comp.created_date || comp.created_at || '—');
+
+        // Populate Host Machine / Deployment Tab
+        const hostWrap = document.getElementById('drawerHostAssetWrap');
+        if (hostWrap) {
+            if (comp.status === 'Installed') {
+                const hostDisplay = comp.installedAsset || comp.installed_asset || 'Assigned Host Device';
+                const hostTag = comp.host_asset_tag || (hostDisplay.match(/^([A-Z0-9_-]+)/) ? hostDisplay.match(/^([A-Z0-9_-]+)/)[1] : '');
+                const hostName = comp.host_asset_name || (comp.installedAsset || 'Host Machine');
+
+                hostWrap.innerHTML = `
+                    <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 44px; height: 44px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; border: 1px solid #bfdbfe; flex-shrink: 0;">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="asset-tag-badge" style="font-size: 11.5px; font-weight: 700;">${escapeHtml(hostTag || 'HOST DEVICE')}</span>
+                                        <span class="asset-status-badge status-in-use" style="font-size: 11px;"><span class="dot"></span>Deployed</span>
+                                    </div>
+                                    <h4 style="margin: 4px 0 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">${escapeHtml(hostName)}</h4>
+                                </div>
+                            </div>
+                            ${hostTag ? `
+                                <a href="assets.php?search=${encodeURIComponent(hostTag)}" class="btn-secondary" style="padding: 5px 12px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;" title="View host asset in Assets directory">
+                                    <span>View Asset</span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                </a>
+                            ` : ''}
+                        </div>
+
+                        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12.5px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="color: var(--text-muted);">Slot / Bay Location:</span>
+                                <span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(comp.location || 'Internal Bay / Slot')}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="color: var(--text-muted);">Deployment Branch:</span>
+                                <span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(comp.branch_location || 'Corporate Site')}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">Component State:</span>
+                                <span style="color: #16a34a; font-weight: 600;">Active Hardware Module</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (comp.status === 'Under Repair' || comp.status === 'Defective') {
+                hostWrap.innerHTML = `
+                    <div style="background: #fff7ed; border: 1px dashed #fdba74; border-radius: var(--radius-md); padding: 18px 16px; text-align: center;">
+                        <div style="font-size: 26px; margin-bottom: 6px;">🛠️</div>
+                        <div style="font-size: 14px; font-weight: 700; color: #9a3412;">Under Maintenance / Service Depot</div>
+                        <div style="font-size: 12px; color: #7c2d12; margin-top: 4px; line-height: 1.5;">
+                            This component is currently undergoing diagnosis, RMA replacement, or hardware repairs.
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: var(--text-secondary); background: #ffffff; padding: 6px 12px; border-radius: 6px; display: inline-block; border: 1px solid #fed7aa;">
+                            Depot Location: <strong>${escapeHtml(comp.location || 'Repair Bench')}</strong>
+                        </div>
+                    </div>
+                `;
+            } else {
+                hostWrap.innerHTML = `
+                    <div style="background: #f8fafc; border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 22px 18px; text-align: center;">
+                        <div style="font-size: 28px; margin-bottom: 6px; opacity: 0.8;">📦</div>
+                        <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">In Stock / Storage Depot</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
+                            This component is available in storage and ready for deployment into compatible systems.
+                        </div>
+                        <div style="margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            <span>Shelf Location: <strong>${escapeHtml(comp.location || 'Depot Shelf')}</strong></span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Set Overview as active tab
+        if (typeof window.switchComponentDrawerTab === 'function') {
+            window.switchComponentDrawerTab('overview');
+        }
+
+        // Open Drawer
+        const drawer = document.getElementById('componentDrawer');
+        const backdrop = document.getElementById('drawerBackdrop');
+        if (drawer) drawer.classList.add('open');
+        if (backdrop) backdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeComponentDrawer = function () {
+        const drawer = document.getElementById('componentDrawer');
+        const backdrop = document.getElementById('drawerBackdrop');
+        if (drawer) drawer.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+        document.body.style.overflow = '';
+        activeDrawerCompId = null;
+        window.activeDrawerCompId = null;
+    };
+
+    window.switchComponentDrawerTab = function (tabName) {
+        const drawer = document.getElementById('componentDrawer');
+        if (!drawer) return;
+        drawer.querySelectorAll('.drawer-tab').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === tabName);
+        });
+        drawer.querySelectorAll('.drawer-tab-pane').forEach(p => {
+            p.classList.toggle('active', p.id === 'pane_' + tabName);
+        });
+    };
+
+    // =========================================================================
+    // Thermal Label & QR Print Modal for Components
+    // =========================================================================
+
+    let currentLabelComponent = null;
+
+    window.openLabelModal = function (compId) {
+        const comp = components.find(c => c.id === compId);
+        if (!comp) return;
+        currentLabelComponent = comp;
+
+        const tagEl = document.getElementById('lblStickerTag');
+        if (tagEl) tagEl.textContent = 'TAG: ' + (comp.sku || '');
+        const nameEl = document.getElementById('lblStickerName');
+        if (nameEl) nameEl.textContent = comp.name || '';
+        const serialEl = document.getElementById('lblStickerSerial');
+        if (serialEl) serialEl.textContent = 'SN: ' + (comp.serial || 'N/A');
+        const catEl = document.getElementById('lblStickerCategory');
+        if (catEl) catEl.textContent = 'Category: ' + (comp.category || '');
+
+        // Check and fetch latest system printers asynchronously if needed
+        if (typeof window.refreshSystemPrinters === 'function') {
+            window.refreshSystemPrinters(false);
+        }
+
+        // Restore preferred printer from localStorage if saved
+        try {
+            const savedPrinter = localStorage.getItem('viros_preferred_printer');
+            const printerSelect = document.getElementById('labelPrinterSelect');
+            if (printerSelect && savedPrinter) {
+                printerSelect.value = savedPrinter;
+                if (typeof window.handleLabelPrinterChange === 'function') {
+                    window.handleLabelPrinterChange(savedPrinter);
+                }
+            } else if (printerSelect) {
+                window.handleLabelPrinterChange(printerSelect.value);
+            }
+        } catch (e) {}
+
+        const modal = document.getElementById('labelModal');
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeLabelModal = function () {
+        const modal = document.getElementById('labelModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.refreshSystemPrinters = function (force = false) {
+        const btn = document.getElementById('refreshPrintersBtn');
+        if (btn) {
+            btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning...`;
+            btn.disabled = true;
+        }
+
+        fetch(getApiUrl() + (getApiUrl().includes('?') ? '&' : '?') + 'action=get_system_printers' + (force ? '&refresh=1' : ''))
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.printers)) {
+                    updatePrinterSelectOptions(data.printers);
+                    if (force) {
+                        showNotification(`Detected ${data.printers.length} installed system printers`, 'info');
+                    }
+                }
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (btn) {
+                    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg> Refresh`;
+                    btn.disabled = false;
+                }
+            });
+    };
+
+    function updatePrinterSelectOptions(printers) {
+        const select = document.getElementById('labelPrinterSelect');
+        if (!select || !Array.isArray(printers) || printers.length === 0) return;
+
+        const currentVal = select.value;
+        select.innerHTML = '';
+
+        printers.forEach(p => {
+            if (!p || !p.name) return;
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            opt.textContent = p.name;
+            select.appendChild(opt);
+        });
+
+        // Keep previous or saved selection if still valid, or default to first
+        const saved = localStorage.getItem('viros_preferred_printer') || currentVal;
+        const exists = Array.from(select.options).some(o => o.value === saved);
+        if (exists) {
+            select.value = saved;
+        } else if (select.options.length > 0) {
+            select.value = select.options[0].value;
+        }
+        handleLabelPrinterChange(select.value);
+
+        // Sync custom searchable dropdown UI if loaded
+        if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+            window.SearchableSelect.sync(select);
+        }
+    }
+
+    // Auto-detect installed printers on initialization
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(() => refreshSystemPrinters(false), 200);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => refreshSystemPrinters(false), 200);
+        });
+    }
+
+    window.handleLabelPrinterChange = function (val) {
+        try {
+            localStorage.setItem('viros_preferred_printer', val);
+        } catch (e) {}
+
+        const textEl = document.getElementById('selectedPrinterNameText');
+        if (textEl) {
+            textEl.innerHTML = `Printer: <strong>${escapeHtml(val || 'Default')}</strong>`;
+        }
+    };
+
+    window.downloadLabelZpl = function () {
+        if (!currentLabelComponent) return;
+        const copies = parseInt(document.getElementById('labelCopiesCount')?.value || '1', 10);
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'generate_zpl',
+                tag: currentLabelComponent.sku,
+                serial: currentLabelComponent.serial,
+                name: currentLabelComponent.name,
+                copies: copies
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success && data.zpl) {
+                const blob = new Blob([data.zpl], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `label_${currentLabelComponent.sku}.prn`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showNotification(`ZPL print file exported for ${currentLabelComponent.sku}`, 'success');
+            } else {
+                showNotification('Failed to generate ZPL code', 'error');
+            }
+        })
+        .catch(() => {
+            showNotification('Error downloading ZPL template', 'error');
+        });
+    };
+
+    window.printSticker = function () {
+        if (!currentLabelComponent) {
+            showNotification('No component selected for printing', 'warning');
+            return;
+        }
+
+        const printerSelect = document.getElementById('labelPrinterSelect');
+        const printerName = printerSelect ? printerSelect.value.trim() : '';
+        const copies = parseInt(document.getElementById('labelCopiesCount')?.value || '1', 10);
+
+        if (!printerName) {
+            showNotification('Please select a system printer first', 'warning');
+            return;
+        }
+
+        // If explicitly set to system default browser dialog
+        if (printerName === 'system_default') {
+            window.print();
+            return;
+        }
+
+        const btn = document.getElementById('btnPrintStickerBtn');
+        const origContent = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Sending to Printer...`;
+            btn.disabled = true;
+        }
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'print_label',
+                printer_name: printerName,
+                tag: currentLabelComponent.sku,
+                serial: currentLabelComponent.serial,
+                name: currentLabelComponent.name,
+                copies: copies
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success) {
+                showNotification(data.message || `Print job sent to "${printerName}" (${copies} ${copies === 1 ? 'copy' : 'copies'})`, 'success');
+                closeLabelModal();
+            } else if (data && data.fallback_browser) {
+                window.print();
+            } else {
+                showNotification(data.message || 'Failed to send label to printer', 'error');
+            }
+        })
+        .catch(err => {
+            showNotification('Error communicating with print service', 'error');
+        })
+        .finally(() => {
+            if (btn) {
+                btn.innerHTML = origContent;
+                btn.disabled = false;
+            }
+        });
+    };
+
     // Global hooks
     window.compMgr = {
-        openInstall: openInstallModal,
-        detachItem: openDetachModal,
+        openView: window.openComponentDrawer,
         openEdit: openEditModal,
         deleteItem: openDeleteModal,
+        openPrint: openLabelModal,
         reload: loadComponents
     };
 
