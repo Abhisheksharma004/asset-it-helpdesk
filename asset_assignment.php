@@ -642,18 +642,26 @@ include 'includes/topbar.php';
 <div class="drawer-backdrop" id="assignmentDrawerBackdrop"></div>
 
 <aside class="asset-drawer" id="assignmentDrawer">
-    <div class="drawer-header">
-        <div class="drawer-header-left">
-            <div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span class="asset-tag-badge" id="drawerTagBadge" style="font-size: 12px; font-weight: 700;">-</span>
+    <div class="drawer-header" style="padding: 18px 22px; border-bottom: 1px solid var(--border-color); background: #ffffff; display: flex; align-items: flex-start; justify-content: space-between;">
+        <div class="drawer-header-left" style="display: flex; align-items: center; gap: 14px; width: calc(100% - 40px); min-width: 0;">
+            <!-- Employee Avatar (Matching Employee Master design) -->
+            <div class="emp-avatar" id="drawerHeaderAvatar" style="width: 48px; height: 48px; font-size: 16px; font-weight: 700; border-radius: 50%; color: #ffffff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,25,56,0.18); display: flex; align-items: center; justify-content: center; background: var(--cyan-primary);">
+                --
+            </div>
+            
+            <!-- Employee Details in Header -->
+            <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                    <span class="slip-badge" id="drawerSlipNo" style="font-size: 11.5px; font-weight: 700; padding: 2px 8px;">-</span>
                     <span class="custody-badge status-active" id="drawerStatusBadge"><span class="dot"></span>In Custody</span>
-                    <span class="emp-code-badge" id="drawerSlipNo">-</span>
+                    <span class="emp-code-badge" id="drawerHeaderEmpCode" style="font-size: 11px; padding: 2px 7px;">-</span>
                 </div>
-                <h3 id="drawerAssetName" style="margin-top: 4px;">-</h3>
+                <h3 id="drawerHeaderEmpName" style="margin: 0; font-size: 17.5px; font-weight: 700; color: var(--navy-primary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</h3>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="drawerHeaderEmpMeta">-</div>
+                <div style="font-size: 11.5px; color: var(--cyan-primary); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="drawerHeaderEmpEmail">-</div>
             </div>
         </div>
-        <button type="button" class="drawer-close-btn" id="closeAssignmentDrawerBtn" title="Close Drawer">&times;</button>
+        <button type="button" class="drawer-close-btn" id="closeAssignmentDrawerBtn" title="Close Drawer" style="flex-shrink: 0; margin-left: 10px;">&times;</button>
     </div>
 
     <!-- Drawer Tabs -->
@@ -677,28 +685,33 @@ include 'includes/topbar.php';
         <!-- Tab 1: Overview -->
         <div class="drawer-tab-pane active" id="pane_custody_overview">
             
-            <!-- Custodian Profile Card -->
+            <!-- 1. Allocated Hardware Assets Checklist (Asset Detail - NICHE) -->
             <div class="drawer-section">
-                <div class="drawer-section-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    Assigned Custodian (Employee)
-                </div>
-                <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="custodian-avatar" id="drawerCustAvatar" style="width: 44px; height: 44px; font-size: 15px;">--</div>
-                        <div>
-                            <div style="font-size: 14.5px; font-weight: 700; color: var(--text-primary);" id="drawerCustName">-</div>
-                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 1px;" id="drawerCustMeta">-</div>
-                            <div style="font-size: 11.5px; color: var(--cyan-primary); margin-top: 2px;" id="drawerCustEmail">-</div>
-                        </div>
+                <div class="drawer-section-title" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        <span>Assigned Hardware Assets (<span id="drawerAssetCount">0</span>)</span>
                     </div>
-                    <button type="button" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="if(window.activeAllocId) openTransferModal(window.activeAllocId)">
-                        Transfer
-                    </button>
+                </div>
+                <div id="drawerAssetsWrap" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
-            <!-- Handover Terms & Scope -->
+            <!-- 2. Bundled Accessories Checklist (Accessories Detail - NICHE) -->
+            <div class="drawer-section">
+                <div class="drawer-section-title" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        <span>Assigned Accessories (<span id="drawerAccCount">0</span>)</span>
+                    </div>
+                </div>
+                <div id="drawerAccessoriesWrap" class="accessory-chip-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- 3. Handover Terms & Scope -->
             <div class="drawer-section">
                 <div class="drawer-section-title">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -732,29 +745,7 @@ include 'includes/topbar.php';
                 </div>
             </div>
 
-            <!-- Allocated Hardware Assets Checklist -->
-            <div class="drawer-section">
-                <div class="drawer-section-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                    Allocated Hardware Devices (<span id="drawerAssetCount">0</span>)
-                </div>
-                <div id="drawerAssetsWrap" style="display: flex; flex-direction: column; gap: 8px;">
-                    <!-- Populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Bundled Accessories Checklist -->
-            <div class="drawer-section">
-                <div class="drawer-section-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                    Bundled Accessories Included
-                </div>
-                <div id="drawerAccessoriesWrap" class="accessory-chip-grid">
-                    <!-- Populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Handover Policy & Notes -->
+            <!-- 4. Handover Agreement & Notes -->
             <div class="drawer-section">
                 <div class="drawer-section-title">Handover Agreement & Notes</div>
                 <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;" id="drawerNotes">
@@ -766,32 +757,34 @@ include 'includes/topbar.php';
 
         <!-- Tab 2: Specs -->
         <div class="drawer-tab-pane" id="pane_device_specs">
-            <div class="drawer-section">
-                <div class="drawer-section-title">Hardware Specifications</div>
-                <div class="drawer-spec-grid">
-                    <div class="drawer-spec-item">
-                        <div class="label">Asset Tag</div>
-                        <div class="value" id="specTag" style="font-family: monospace; font-weight: 700; color: var(--cyan-primary);">-</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Category</div>
-                        <div class="value" id="specCategory">-</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Brand</div>
-                        <div class="value" id="specBrand">-</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Model</div>
-                        <div class="value" id="specModel">-</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Serial Number</div>
-                        <div class="value" id="specSerial" style="font-family: monospace;">-</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Hardware Specs</div>
-                        <div class="value" id="specDetails">-</div>
+            <div id="drawerSpecsListWrap">
+                <div class="drawer-section">
+                    <div class="drawer-section-title">Hardware Specifications</div>
+                    <div class="drawer-spec-grid">
+                        <div class="drawer-spec-item">
+                            <div class="label">Asset Tag</div>
+                            <div class="value" id="specTag" style="font-family: monospace; font-weight: 700; color: var(--cyan-primary);">-</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Category</div>
+                            <div class="value" id="specCategory">-</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Brand</div>
+                            <div class="value" id="specBrand">-</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Model</div>
+                            <div class="value" id="specModel">-</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Serial Number</div>
+                            <div class="value" id="specSerial" style="font-family: monospace;">-</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Hardware Specs</div>
+                            <div class="value" id="specDetails">-</div>
+                        </div>
                     </div>
                 </div>
             </div>

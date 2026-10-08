@@ -408,13 +408,39 @@
         const assetsList = Array.isArray(item.assets) ? item.assets : [];
         const accList = Array.isArray(item.accessories) ? item.accessories : [];
 
-        // Header
-        const tagEl = document.getElementById('drawerTagBadge');
-        if (tagEl) tagEl.textContent = assetsList.length > 0 ? assetsList[0].tag : 'SLIP';
-        const nameEl = document.getElementById('drawerAssetName');
-        if (nameEl) nameEl.textContent = assetsList.length > 0 ? assetsList.map(a => a.name).join(', ') : (item.asset_name || 'Equipment Allocation');
+        // 1. Drawer Header: Employee Profile & Handover Slip Details
+        const hAvatar = document.getElementById('drawerHeaderAvatar');
+        if (hAvatar) {
+            hAvatar.textContent = getInitials(item.employee_name);
+            hAvatar.style.background = getAvatarColor(item.employee_name, item.emp_code, item.employee_id || item.id);
+        }
+
+        const hName = document.getElementById('drawerHeaderEmpName');
+        if (hName) {
+            hName.textContent = item.employee_name || 'Assigned Custodian';
+        }
+
+        const hEmpCode = document.getElementById('drawerHeaderEmpCode');
+        if (hEmpCode) {
+            hEmpCode.textContent = item.emp_code || 'EMP-STAFF';
+        }
+
+        const hMeta = document.getElementById('drawerHeaderEmpMeta');
+        if (hMeta) {
+            hMeta.textContent = `${item.designation || 'Staff'} • ${item.department || 'General'}`;
+        }
+
+        const hEmail = document.getElementById('drawerHeaderEmpEmail');
+        if (hEmail) {
+            const emailPart = item.employee_email ? item.employee_email : '';
+            const locPart = item.location ? `• ${item.location}` : '';
+            hEmail.textContent = [emailPart, locPart].filter(Boolean).join(' ') || '—';
+        }
+
         const slipEl = document.getElementById('drawerSlipNo');
-        if (slipEl) slipEl.textContent = item.slip_no || 'SLIP-2026-' + item.id;
+        if (slipEl) {
+            slipEl.textContent = item.slip_no || ('SLIP-2026-' + item.id);
+        }
 
         const statusEl = document.getElementById('drawerStatusBadge');
         if (statusEl) {
@@ -434,7 +460,11 @@
             statusEl.innerHTML = `<span class="dot"></span>${txt}`;
         }
 
-        // Custodian Profile
+        // Backward compatibility fallbacks
+        const tagEl = document.getElementById('drawerTagBadge');
+        if (tagEl) tagEl.textContent = assetsList.length > 0 ? assetsList[0].tag : 'SLIP';
+        const nameEl = document.getElementById('drawerAssetName');
+        if (nameEl) nameEl.textContent = assetsList.length > 0 ? assetsList.map(a => a.name).join(', ') : (item.asset_name || 'Equipment Allocation');
         const cAvatar = document.getElementById('drawerCustAvatar');
         if (cAvatar) {
             cAvatar.textContent = getInitials(item.employee_name);
@@ -461,51 +491,70 @@
         setVal('drawerHandoverBy', item.handover_by || 'IT Lead');
         setVal('drawerNotes', item.notes || 'Equipment verified and allocated in good physical condition.');
 
-        // Allocated Hardware Devices List
+        // 2. Hardware Assets List (Asset Detail - NICHE)
         const assetsWrap = document.getElementById('drawerAssetsWrap');
         const countBadge = document.getElementById('drawerAssetCount');
         if (countBadge) countBadge.textContent = assetsList.length;
         if (assetsWrap) {
             if (assetsList.length === 0) {
-                assetsWrap.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No hardware devices assigned under this slip.</div>';
+                assetsWrap.innerHTML = '<div style="font-size: 12.5px; color: var(--text-muted); padding: 12px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: 8px; text-align: center;">No hardware devices assigned under this slip.</div>';
             } else {
                 assetsWrap.innerHTML = assetsList.map(a => `
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                            <div style="width: 32px; height: 32px; border-radius: 6px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10.5px; flex-shrink: 0; font-family: monospace;">
+                    <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                        <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1;">
+                            <div style="min-width: 80px; text-align: center; padding: 6px 8px; border-radius: 6px; background: #e0f2fe; color: #0284c7; font-weight: 700; font-size: 11.5px; flex-shrink: 0; font-family: monospace; border: 1px solid #bae6fd;">
                                 ${escapeHtml(a.tag || 'AST')}
                             </div>
-                            <div style="min-width: 0;">
-                                <div style="font-weight: 700; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(a.name)}</div>
-                                <div style="font-size: 11.5px; color: var(--text-muted);">${escapeHtml(a.category || 'Hardware')} • SN: <span style="font-family: monospace;">${escapeHtml(a.serial || '—')}</span></div>
+                            <div style="min-width: 0; flex: 1;">
+                                <div style="font-weight: 700; font-size: 13.5px; color: var(--navy-primary); line-height: 1.3;">${escapeHtml(a.name || 'Device')}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
+                                    ${a.brand ? `<strong>${escapeHtml(a.brand)}</strong> • ` : ''}
+                                    ${escapeHtml(a.category || 'Hardware')} 
+                                    ${a.model ? `(${escapeHtml(a.model)})` : ''}
+                                </div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; font-family: monospace;">
+                                    Serial No: <strong style="color: var(--text-primary);">${escapeHtml(a.serial || '—')}</strong>
+                                </div>
+                                ${a.specs ? `<div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; background: #f8fafc; padding: 3px 8px; border-radius: 4px; display: inline-block;">${escapeHtml(a.specs)}</div>` : ''}
                             </div>
                         </div>
-                        <span style="font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">${escapeHtml(a.condition || 'Good')}</span>
+                        <div style="text-align: right; flex-shrink: 0;">
+                            <span style="font-size: 11.5px; background: #f1f5f9; color: var(--navy-primary); padding: 3px 9px; border-radius: 12px; font-weight: 600; border: 1px solid #e2e8f0; display: inline-block;">
+                                ${escapeHtml(a.condition || 'Good')}
+                            </span>
+                        </div>
                     </div>
                 `).join('');
             }
         }
 
-        // Accessories Chips
+        // 3. Bundled Accessories List (Accessories Detail - NICHE)
         const accWrap = document.getElementById('drawerAccessoriesWrap');
+        const accCountBadge = document.getElementById('drawerAccCount');
+        if (accCountBadge) accCountBadge.textContent = accList.length;
         if (accWrap) {
             if (accList.length === 0) {
-                accWrap.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); padding: 8px;">No accessories assigned under this slip.</div>';
+                accWrap.innerHTML = '<div style="font-size: 12.5px; color: var(--text-muted); padding: 12px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: 8px; text-align: center; width: 100%;">No accessories assigned under this slip.</div>';
             } else {
                 accWrap.innerHTML = accList.map(ac => {
                     const acName = typeof ac === 'string' ? ac : (ac.name || 'Item');
                     const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                    const acCategory = (typeof ac === 'object' && ac.category) ? ac.category : '';
                     return `
-                        <div class="accessory-chip checked" style="cursor: default;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            <span>${escapeHtml(acName)} <strong>(x${escapeHtml(acQty)})</strong></span>
+                        <div class="accessory-chip checked" style="cursor: default; padding: 7px 14px; display: inline-flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span style="font-size: 12.5px; font-weight: 600; color: #166534;">
+                                ${escapeHtml(acName)} 
+                                <strong style="background: #dcfce7; padding: 2px 7px; border-radius: 10px; color: #15803d; font-size: 11px; margin-left: 3px;">x${escapeHtml(acQty)}</strong>
+                            </span>
+                            ${acCategory ? `<span style="font-size: 11px; color: #15803d; opacity: 0.85;">(${escapeHtml(acCategory)})</span>` : ''}
                         </div>
                     `;
                 }).join('');
             }
         }
 
-        // Device Specs Tab (First or primary device)
+        // Device Specs Tab (Hardware specs for all assigned devices)
         const primary = assetsList[0] || {};
         setVal('specTag', primary.tag || item.asset_tag || '—');
         setVal('specCategory', primary.category || item.category || '—');
@@ -513,6 +562,48 @@
         setVal('specModel', primary.model || item.model || '—');
         setVal('specSerial', primary.serial || item.serial || '—');
         setVal('specDetails', primary.specs || item.specs || 'N/A');
+
+        const specsWrap = document.getElementById('drawerSpecsListWrap');
+        if (specsWrap) {
+            if (assetsList.length === 0) {
+                specsWrap.innerHTML = '<div style="font-size: 12.5px; color: var(--text-muted); padding: 12px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: 8px; text-align: center;">No hardware device specs available.</div>';
+            } else {
+                specsWrap.innerHTML = assetsList.map(a => `
+                    <div class="drawer-section" style="margin-bottom: 16px;">
+                        <div class="drawer-section-title" style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>${escapeHtml(a.name || 'Hardware Device')}</span>
+                            <span class="asset-tag-badge" style="font-size: 11px; font-family: monospace;">${escapeHtml(a.tag || 'AST')}</span>
+                        </div>
+                        <div class="drawer-spec-grid">
+                            <div class="drawer-spec-item">
+                                <div class="label">Asset Tag</div>
+                                <div class="value" style="font-family: monospace; font-weight: 700; color: var(--cyan-primary);">${escapeHtml(a.tag || '—')}</div>
+                            </div>
+                            <div class="drawer-spec-item">
+                                <div class="label">Category</div>
+                                <div class="value">${escapeHtml(a.category || '—')}</div>
+                            </div>
+                            <div class="drawer-spec-item">
+                                <div class="label">Brand</div>
+                                <div class="value">${escapeHtml(a.brand || '—')}</div>
+                            </div>
+                            <div class="drawer-spec-item">
+                                <div class="label">Model</div>
+                                <div class="value">${escapeHtml(a.model || '—')}</div>
+                            </div>
+                            <div class="drawer-spec-item">
+                                <div class="label">Serial Number</div>
+                                <div class="value" style="font-family: monospace;">${escapeHtml(a.serial || '—')}</div>
+                            </div>
+                            <div class="drawer-spec-item">
+                                <div class="label">Hardware Specs</div>
+                                <div class="value">${escapeHtml(a.specs || 'N/A')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
 
         // Custody Timeline
         const timeWrap = document.getElementById('drawerTimelineWrap');
