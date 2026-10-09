@@ -152,7 +152,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                     </a>
                 </li>
                 <li>
-                    <a href="#software-licenses" class="submenu-link <?php echo in_array($active_page, ['software', 'software_licenses']) ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Software & Licenses')">
+                    <a href="software_licenses.php" class="submenu-link <?php echo in_array($active_page, ['software', 'software_licenses']) ? 'active' : ''; ?>">
                         <span>Software Licenses</span>
                     </a>
                 </li>
