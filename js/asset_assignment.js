@@ -137,7 +137,15 @@
             if (selectedType !== 'all' && item.allocation_type !== selectedType) return false;
 
             // Custody Status filter
-            if (selectedStatus !== 'all' && item.custody_status !== selectedStatus) return false;
+            if (selectedStatus !== 'all') {
+                if (selectedStatus === 'Transferred') {
+                    if (item.custody_status !== 'Transferred' && !(item.custody_status && item.custody_status.includes('Transferred'))) {
+                        return false;
+                    }
+                } else if (item.custody_status !== selectedStatus) {
+                    return false;
+                }
+            }
 
             // Search query
             if (searchTerm) {
@@ -149,7 +157,8 @@
                 const matchCode = item.emp_code && item.emp_code.toLowerCase().includes(q);
                 const matchDept = item.department && item.department.toLowerCase().includes(q);
                 const matchDesig = item.designation && item.designation.toLowerCase().includes(q);
-                if (!matchTag && !matchName && !matchSerial && !matchEmp && !matchCode && !matchDept && !matchDesig) {
+                const matchTransferred = item.transferred_to && item.transferred_to.toLowerCase().includes(q);
+                if (!matchTag && !matchName && !matchSerial && !matchEmp && !matchCode && !matchDept && !matchDesig && !matchTransferred) {
                     return false;
                 }
             }
@@ -204,6 +213,10 @@
             } else if (item.custody_status === 'Returned') {
                 custodyBadge = 'status-returned';
                 statusText = 'Returned';
+            } else if (item.custody_status === 'Transferred' || (item.custody_status && item.custody_status.includes('Transferred'))) {
+                custodyBadge = 'status-transferred';
+                const tgt = item.transferred_to || '';
+                statusText = tgt ? `Transferred to ${tgt}` : 'Transferred';
             }
 
             const assetsList = Array.isArray(item.assets) ? item.assets : [];
@@ -284,15 +297,15 @@
                         </div>
                         <div class="chips-compact-list">
                             ${accList.slice(0, 2).map(ac => {
-                                const acName = typeof ac === 'string' ? ac : (ac.name || 'Item');
-                                const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
-                                return `
+                const acName = typeof ac === 'string' ? ac : (ac.name || 'Item');
+                const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                return `
                                     <span class="chip-acc-tag" title="${escapeHtml(acName)}">
                                         <span>${escapeHtml(acName)}</span>
                                         <span class="chip-acc-qty">${escapeHtml(acQty)}</span>
                                     </span>
                                 `;
-                            }).join('')}
+            }).join('')}
                             ${accList.length > 2 ? `
                                 <span class="chip-more-count" onclick="openAssignmentDrawer(${item.id})">+${accList.length - 2} more item(s)</span>
                             ` : ''}
@@ -455,9 +468,13 @@
             } else if (item.custody_status === 'Returned') {
                 cls = 'status-returned';
                 txt = 'Returned to Stock';
+            } else if (item.custody_status === 'Transferred' || (item.custody_status && item.custody_status.includes('Transferred'))) {
+                cls = 'status-transferred';
+                const tgt = item.transferred_to || '';
+                txt = tgt ? `Transferred to ${tgt}` : 'Transferred';
             }
             statusEl.className = `custody-badge ${cls}`;
-            statusEl.innerHTML = `<span class="dot"></span>${txt}`;
+            statusEl.innerHTML = `<span class="dot"></span>${escapeHtml(txt)}`;
         }
 
         // Drawer Return Button state
@@ -469,6 +486,12 @@
                 drawerReturnBtn.style.opacity = '0.6';
                 drawerReturnBtn.style.cursor = 'not-allowed';
                 drawerReturnBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Already in Stock';
+            } else if (item.custody_status === 'Transferred' || (item.custody_status && item.custody_status.includes('Transferred'))) {
+                drawerReturnBtn.disabled = true;
+                drawerReturnBtn.className = 'btn-secondary';
+                drawerReturnBtn.style.opacity = '0.7';
+                drawerReturnBtn.style.cursor = 'not-allowed';
+                drawerReturnBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> Transferred Out';
             } else {
                 drawerReturnBtn.disabled = false;
                 drawerReturnBtn.className = 'btn-danger';
@@ -1172,8 +1195,8 @@
             const location = document.getElementById('assignLocation').value;
             const notes = document.getElementById('assignNotes').value.trim();
 
-            const accessories = batchSelectedAccessories.length > 0 
-                ? batchSelectedAccessories.map(a => a.qty > 1 ? `${a.name} (Qty: ${a.qty})` : a.name) 
+            const accessories = batchSelectedAccessories.length > 0
+                ? batchSelectedAccessories.map(a => a.qty > 1 ? `${a.name} (Qty: ${a.qty})` : a.name)
                 : ['Power Adapter & Cable'];
 
             const assetSelect = document.getElementById('assignAssetSelect');
@@ -1218,53 +1241,53 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success && res.data) {
-                    const rec = Array.isArray(res.data) ? res.data[0] : res.data;
-                    assignments.unshift(rec);
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success && res.data) {
+                        const rec = Array.isArray(res.data) ? res.data[0] : res.data;
+                        assignments.unshift(rec);
 
-                    if (Array.isArray(rec.assets)) {
-                        rec.assets.forEach(ast => {
-                            availableAssets = availableAssets.filter(a => a.id !== ast.id);
-                            if (assetSelect) {
-                                const selOpt = assetSelect.querySelector(`option[value="${ast.id}"]`);
-                                if (selOpt) selOpt.remove();
-                            }
-                        });
+                        if (Array.isArray(rec.assets)) {
+                            rec.assets.forEach(ast => {
+                                availableAssets = availableAssets.filter(a => a.id !== ast.id);
+                                if (assetSelect) {
+                                    const selOpt = assetSelect.querySelector(`option[value="${ast.id}"]`);
+                                    if (selOpt) selOpt.remove();
+                                }
+                            });
+                        }
+
+                        batchSelectedAssets = [];
+                        batchSelectedAccessories = [];
+                        renderBatchAssets();
+                        renderBatchAccessories();
+
+                        closeModal(assignModal);
+                        renderTable();
+                        updateKPIs();
+
+                        showNotification(res.message || `Successfully allocated equipment under slip ${rec.slip_no}!`, 'success');
+
+                        const slipIdToOpen = res.new_id || rec.id;
+                        if (slipIdToOpen) {
+                            setTimeout(() => {
+                                openSlipModal(slipIdToOpen);
+                            }, 300);
+                        }
+                    } else {
+                        showNotification(res.message || 'Failed to complete assignment.', 'danger');
                     }
-
-                    batchSelectedAssets = [];
-                    batchSelectedAccessories = [];
-                    renderBatchAssets();
-                    renderBatchAccessories();
-
-                    closeModal(assignModal);
-                    renderTable();
-                    updateKPIs();
-
-                    showNotification(res.message || `Successfully allocated equipment under slip ${rec.slip_no}!`, 'success');
-
-                    const slipIdToOpen = res.new_id || rec.id;
-                    if (slipIdToOpen) {
-                        setTimeout(() => {
-                            openSlipModal(slipIdToOpen);
-                        }, 300);
+                })
+                .catch(err => {
+                    console.error('Assign error:', err);
+                    showNotification('Network/server error while saving assignment.', 'danger');
+                })
+                .finally(() => {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHtml;
                     }
-                } else {
-                    showNotification(res.message || 'Failed to complete assignment.', 'danger');
-                }
-            })
-            .catch(err => {
-                console.error('Assign error:', err);
-                showNotification('Network/server error while saving assignment.', 'danger');
-            })
-            .finally(() => {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnHtml;
-                }
-            });
+                });
         });
     }
 
@@ -1428,94 +1451,94 @@
                     return_notes: retNotes
                 })
             })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    item.custody_status = 'Returned';
-                    item.return_date = retDate;
-                    item.condition = retCondition;
-                    item.return_condition = retCondition;
-                    item.return_notes = retNotes;
-                    item.notes = (item.notes ? item.notes + ' ' : '') + `[Returned on ${retDate}: ${retNotes}]`;
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        item.custody_status = 'Returned';
+                        item.return_date = retDate;
+                        item.condition = retCondition;
+                        item.return_condition = retCondition;
+                        item.return_notes = retNotes;
+                        item.notes = (item.notes ? item.notes + ' ' : '') + `[Returned on ${retDate}: ${retNotes}]`;
 
-                    // 1. Restore assets into availableAssets in-memory stock array
-                    const restoredList = Array.isArray(res.restored_assets) && res.restored_assets.length > 0
-                        ? res.restored_assets
-                        : (Array.isArray(item.assets) && item.assets.length > 0
-                            ? item.assets.map(a => ({
-                                id: a.id,
-                                tag: a.tag,
-                                name: a.name,
-                                category: a.category || 'Hardware',
-                                brand: a.brand || '',
-                                model: a.model || '',
-                                serial: a.serial || '',
-                                condition: retCondition,
-                                location: retShelf,
-                                specs: a.specs || ''
-                            }))
-                            : [{
-                                id: item.asset_id,
-                                tag: item.asset_tag,
-                                name: item.asset_name,
-                                category: item.category,
-                                brand: item.brand,
-                                model: item.model,
-                                serial: item.serial,
-                                condition: retCondition,
-                                location: retShelf,
-                                specs: item.specs
-                            }]
-                        );
+                        // 1. Restore assets into availableAssets in-memory stock array
+                        const restoredList = Array.isArray(res.restored_assets) && res.restored_assets.length > 0
+                            ? res.restored_assets
+                            : (Array.isArray(item.assets) && item.assets.length > 0
+                                ? item.assets.map(a => ({
+                                    id: a.id,
+                                    tag: a.tag,
+                                    name: a.name,
+                                    category: a.category || 'Hardware',
+                                    brand: a.brand || '',
+                                    model: a.model || '',
+                                    serial: a.serial || '',
+                                    condition: retCondition,
+                                    location: retShelf,
+                                    specs: a.specs || ''
+                                }))
+                                : [{
+                                    id: item.asset_id,
+                                    tag: item.asset_tag,
+                                    name: item.asset_name,
+                                    category: item.category,
+                                    brand: item.brand,
+                                    model: item.model,
+                                    serial: item.serial,
+                                    condition: retCondition,
+                                    location: retShelf,
+                                    specs: item.specs
+                                }]
+                            );
 
-                    restoredList.forEach(rAst => {
-                        if (rAst && rAst.id) {
-                            const existingIdx = availableAssets.findIndex(a => a.id === rAst.id);
-                            if (existingIdx >= 0) {
-                                availableAssets[existingIdx] = rAst;
-                            } else {
-                                availableAssets.unshift(rAst);
+                        restoredList.forEach(rAst => {
+                            if (rAst && rAst.id) {
+                                const existingIdx = availableAssets.findIndex(a => a.id === rAst.id);
+                                if (existingIdx >= 0) {
+                                    availableAssets[existingIdx] = rAst;
+                                } else {
+                                    availableAssets.unshift(rAst);
+                                }
                             }
+                        });
+
+                        // 2. Synchronize dropdowns so returned assets appear immediately in "Assign New Asset"
+                        refreshAvailableAssetsDropdown();
+
+                        closeModal(returnModal);
+                        if (window.activeAllocId === id) {
+                            openAssignmentDrawer(id); // update drawer to show returned status
                         }
-                    });
 
-                    // 2. Synchronize dropdowns so returned assets appear immediately in "Assign New Asset"
-                    refreshAvailableAssetsDropdown();
+                        renderTable();
+                        updateKPIs();
 
-                    closeModal(returnModal);
-                    if (window.activeAllocId === id) {
-                        openAssignmentDrawer(id); // update drawer to show returned status
-                    }
-
-                    renderTable();
-                    updateKPIs();
-
-                    const firstRestored = restoredList[0];
-                    if (firstRestored && firstRestored.id) {
-                        showNotification(
-                            `Equipment returned! Asset ${firstRestored.tag} is now Available in Stock and ready to be assigned to another employee.`,
-                            'success'
-                        );
+                        const firstRestored = restoredList[0];
+                        if (firstRestored && firstRestored.id) {
+                            showNotification(
+                                `Equipment returned! Asset ${firstRestored.tag} is now Available in Stock and ready to be assigned to another employee.`,
+                                'success'
+                            );
+                        } else {
+                            showNotification(res.message || 'Equipment returned and checked back into stock successfully!', 'success');
+                        }
                     } else {
-                        showNotification(res.message || 'Equipment returned and checked back into stock successfully!', 'success');
+                        showNotification(res.message || 'Failed to process return.', 'danger');
                     }
-                } else {
-                    showNotification(res.message || 'Failed to process return.', 'danger');
-                }
-            })
-            .catch(err => {
-                console.error('Return error:', err);
-                showNotification('Network error while returning asset.', 'danger');
-            })
-            .finally(() => {
-                if (retBtn) {
-                    retBtn.disabled = false;
-                    retBtn.innerHTML = `
+                })
+                .catch(err => {
+                    console.error('Return error:', err);
+                    showNotification('Network error while returning asset.', 'danger');
+                })
+                .finally(() => {
+                    if (retBtn) {
+                        retBtn.disabled = false;
+                        retBtn.innerHTML = `
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         Confirm Return & Check-In
                     `;
-                }
-            });
+                    }
+                });
         });
     }
 
@@ -1568,60 +1591,60 @@
                     transfer_notes: transferReason
                 })
             })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    const oldName = item.employee_name;
-                    item.custody_status = 'Transferred';
-                    item.notes += ` [Custody transferred from ${oldName} to ${newEmpOpt.dataset.name} on ${effDate} for ${transferReason}].`;
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        const oldName = item.employee_name;
+                        item.custody_status = 'Transferred';
+                        item.notes += ` [Custody transferred from ${oldName} to ${newEmpOpt.dataset.name} on ${effDate} for ${transferReason}].`;
 
-                    assignments.unshift({
-                        id: res.new_id || Date.now(),
-                        slip_no: res.new_slip || ('SLIP-2026-' + String(assignments.length + 1).padStart(4, '0')),
-                        asset_id: item.asset_id,
-                        asset_tag: item.asset_tag,
-                        asset_name: item.asset_name,
-                        category: item.category,
-                        brand: item.brand,
-                        model: item.model,
-                        serial: item.serial,
-                        specs: item.specs,
-                        employee_name: newEmpOpt.dataset.name,
-                        emp_code: newEmpOpt.dataset.code,
-                        employee_email: newEmpOpt.dataset.email || '',
-                        department: newDept,
-                        designation: newEmpOpt.dataset.desig || 'Team Member',
-                        location: item.location,
-                        assigned_date: effDate,
-                        allocation_type: item.allocation_type,
-                        expected_return: item.expected_return,
-                        custody_status: 'Active',
-                        condition: item.condition,
-                        accessories: item.accessories,
-                        handover_by: 'IT Administrator (Transfer)',
-                        agreement_signed: true,
-                        notes: `Transferred custody from ${oldName}. Reason: ${transferReason}`
-                    });
+                        assignments.unshift({
+                            id: res.new_id || Date.now(),
+                            slip_no: res.new_slip || ('SLIP-2026-' + String(assignments.length + 1).padStart(4, '0')),
+                            asset_id: item.asset_id,
+                            asset_tag: item.asset_tag,
+                            asset_name: item.asset_name,
+                            category: item.category,
+                            brand: item.brand,
+                            model: item.model,
+                            serial: item.serial,
+                            specs: item.specs,
+                            employee_name: newEmpOpt.dataset.name,
+                            emp_code: newEmpOpt.dataset.code,
+                            employee_email: newEmpOpt.dataset.email || '',
+                            department: newDept,
+                            designation: newEmpOpt.dataset.desig || 'Team Member',
+                            location: item.location,
+                            assigned_date: effDate,
+                            allocation_type: item.allocation_type,
+                            expected_return: item.expected_return,
+                            custody_status: 'Active',
+                            condition: item.condition,
+                            accessories: item.accessories,
+                            handover_by: 'IT Administrator (Transfer)',
+                            agreement_signed: true,
+                            notes: `Transferred custody from ${oldName}. Reason: ${transferReason}`
+                        });
 
-                    closeModal(transferModal);
-                    if (window.activeAllocId === id) {
-                        openAssignmentDrawer(res.new_id || id);
+                        closeModal(transferModal);
+                        if (window.activeAllocId === id) {
+                            openAssignmentDrawer(res.new_id || id);
+                        }
+
+                        renderTable();
+                        updateKPIs();
+                        showNotification(res.message || `Custody of ${item.asset_tag} successfully transferred to ${newEmpOpt.dataset.name}!`, 'success');
+                    } else {
+                        showNotification(res.message || 'Transfer failed.', 'danger');
                     }
-
-                    renderTable();
-                    updateKPIs();
-                    showNotification(res.message || `Custody of ${item.asset_tag} successfully transferred to ${newEmpOpt.dataset.name}!`, 'success');
-                } else {
-                    showNotification(res.message || 'Transfer failed.', 'danger');
-                }
-            })
-            .catch(err => {
-                console.error('Transfer error:', err);
-                showNotification('Network error while transferring asset.', 'danger');
-            })
-            .finally(() => {
-                if (trBtn) trBtn.disabled = false;
-            });
+                })
+                .catch(err => {
+                    console.error('Transfer error:', err);
+                    showNotification('Network error while transferring asset.', 'danger');
+                })
+                .finally(() => {
+                    if (trBtn) trBtn.disabled = false;
+                });
         });
     }
 
@@ -2107,7 +2130,7 @@
         const inStockTbody = document.getElementById('inStockAssetsTbody');
         const inStockCountText = document.getElementById('inStockModalCountText');
 
-        window.renderInStockModalTable = function(filterText = '') {
+        window.renderInStockModalTable = function (filterText = '') {
             if (!inStockTbody) return;
             inStockTbody.innerHTML = '';
 
@@ -2115,11 +2138,11 @@
             const filtered = availableAssets.filter(a => {
                 if (!q) return true;
                 return (a.tag && a.tag.toLowerCase().includes(q)) ||
-                       (a.name && a.name.toLowerCase().includes(q)) ||
-                       (a.category && a.category.toLowerCase().includes(q)) ||
-                       (a.serial && a.serial.toLowerCase().includes(q)) ||
-                       (a.model && a.model.toLowerCase().includes(q)) ||
-                       (a.brand && a.brand.toLowerCase().includes(q));
+                    (a.name && a.name.toLowerCase().includes(q)) ||
+                    (a.category && a.category.toLowerCase().includes(q)) ||
+                    (a.serial && a.serial.toLowerCase().includes(q)) ||
+                    (a.model && a.model.toLowerCase().includes(q)) ||
+                    (a.brand && a.brand.toLowerCase().includes(q));
             });
 
             if (inStockCountText) {
@@ -2194,7 +2217,7 @@
         document.getElementById('closeAvailableModalFooterBtn')?.addEventListener('click', () => closeModal(inStockModal));
 
         if (inStockSearchInput) {
-            inStockSearchInput.addEventListener('input', function() {
+            inStockSearchInput.addEventListener('input', function () {
                 if (typeof window.renderInStockModalTable === 'function') {
                     window.renderInStockModalTable(this.value);
                 }

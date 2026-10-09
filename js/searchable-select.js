@@ -35,7 +35,13 @@
             // Create wrapper
             const wrapper = document.createElement('div');
             wrapper.className = 'custom-select-wrapper';
-            if (select.classList.contains('filter-select') || select.classList.contains('asset-filter-select') || select.classList.contains('return-filter-select')) {
+            if (
+                select.classList.contains('filter-select') || 
+                select.classList.contains('asset-filter-select') || 
+                select.classList.contains('return-filter-select') ||
+                select.classList.contains('transfer-filter-select') ||
+                select.closest('.toolbar-left, .asset-toolbar, .transfer-search-group')
+            ) {
                 wrapper.classList.add('is-filter-select');
             }
             if (select.id) {
@@ -128,6 +134,10 @@
                 let lastOptgroup = null;
 
                 options.forEach((opt, idx) => {
+                    if (opt.hidden || opt.dataset.exclude === 'true' || opt.style.display === 'none') {
+                        return;
+                    }
+
                     const parent = opt.parentElement;
                     if (parent && parent.tagName === 'OPTGROUP' && parent !== lastOptgroup) {
                         lastOptgroup = parent;
@@ -265,7 +275,9 @@
 
                 // Focus search input
                 setTimeout(() => {
-                    searchInput.focus();
+                    if (typeof searchInput.focus === 'function') {
+                        searchInput.focus({ preventScroll: true });
+                    }
                 }, 50);
             }
 
@@ -451,11 +463,11 @@
                 // Ignore descriptor errors
             }
 
-            // MutationObserver to auto-update when JS alters <option> elements (e.g. Dynamic AJAX categories)
+            // MutationObserver to auto-update when JS alters <option> elements (e.g. Dynamic AJAX categories or filtering)
             const observer = new MutationObserver(function () {
                 renderOptions();
             });
-            observer.observe(select, { childList: true, subtree: true, characterData: true });
+            observer.observe(select, { childList: true, subtree: true, characterData: true, attributes: true });
 
             // Initial render
             renderOptions();

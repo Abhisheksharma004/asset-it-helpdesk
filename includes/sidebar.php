@@ -147,7 +147,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                     </a>
                 </li>
                 <li>
-                    <a href="#asset-transfer" class="submenu-link <?php echo ($active_page === 'asset_transfer') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Transfer')">
+                    <a href="asset_transfer.php" class="submenu-link <?php echo ($active_page === 'asset_transfer') ? 'active' : ''; ?>">
                         <span>Asset Transfer</span>
                     </a>
                 </li>

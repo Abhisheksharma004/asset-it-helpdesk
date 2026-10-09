@@ -113,6 +113,21 @@ if (isset($conn) && $conn !== false) {
         sqlsrv_free_stmt($accStmt);
     }
 
+    // Preload master asset inventory for serial and hardware metadata resolution
+    $masterAssetsMap = [];
+    $masterAssetsByTag = [];
+    $allAstStmt = sqlsrv_query($conn, "SELECT id, tag, name, category, brand, model, serial, condition, processor, ram, storage FROM assets");
+    if ($allAstStmt !== false) {
+        while ($ar = sqlsrv_fetch_array($allAstStmt, SQLSRV_FETCH_ASSOC)) {
+            $arId = intval($ar['id']);
+            $masterAssetsMap[$arId] = $ar;
+            if (!empty($ar['tag'])) {
+                $masterAssetsByTag[strtoupper(trim($ar['tag']))] = $ar;
+            }
+        }
+        sqlsrv_free_stmt($allAstStmt);
+    }
+
     // 5. Fetch live assignments directly from real asset_assignments table in database
     $assignedStmt = sqlsrv_query($conn, "SELECT id, slip_no, asset_id, asset_tag, asset_name, category, brand, model, serial, specs,
                                                 employee_id, employee_name, emp_code, employee_email, department, designation, location,
@@ -122,7 +137,7 @@ if (isset($conn) && $conn !== false) {
                                                 CONVERT(VARCHAR(10), return_date, 120) AS return_date,
                                                 custody_status, condition, return_condition,
                                                 total_assets, total_accessories, assets_json, accessories_json,
-                                                handover_by, agreement_signed, notes, return_notes
+                                                handover_by, agreement_signed, notes, return_notes, transferred_to
                                          FROM asset_assignments
                                          WHERE custody_status != 'Returned'
                                          ORDER BY id DESC");
@@ -152,6 +167,33 @@ if (isset($conn) && $conn !== false) {
                     'condition' => $row['condition'] ?? 'Good'
                 ];
             }
+
+            // Ensure serial number and specs are never missing or "—"
+            foreach ($assetsList as &$ast) {
+                $aId = isset($ast['id']) ? intval($ast['id']) : 0;
+                $aTag = isset($ast['tag']) ? strtoupper(trim($ast['tag'])) : '';
+                $master = ($aId > 0 && isset($masterAssetsMap[$aId])) 
+                    ? $masterAssetsMap[$aId] 
+                    : (($aTag && isset($masterAssetsByTag[$aTag])) ? $masterAssetsByTag[$aTag] : null);
+
+                if ($master) {
+                    if (empty($ast['serial']) || $ast['serial'] === '—' || $ast['serial'] === '-') {
+                        $ast['serial'] = (!empty($master['serial']) && $master['serial'] !== '—') ? $master['serial'] : '—';
+                    }
+                    if (empty($ast['brand'])) {
+                        $ast['brand'] = $master['brand'] ?? '';
+                    }
+                    if (empty($ast['model'])) {
+                        $ast['model'] = $master['model'] ?? '';
+                    }
+                    if (empty($ast['category']) || $ast['category'] === 'Hardware') {
+                        $ast['category'] = $master['category'] ?? 'Hardware';
+                    }
+                } elseif (!empty($row['serial']) && (empty($ast['serial']) || $ast['serial'] === '—')) {
+                    $ast['serial'] = $row['serial'];
+                }
+            }
+            unset($ast);
 
             // Accessories decode
             $accList = [];
@@ -190,6 +232,7 @@ if (isset($conn) && $conn !== false) {
                 'expected_return'   => $row['expected_return'],
                 'return_date'       => $row['return_date'],
                 'custody_status'    => $row['custody_status'],
+                'transferred_to'    => $row['transferred_to'] ?? '',
                 'condition'         => $row['condition'] ?? 'Good',
                 'total_assets'      => $totalAssets,
                 'total_accessories' => $totalAccessories,
@@ -212,6 +255,7 @@ $stats = [
     'temporary'         => 0,
     'remote'            => 0,
     'due_soon'          => 0,
+    'transferred'       => 0,
     'returned'          => 0,
     'total_assets'      => 0,
     'total_accessories' => 0,
@@ -233,6 +277,8 @@ foreach ($initialAssignments as $item) {
 
     if ($item['custody_status'] === 'Due Soon' || $item['custody_status'] === 'Overdue') {
         $stats['due_soon']++;
+    } elseif ($item['custody_status'] === 'Transferred' || strpos($item['custody_status'], 'Transferred') !== false) {
+        $stats['transferred']++;
     }
 }
 
@@ -402,6 +448,7 @@ include 'includes/topbar.php';
             <select class="asset-filter-select" id="allocStatusFilter">
                 <option value="all">All Custody States</option>
                 <option value="Active">Active Custody</option>
+                <option value="Transferred">Transferred</option>
                 <option value="Due Soon">Due Soon (<30d)</option>
                 <option value="Overdue">Overdue</option>
             </select>
@@ -454,6 +501,10 @@ include 'includes/topbar.php';
                         } elseif ($row['custody_status'] === 'Returned') {
                             $custodyBadge = 'status-returned';
                             $statusText = 'Returned';
+                        } elseif ($row['custody_status'] === 'Transferred' || strpos($row['custody_status'], 'Transferred') !== false) {
+                            $custodyBadge = 'status-transferred';
+                            $tgtName = !empty($row['transferred_to']) ? $row['transferred_to'] : '';
+                            $statusText = $tgtName ? ('Transferred to ' . $tgtName) : 'Transferred';
                         }
                     ?>
                         <tr data-id="<?php echo $row['id']; ?>">

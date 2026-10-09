@@ -372,18 +372,28 @@
 
 /* Allow Modal Box to let custom select dropdown float without clipping */
 .modal-box,
+.modal-box-large,
 .modal-box form,
+.modal-box-large form,
 .modal-box .modal-body,
-.modal-box .modal-tab-pane {
+.modal-box-large .modal-body,
+.modal-box .modal-tab-pane,
+.modal-box-large .modal-tab-pane,
+#transferModal .modal-body,
+#transferModal .modal-tab-pane,
+#processReturnModal .modal-body,
+#processReturnModal .modal-tab-pane,
+#assignAssetModal .modal-body,
+#assignAssetModal .modal-tab-pane {
     overflow: visible !important;
 }
 
 .modal-header {
-    border-top-left-radius: var(--radius-md, 8px);
-    border-top-right-radius: var(--radius-md, 8px);
+    border-top-left-radius: var(--radius-md, 12px);
+    border-top-right-radius: var(--radius-md, 12px);
 }
 
 .modal-footer {
-    border-bottom-left-radius: var(--radius-md, 8px);
-    border-bottom-right-radius: var(--radius-md, 8px);
+    border-bottom-left-radius: var(--radius-md, 12px);
+    border-bottom-right-radius: var(--radius-md, 12px);
 }

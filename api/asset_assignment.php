@@ -61,6 +61,7 @@ BEGIN
         agreement_signed BIT NOT NULL DEFAULT 1,
         notes NVARCHAR(MAX) NULL,
         return_notes NVARCHAR(MAX) NULL,
+        transferred_to NVARCHAR(150) NULL,
         created_at DATETIME NOT NULL DEFAULT GETDATE(),
         updated_at DATETIME NOT NULL DEFAULT GETDATE()
     );
@@ -80,6 +81,11 @@ BEGIN
     IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'asset_assignments' AND COLUMN_NAME = 'total_accessories')
     BEGIN
         ALTER TABLE asset_assignments ADD total_accessories INT NOT NULL DEFAULT 0;
+    END
+
+    IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'asset_assignments' AND COLUMN_NAME = 'transferred_to')
+    BEGIN
+        ALTER TABLE asset_assignments ADD transferred_to NVARCHAR(150) NULL;
     END
 
     ALTER TABLE asset_assignments ALTER COLUMN asset_id INT NULL;
@@ -227,7 +233,7 @@ if ($action === 'get' || $action === 'list') {
                      CONVERT(VARCHAR(10), return_date, 120) AS return_date,
                      custody_status, condition, return_condition,
                      total_assets, total_accessories, assets_json, accessories_json,
-                     handover_by, agreement_signed, notes, return_notes,
+                     handover_by, agreement_signed, notes, return_notes, transferred_to,
                      CONVERT(VARCHAR(19), created_at, 120) AS created_at
               FROM asset_assignments
               WHERE $whereClause
@@ -235,6 +241,22 @@ if ($action === 'get' || $action === 'list') {
 
     $stmt = sqlsrv_query($conn, $query, $params);
     $items = [];
+
+    // Preload master asset inventory for serial and hardware metadata resolution
+    $masterAssetsMap = [];
+    $masterAssetsByTag = [];
+    $allAstStmt = sqlsrv_query($conn, "SELECT id, tag, name, category, brand, model, serial, condition, processor, ram, storage FROM assets");
+    if ($allAstStmt !== false) {
+        while ($ar = sqlsrv_fetch_array($allAstStmt, SQLSRV_FETCH_ASSOC)) {
+            $arId = intval($ar['id']);
+            $masterAssetsMap[$arId] = $ar;
+            if (!empty($ar['tag'])) {
+                $masterAssetsByTag[strtoupper(trim($ar['tag']))] = $ar;
+            }
+        }
+        sqlsrv_free_stmt($allAstStmt);
+    }
+
     if ($stmt !== false) {
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             // Decode assets
@@ -259,6 +281,33 @@ if ($action === 'get' || $action === 'list') {
                     'condition' => $row['condition'] ?? 'Good'
                 ];
             }
+
+            // Ensure serial number and specs are never missing or "—"
+            foreach ($assetsList as &$ast) {
+                $aId = isset($ast['id']) ? intval($ast['id']) : 0;
+                $aTag = isset($ast['tag']) ? strtoupper(trim($ast['tag'])) : '';
+                $master = ($aId > 0 && isset($masterAssetsMap[$aId])) 
+                    ? $masterAssetsMap[$aId] 
+                    : (($aTag && isset($masterAssetsByTag[$aTag])) ? $masterAssetsByTag[$aTag] : null);
+
+                if ($master) {
+                    if (empty($ast['serial']) || $ast['serial'] === '—' || $ast['serial'] === '-') {
+                        $ast['serial'] = (!empty($master['serial']) && $master['serial'] !== '—') ? $master['serial'] : '—';
+                    }
+                    if (empty($ast['brand'])) {
+                        $ast['brand'] = $master['brand'] ?? '';
+                    }
+                    if (empty($ast['model'])) {
+                        $ast['model'] = $master['model'] ?? '';
+                    }
+                    if (empty($ast['category']) || $ast['category'] === 'Hardware') {
+                        $ast['category'] = $master['category'] ?? 'Hardware';
+                    }
+                } elseif (!empty($row['serial']) && (empty($ast['serial']) || $ast['serial'] === '—')) {
+                    $ast['serial'] = $row['serial'];
+                }
+            }
+            unset($ast);
 
             // Decode accessories
             $accList = [];
@@ -298,6 +347,7 @@ if ($action === 'get' || $action === 'list') {
                 'expected_return'   => $row['expected_return'],
                 'return_date'       => $row['return_date'],
                 'custody_status'    => $row['custody_status'],
+                'transferred_to'    => $row['transferred_to'] ?? '',
                 'condition'         => $row['condition'] ?? 'Good',
                 'total_assets'      => $totalAssets,
                 'total_accessories' => $totalAccessories,
@@ -319,6 +369,7 @@ if ($action === 'get' || $action === 'list') {
         'temporary'         => 0,
         'remote'            => 0,
         'due_soon'          => 0,
+        'transferred'       => 0,
         'deployed_assets'   => 0,
         'deployed_acc'      => 0,
         'available_assets'  => 0
@@ -330,6 +381,7 @@ if ($action === 'get' || $action === 'list') {
                     ISNULL(SUM(CASE WHEN allocation_type = 'Temporary Loaner' AND custody_status != 'Returned' THEN 1 ELSE 0 END), 0) AS temporary,
                     ISNULL(SUM(CASE WHEN allocation_type = 'Remote / WFH' AND custody_status != 'Returned' THEN 1 ELSE 0 END), 0) AS remote,
                     ISNULL(SUM(CASE WHEN (custody_status = 'Due Soon' OR custody_status = 'Overdue') THEN 1 ELSE 0 END), 0) AS due_soon,
+                    ISNULL(SUM(CASE WHEN custody_status = 'Transferred' THEN 1 ELSE 0 END), 0) AS transferred,
                     ISNULL(SUM(CASE WHEN custody_status != 'Returned' THEN total_assets ELSE 0 END), 0) AS deployed_assets,
                     ISNULL(SUM(CASE WHEN custody_status != 'Returned' THEN total_accessories ELSE 0 END), 0) AS deployed_acc
                   FROM asset_assignments
@@ -341,6 +393,7 @@ if ($action === 'get' || $action === 'list') {
         $stats['temporary']        = intval($sRow['temporary']);
         $stats['remote']           = intval($sRow['remote']);
         $stats['due_soon']         = intval($sRow['due_soon']);
+        $stats['transferred']      = intval($sRow['transferred']);
         $stats['deployed_assets']  = intval($sRow['deployed_assets']);
         $stats['deployed_acc']     = intval($sRow['deployed_acc']);
         sqlsrv_free_stmt($statStmt);
