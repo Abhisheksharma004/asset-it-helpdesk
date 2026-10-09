@@ -126,6 +126,7 @@
             if (selectedTab === 'due_soon') {
                 if (item.custody_status !== 'Due Soon' && item.custody_status !== 'Overdue') return false;
             }
+            if (selectedTab === 'returned' && item.custody_status !== 'Returned') return false;
 
             // Department filter
             if (selectedDept !== 'all' && item.department !== selectedDept) return false;
@@ -327,9 +328,15 @@
                         <button type="button" class="action-icon-btn btn-view" title="View Custody Details & Handover Slip" onclick="openAssignmentDrawer(${item.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                         </button>
-                        <button type="button" class="action-icon-btn btn-return" title="Return Asset (Check-In to Inventory)" onclick="openReturnModal(${item.id})">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
-                        </button>
+                        ${item.custody_status === 'Returned' ? `
+                            <button type="button" class="action-icon-btn btn-returned-disabled" title="Asset returned and checked-in back to stock" disabled style="opacity: 0.5; cursor: not-allowed; background: #ecfdf5; color: #059669; border-color: #a7f3d0;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </button>
+                        ` : `
+                            <button type="button" class="action-icon-btn btn-return" title="Return Asset (Check-In to Inventory Stock)" onclick="openReturnModal(${item.id})">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+                            </button>
+                        `}
                         <button type="button" class="action-icon-btn btn-transfer" title="Transfer to Another Custodian" onclick="openTransferModal(${item.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
                         </button>
@@ -349,6 +356,7 @@
         let temporary = 0;
         let remote = 0;
         let dueSoon = 0;
+        let returned = 0;
         let totalAssetsCount = 0;
         let totalAccCount = 0;
 
@@ -356,6 +364,8 @@
             if (a.custody_status !== 'Returned') {
                 totalAssetsCount += a.total_assets || (Array.isArray(a.assets) ? a.assets.length : 0);
                 totalAccCount += a.total_accessories || (Array.isArray(a.accessories) ? a.accessories.length : 0);
+            } else {
+                returned++;
             }
 
             if (a.allocation_type === 'Permanent') permanent++;
@@ -386,12 +396,14 @@
         const tabTemp = document.getElementById('tabCountTemporary');
         const tabRemote = document.getElementById('tabCountRemote');
         const tabDue = document.getElementById('tabCountDueSoon');
+        const tabReturned = document.getElementById('tabCountReturned');
 
         if (tabAll) tabAll.textContent = total;
         if (tabPerm) tabPerm.textContent = permanent;
         if (tabTemp) tabTemp.textContent = temporary;
         if (tabRemote) tabRemote.textContent = remote;
         if (tabDue) tabDue.textContent = dueSoon;
+        if (tabReturned) tabReturned.textContent = returned;
     }
 
     // =========================================================================
@@ -454,10 +466,28 @@
                 txt = 'Overdue';
             } else if (item.custody_status === 'Returned') {
                 cls = 'status-returned';
-                txt = 'Returned';
+                txt = 'Returned to Stock';
             }
             statusEl.className = `custody-badge ${cls}`;
             statusEl.innerHTML = `<span class="dot"></span>${txt}`;
+        }
+
+        // Drawer Return Button state
+        const drawerReturnBtn = document.getElementById('drawerReturnBtn');
+        if (drawerReturnBtn) {
+            if (item.custody_status === 'Returned') {
+                drawerReturnBtn.disabled = true;
+                drawerReturnBtn.className = 'btn-secondary';
+                drawerReturnBtn.style.opacity = '0.6';
+                drawerReturnBtn.style.cursor = 'not-allowed';
+                drawerReturnBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Already in Stock';
+            } else {
+                drawerReturnBtn.disabled = false;
+                drawerReturnBtn.className = 'btn-danger';
+                drawerReturnBtn.style.opacity = '1';
+                drawerReturnBtn.style.cursor = 'pointer';
+                drawerReturnBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg> Return Asset';
+            }
         }
 
         // Backward compatibility fallbacks
@@ -1257,20 +1287,130 @@
         });
     }
 
+    // --- Synchronize Available In-Stock Assets Dropdown ---
+    window.refreshAvailableAssetsDropdown = function () {
+        const select = document.getElementById('assignAssetSelect');
+        if (select) {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Choose In-Stock Asset to Add --</option>';
+            availableAssets.forEach(av => {
+                const opt = document.createElement('option');
+                opt.value = av.id;
+                opt.dataset.tag = av.tag || '';
+                opt.dataset.name = av.name || '';
+                opt.dataset.category = av.category || '';
+                opt.dataset.brand = av.brand || '';
+                opt.dataset.serial = av.serial || '';
+                opt.dataset.condition = av.condition || 'Good';
+                opt.dataset.specs = av.specs || '';
+                opt.textContent = `${av.tag} • ${av.name} (SN: ${av.serial || 'N/A'})`;
+                select.appendChild(opt);
+            });
+            if (currentVal && availableAssets.some(a => a.id == currentVal)) {
+                select.value = currentVal;
+            }
+        }
+
+        const kpiAvail = document.getElementById('kpiAvailableAssets');
+        if (kpiAvail) kpiAvail.textContent = availableAssets.length;
+
+        // Also refresh in-stock modal if open
+        if (typeof renderInStockModalTable === 'function') {
+            const inStockSearch = document.getElementById('inStockSearchInput');
+            renderInStockModalTable(inStockSearch ? inStockSearch.value : '');
+        }
+    };
+
+    // Quick Assign an In-Stock Asset directly to an employee
+    window.quickAssignAsset = function (assetId) {
+        if (!assetId) return;
+        const idNum = parseInt(assetId, 10);
+        openAssignModal();
+
+        // Ensure asset is added to batch allocation
+        setTimeout(() => {
+            addAssetToBatch(idNum);
+            switchAssignModalTab('employee');
+            showNotification('In-stock asset selected! Choose employee and confirm allocation.', 'info');
+        }, 150);
+    };
+
     // --- Return Modal ---
     window.openReturnModal = function (id) {
         const item = assignments.find(a => a.id === id);
         if (!item) return;
 
+        if (item.custody_status === 'Returned') {
+            showNotification('This equipment has already been returned and checked into available stock.', 'info');
+            return;
+        }
+
         document.getElementById('returnAllocId').value = item.id;
-        document.getElementById('returnTagText').textContent = item.asset_tag;
-        document.getElementById('returnAssetNameText').textContent = item.asset_name;
+        document.getElementById('returnTagText').textContent = item.slip_no || ('SLIP-2026-' + item.id);
+        document.getElementById('returnAssetNameText').textContent = item.asset_name || 'Assigned Equipment Bundle';
         document.getElementById('returnEmpNameText').textContent = item.employee_name;
         document.getElementById('returnEmpCodeText').textContent = item.emp_code;
 
         const dateInput = document.getElementById('returnDate');
         if (dateInput) {
             dateInput.value = new Date().toISOString().split('T')[0];
+        }
+
+        // Populate hardware devices & accessories returning to stock
+        const chkList = document.getElementById('returnItemsChecklist');
+        const badgeCount = document.getElementById('returnItemCountBadge');
+        if (chkList) {
+            chkList.innerHTML = '';
+            const assetsList = Array.isArray(item.assets) ? item.assets : [];
+            const accList = Array.isArray(item.accessories) ? item.accessories : [];
+            let totalItems = assetsList.length + accList.length;
+
+            if (totalItems === 0 && item.asset_name) {
+                totalItems = 1;
+                chkList.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px;">
+                        <div>
+                            <span class="asset-tag-badge" style="font-size: 11px;">${escapeHtml(item.asset_tag || 'AST')}</span>
+                            <strong style="font-size: 12px; margin-left: 6px; color: var(--text-primary);">${escapeHtml(item.asset_name)}</strong>
+                        </div>
+                        <span style="font-size: 11px; color: #059669; font-weight: 700;">✓ Restocking to Inventory</span>
+                    </div>
+                `;
+            } else {
+                assetsList.forEach(ast => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px;';
+                    row.innerHTML = `
+                        <div style="min-width: 0; flex: 1; display: flex; align-items: center; gap: 6px;">
+                            <span class="asset-tag-badge" style="font-size: 10.5px;">${escapeHtml(ast.tag || 'AST')}</span>
+                            <strong style="font-size: 12px; color: var(--text-primary);">${escapeHtml(ast.name || 'Device')}</strong>
+                            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">(SN: ${escapeHtml(ast.serial || '—')})</span>
+                        </div>
+                        <span style="font-size: 11px; color: #059669; font-weight: 700; flex-shrink: 0;">✓ Restocking to Stock</span>
+                    `;
+                    chkList.appendChild(row);
+                });
+
+                accList.forEach(ac => {
+                    const acName = typeof ac === 'string' ? ac : (ac.name || 'Accessory');
+                    const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px;';
+                    row.innerHTML = `
+                        <div style="min-width: 0; flex: 1; display: flex; align-items: center; gap: 6px;">
+                            <span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 700;">ACC</span>
+                            <strong style="font-size: 12px; color: var(--text-primary);">${escapeHtml(acName)}</strong>
+                            <span style="font-size: 11px; color: #15803d; font-weight: 600;">x${acQty}</span>
+                        </div>
+                        <span style="font-size: 11px; color: #059669; font-weight: 700; flex-shrink: 0;">✓ Restocking Stock</span>
+                    `;
+                    chkList.appendChild(row);
+                });
+            }
+
+            if (badgeCount) {
+                badgeCount.textContent = `${totalItems} Item${totalItems > 1 ? 's' : ''}`;
+            }
         }
 
         openModal(returnModal);
@@ -1287,10 +1427,13 @@
             const retCondition = document.getElementById('returnCondition').value;
             const retShelf = document.getElementById('returnStorageLocation').value;
             const retDate = document.getElementById('returnDate') ? document.getElementById('returnDate').value : new Date().toISOString().split('T')[0];
-            const retNotes = `Returned condition: ${retCondition}, placed in ${retShelf}.`;
+            const retNotes = document.getElementById('returnChecklistNotes')?.value?.trim() || `Returned condition: ${retCondition}, placed in ${retShelf}.`;
 
             const retBtn = returnForm.querySelector('button[type="submit"]');
-            if (retBtn) retBtn.disabled = true;
+            if (retBtn) {
+                retBtn.disabled = true;
+                retBtn.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:6px;"></span> Restocking...';
+            }
 
             fetch('api/asset_assignment.php', {
                 method: 'POST',
@@ -1300,6 +1443,7 @@
                     alloc_id: id,
                     return_date: retDate,
                     return_condition: retCondition,
+                    storage_location: retShelf,
                     return_notes: retNotes
                 })
             })
@@ -1309,31 +1453,71 @@
                     item.custody_status = 'Returned';
                     item.return_date = retDate;
                     item.condition = retCondition;
-                    item.notes += ` [${retNotes}]`;
+                    item.return_condition = retCondition;
+                    item.return_notes = retNotes;
+                    item.notes = (item.notes ? item.notes + ' ' : '') + `[Returned on ${retDate}: ${retNotes}]`;
 
-                    if (retCondition !== 'Damaged') {
-                        availableAssets.push({
-                            id: item.asset_id,
-                            tag: item.asset_tag,
-                            name: item.asset_name,
-                            category: item.category,
-                            brand: item.brand,
-                            model: item.model,
-                            serial: item.serial,
-                            condition: retCondition,
-                            location: retShelf,
-                            specs: item.specs
-                        });
-                    }
+                    // 1. Restore assets into availableAssets in-memory stock array
+                    const restoredList = Array.isArray(res.restored_assets) && res.restored_assets.length > 0
+                        ? res.restored_assets
+                        : (Array.isArray(item.assets) && item.assets.length > 0
+                            ? item.assets.map(a => ({
+                                id: a.id,
+                                tag: a.tag,
+                                name: a.name,
+                                category: a.category || 'Hardware',
+                                brand: a.brand || '',
+                                model: a.model || '',
+                                serial: a.serial || '',
+                                condition: retCondition,
+                                location: retShelf,
+                                specs: a.specs || ''
+                            }))
+                            : [{
+                                id: item.asset_id,
+                                tag: item.asset_tag,
+                                name: item.asset_name,
+                                category: item.category,
+                                brand: item.brand,
+                                model: item.model,
+                                serial: item.serial,
+                                condition: retCondition,
+                                location: retShelf,
+                                specs: item.specs
+                            }]
+                        );
+
+                    restoredList.forEach(rAst => {
+                        if (rAst && rAst.id) {
+                            const existingIdx = availableAssets.findIndex(a => a.id === rAst.id);
+                            if (existingIdx >= 0) {
+                                availableAssets[existingIdx] = rAst;
+                            } else {
+                                availableAssets.unshift(rAst);
+                            }
+                        }
+                    });
+
+                    // 2. Synchronize dropdowns so returned assets appear immediately in "Assign New Asset"
+                    refreshAvailableAssetsDropdown();
 
                     closeModal(returnModal);
                     if (window.activeAllocId === id) {
-                        closeAssignmentDrawer();
+                        openAssignmentDrawer(id); // update drawer to show returned status
                     }
 
                     renderTable();
                     updateKPIs();
-                    showNotification(res.message || `Asset ${item.asset_tag} checked-in back to inventory successfully!`, 'success');
+
+                    const firstRestored = restoredList[0];
+                    if (firstRestored && firstRestored.id) {
+                        showNotification(
+                            `Equipment returned! Asset ${firstRestored.tag} is now Available in Stock and ready to be assigned to another employee.`,
+                            'success'
+                        );
+                    } else {
+                        showNotification(res.message || 'Equipment returned and checked back into stock successfully!', 'success');
+                    }
                 } else {
                     showNotification(res.message || 'Failed to process return.', 'danger');
                 }
@@ -1343,7 +1527,13 @@
                 showNotification('Network error while returning asset.', 'danger');
             })
             .finally(() => {
-                if (retBtn) retBtn.disabled = false;
+                if (retBtn) {
+                    retBtn.disabled = false;
+                    retBtn.innerHTML = `
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Confirm Return & Check-In
+                    `;
+                }
             });
         });
     }
@@ -1930,11 +2120,103 @@
             });
         });
 
-        // "Ready to Assign" card click -> opens assignment modal
+        // In-Stock Assets Modal Controller
+        const inStockModal = document.getElementById('availableAssetsModal');
+        const inStockSearchInput = document.getElementById('inStockSearchInput');
+        const inStockTbody = document.getElementById('inStockAssetsTbody');
+        const inStockCountText = document.getElementById('inStockModalCountText');
+
+        window.renderInStockModalTable = function(filterText = '') {
+            if (!inStockTbody) return;
+            inStockTbody.innerHTML = '';
+
+            const q = (filterText || '').trim().toLowerCase();
+            const filtered = availableAssets.filter(a => {
+                if (!q) return true;
+                return (a.tag && a.tag.toLowerCase().includes(q)) ||
+                       (a.name && a.name.toLowerCase().includes(q)) ||
+                       (a.category && a.category.toLowerCase().includes(q)) ||
+                       (a.serial && a.serial.toLowerCase().includes(q)) ||
+                       (a.model && a.model.toLowerCase().includes(q)) ||
+                       (a.brand && a.brand.toLowerCase().includes(q));
+            });
+
+            if (inStockCountText) {
+                inStockCountText.textContent = `${availableAssets.length} Assets`;
+            }
+
+            if (filtered.length === 0) {
+                inStockTbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 32px 14px; color: var(--text-muted);">
+                            <div style="font-size: 26px; margin-bottom: 6px;">📦</div>
+                            <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">No In-Stock Assets Found</div>
+                            <div style="font-size: 12px; margin-top: 4px;">${q ? 'No available assets match your filter term.' : 'All registered hardware units are currently allocated.'}</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filtered.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div class="tbl-asset-cell">
+                            <div class="batch-asset-icon" style="background:#e0f2fe; color:#0284c7;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                            </div>
+                            <div class="tbl-asset-info">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span class="asset-tag-badge">${escapeHtml(a.tag)}</span>
+                                    <span class="tbl-asset-name">${escapeHtml(a.name)}</span>
+                                </div>
+                                <span class="tbl-asset-category">${escapeHtml(a.category || 'Hardware')}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size:12px; font-weight:600; color:var(--text-primary);">${escapeHtml(a.model || a.brand || 'Standard')}</div>
+                        <div style="font-size:11px; font-family:monospace; color:var(--text-muted);">SN: ${escapeHtml(a.serial || '—')}</div>
+                    </td>
+                    <td>
+                        <span style="font-size:11.5px; background:#ecfdf5; color:#059669; padding:2px 8px; border-radius:10px; font-weight:600; border:1px solid #a7f3d0;">
+                            ${escapeHtml(a.condition || 'Good')}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="font-size:11.5px; color:var(--text-secondary);">${escapeHtml(a.location || 'Storage Depot')}</span>
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn-primary" style="padding: 5px 12px; font-size: 11.5px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" onclick="closeModal(document.getElementById('availableAssetsModal')); quickAssignAsset(${a.id});">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Assign to Staff
+                        </button>
+                    </td>
+                `;
+                inStockTbody.appendChild(tr);
+            });
+        };
+
+        // "Ready to Assign" card click -> opens In-Stock modal
         const cardAvailable = document.getElementById('cardAvailableInStock');
         if (cardAvailable) {
             cardAvailable.addEventListener('click', function () {
-                openAssignModal();
+                if (typeof window.renderInStockModalTable === 'function') {
+                    window.renderInStockModalTable();
+                }
+                openModal(inStockModal);
+            });
+        }
+
+        document.getElementById('closeAvailableAssetsModalBtn')?.addEventListener('click', () => closeModal(inStockModal));
+        document.getElementById('closeAvailableModalFooterBtn')?.addEventListener('click', () => closeModal(inStockModal));
+
+        if (inStockSearchInput) {
+            inStockSearchInput.addEventListener('input', function() {
+                if (typeof window.renderInStockModalTable === 'function') {
+                    window.renderInStockModalTable(this.value);
+                }
             });
         }
 
@@ -2031,11 +2313,12 @@
                 closeModal(returnModal);
                 closeModal(transferModal);
                 closeModal(slipModal);
+                closeModal(inStockModal);
                 window.closeAssignmentDrawer();
             }
         });
 
-        [assignModal, returnModal, transferModal, slipModal].forEach(modal => {
+        [assignModal, returnModal, transferModal, slipModal, inStockModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) {
@@ -2047,8 +2330,9 @@
     }
 
     function init() {
+        const inStockModal = document.getElementById('availableAssetsModal');
         // Relocate all modals directly into <body> to prevent sidebar / main-wrapper positioning constraints
-        [assignModal, returnModal, transferModal, slipModal].forEach(modal => {
+        [assignModal, returnModal, transferModal, slipModal, inStockModal].forEach(modal => {
             if (modal && modal.parentElement !== document.body) {
                 document.body.appendChild(modal);
             }

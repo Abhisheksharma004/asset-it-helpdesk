@@ -203,13 +203,13 @@ if (isset($conn) && $conn !== false) {
 }
 
 // Live assignments, assets, and employees are sourced directly from database tables
-// Compute live metrics
 $stats = [
     'total'             => count($initialAssignments),
     'permanent'         => 0,
     'temporary'         => 0,
     'remote'            => 0,
     'due_soon'          => 0,
+    'returned'          => 0,
     'total_assets'      => 0,
     'total_accessories' => 0,
     'available'         => count($availableAssets)
@@ -219,6 +219,8 @@ foreach ($initialAssignments as $item) {
     if ($item['custody_status'] !== 'Returned') {
         $stats['total_assets'] += $item['total_assets'];
         $stats['total_accessories'] += $item['total_accessories'];
+    } else {
+        $stats['returned']++;
     }
 
     $type = $item['allocation_type'];
@@ -349,11 +351,13 @@ include 'includes/topbar.php';
         </div>
 
         <!-- Ready to Assign / In Stock -->
-        <div class="alloc-stat-card card-available" id="cardAvailableInStock" title="View available unallocated hardware">
+        <div class="alloc-stat-card card-available" id="cardAvailableInStock" title="Click to view all available in-stock devices ready for assignment" style="cursor: pointer;">
             <div class="alloc-stat-info">
                 <div class="stat-lbl">Ready to Assign</div>
                 <div class="stat-val" id="kpiAvailableAssets" style="color: #0891b2;"><?php echo $stats['available']; ?></div>
-                <div class="stat-sub">In stock in IT storage depot</div>
+                <div class="stat-sub">
+                    <span style="color: #10b981; font-weight: 600;">●</span> In stock • Click to view
+                </div>
             </div>
             <div class="alloc-stat-icon cyan">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -386,6 +390,10 @@ include 'includes/topbar.php';
         <button type="button" class="status-tab-btn" data-tab="due_soon" style="border-left: 2px solid #fdba74;">
             Due Soon / Overdue
             <span class="status-tab-badge" id="tabCountDueSoon" style="background: #ea580c; color: #fff;"><?php echo $stats['due_soon']; ?></span>
+        </button>
+        <button type="button" class="status-tab-btn" data-tab="returned" style="border-left: 2px solid #a7f3d0;">
+            Returned to Stock
+            <span class="status-tab-badge" id="tabCountReturned" style="background: #059669; color: #fff;"><?php echo $stats['returned']; ?></span>
         </button>
     </div>
 
@@ -604,9 +612,15 @@ include 'includes/topbar.php';
                                     <button type="button" class="action-icon-btn btn-view" title="View Custody Details & Handover Slip" onclick="openAssignmentDrawer(<?php echo $row['id']; ?>)">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                     </button>
-                                    <button type="button" class="action-icon-btn btn-return" title="Return Asset (Check-In to Inventory)" onclick="openReturnModal(<?php echo $row['id']; ?>)">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
-                                    </button>
+                                    <?php if ($row['custody_status'] === 'Returned'): ?>
+                                        <button type="button" class="action-icon-btn btn-returned-disabled" title="Asset returned and checked-in back to stock" disabled style="opacity: 0.5; cursor: not-allowed; background: #ecfdf5; color: #059669; border-color: #a7f3d0;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" class="action-icon-btn btn-return" title="Return Asset (Check-In to Inventory Stock)" onclick="openReturnModal(<?php echo $row['id']; ?>)">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+                                        </button>
+                                    <?php endif; ?>
                                     <button type="button" class="action-icon-btn btn-transfer" title="Transfer to Another Custodian" onclick="openTransferModal(<?php echo $row['id']; ?>)">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
                                     </button>
@@ -803,7 +817,7 @@ include 'includes/topbar.php';
 
     <!-- Drawer Footer Actions -->
     <div class="drawer-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-        <button type="button" class="btn-danger" style="padding: 7px 12px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px;" onclick="if(window.activeAllocId) openReturnModal(window.activeAllocId)">
+        <button type="button" class="btn-danger" id="drawerReturnBtn" style="padding: 7px 12px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px;" onclick="if(window.activeAllocId) openReturnModal(window.activeAllocId)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
             Return Asset
         </button>
@@ -1051,6 +1065,24 @@ include 'includes/topbar.php';
                     </div>
                 </div>
 
+                <!-- Equipment items returning to stock preview -->
+                <div class="modal-form-group" style="margin-bottom: 14px;">
+                    <label style="display: flex; justify-content: space-between; align-items: center; font-size: 12.5px;">
+                        <span>Hardware & Accessories Returning to Stock:</span>
+                        <span class="asset-count-badge" id="returnItemCountBadge" style="background: #e0f2fe; color: #0284c7; font-size: 11px;">1 Item</span>
+                    </label>
+                    <div id="returnItemsChecklist" style="max-height: 140px; overflow-y: auto; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;">
+                        <!-- Dynamically filled with devices & accessories -->
+                    </div>
+                </div>
+
+                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span style="font-size: 12px; color: #065f46; line-height: 1.4;">
+                        <strong>Automatic Inventory Restock:</strong> Returned equipment will immediately be set to <strong>Available</strong> status in stock, ready to assign to another employee.
+                    </span>
+                </div>
+
                 <div class="form-grid-2">
                     <div class="modal-form-group">
                         <label for="returnDate">Return Date *</label>
@@ -1166,7 +1198,60 @@ include 'includes/topbar.php';
     </div>
 </div>
 
-<!-- Direct print slip: processed and invoked directly into the browser native print dialog -->
+<!-- =========================================================================
+     MODAL 4: IN-STOCK ASSETS (READY FOR ASSIGNMENT)
+     ========================================================================= -->
+<div class="modal-overlay" id="availableAssetsModal" style="display: none;">
+    <div class="modal-box" style="max-width: 820px;">
+        <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0;">In-Stock Assets (Ready to Assign)</h3>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 1px;">Hardware units available in storage depot for employee allocation</div>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" id="closeAvailableAssetsModalBtn">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 16px 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
+                <div class="asset-search-wrapper" style="min-width: 260px; flex: 1;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="inStockSearchInput" placeholder="Filter in-stock devices by tag, name, serial...">
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-secondary); font-weight: 600;">
+                    <span id="inStockModalCountText"><?php echo $stats['available']; ?> Assets</span> In Depot
+                </div>
+            </div>
+            <div style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                <table class="batch-modal-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="width: 32%;">Asset Details</th>
+                            <th style="width: 24%;">Serial / Model</th>
+                            <th style="width: 16%;">Condition</th>
+                            <th style="width: 14%;">Depot Location</th>
+                            <th style="width: 14%; text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inStockAssetsTbody">
+                        <!-- Populated dynamically via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; color: var(--text-muted);">
+                Returned assets are automatically added here.
+            </div>
+            <button type="button" class="btn-secondary" id="closeAvailableModalFooterBtn">Close</button>
+        </div>
+    </div>
+</div>
 
 <!-- Embedded JS Data -->
 <script>

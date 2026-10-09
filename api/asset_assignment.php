@@ -540,7 +540,7 @@ if ($action === 'return') {
         exit;
     }
 
-    $stmt = sqlsrv_query($conn, "SELECT id, asset_id, assets_json, accessories_json, custody_status FROM asset_assignments WHERE id = ?", [$allocId]);
+    $stmt = sqlsrv_query($conn, "SELECT id, slip_no, asset_id, asset_tag, asset_name, category, brand, model, serial, specs, assets_json, accessories_json, custody_status FROM asset_assignments WHERE id = ?", [$allocId]);
     $alloc = ($stmt !== false) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
     if ($stmt !== false) sqlsrv_free_stmt($stmt);
 
@@ -567,9 +567,19 @@ if ($action === 'return') {
         $assetsList = json_decode($alloc['assets_json'], true) ?: [];
     }
     if (empty($assetsList) && !empty($alloc['asset_id'])) {
-        $assetsList[] = ['id' => intval($alloc['asset_id'])];
+        $assetsList[] = [
+            'id'       => intval($alloc['asset_id']),
+            'tag'      => $alloc['asset_tag'] ?? '',
+            'name'     => $alloc['asset_name'] ?? '',
+            'category' => $alloc['category'] ?? '',
+            'brand'    => $alloc['brand'] ?? '',
+            'model'    => $alloc['model'] ?? '',
+            'serial'   => $alloc['serial'] ?? '',
+            'specs'    => $alloc['specs'] ?? ''
+        ];
     }
 
+    $restoredAssets = [];
     foreach ($assetsList as $ast) {
         $aId = intval($ast['id'] ?? 0);
         if ($aId > 0) {
@@ -581,10 +591,29 @@ if ($action === 'return') {
                                      department = NULL,
                                      updated_at = GETDATE() 
                                  WHERE id = ?", [$returnCondition, $storageLocation, $aId]);
+
+            // Query the restored asset's latest attributes
+            $fStmt = sqlsrv_query($conn, "SELECT id, tag, name, category, brand, model, serial, condition, location, specs = (ISNULL(processor,'') + ' • ' + ISNULL(ram,'')) FROM assets WHERE id = ?", [$aId]);
+            if ($fStmt !== false && ($aRow = sqlsrv_fetch_array($fStmt, SQLSRV_FETCH_ASSOC))) {
+                $restoredAssets[] = [
+                    'id'        => intval($aRow['id']),
+                    'tag'       => $aRow['tag'],
+                    'name'      => $aRow['name'],
+                    'category'  => $aRow['category'],
+                    'brand'     => $aRow['brand'],
+                    'model'     => $aRow['model'] ?? '',
+                    'serial'    => $aRow['serial'] ?? '',
+                    'condition' => $aRow['condition'] ?? $returnCondition,
+                    'location'  => $aRow['location'] ?? $storageLocation,
+                    'specs'     => trim($aRow['specs'] ?? '', " •")
+                ];
+                sqlsrv_free_stmt($fStmt);
+            }
         }
     }
 
     // 3. Restore all accessories stock
+    $restoredAccessories = [];
     if (!empty($alloc['accessories_json'])) {
         $accs = json_decode($alloc['accessories_json'], true) ?: [];
         foreach ($accs as $ac) {
@@ -596,16 +625,79 @@ if ($action === 'return') {
                                          deployed = CASE WHEN deployed >= ? THEN deployed - ? ELSE 0 END, 
                                          updated_at = GETDATE() 
                                      WHERE id = ?", [$qty, $qty, $qty, $acId]);
+
+                $acStmt = sqlsrv_query($conn, "SELECT id, sku, name, category, brand, model, in_stock, location FROM accessories WHERE id = ?", [$acId]);
+                if ($acStmt !== false && ($acRow = sqlsrv_fetch_array($acStmt, SQLSRV_FETCH_ASSOC))) {
+                    $restoredAccessories[] = [
+                        'id'       => intval($acRow['id']),
+                        'sku'      => $acRow['sku'],
+                        'name'     => $acRow['name'],
+                        'category' => $acRow['category'],
+                        'brand'    => $acRow['brand'] ?? '',
+                        'model'    => $acRow['model'] ?? '',
+                        'in_stock' => intval($acRow['in_stock']),
+                        'location' => $acRow['location'] ?? ''
+                    ];
+                    sqlsrv_free_stmt($acStmt);
+                }
             }
         }
     }
 
     sqlsrv_commit($conn);
 
+    // Calculate updated available stock count
+    $countAvail = 0;
+    $cStmt = sqlsrv_query($conn, "SELECT COUNT(*) AS total FROM assets WHERE status = 'Available'");
+    if ($cStmt !== false && ($cRow = sqlsrv_fetch_array($cStmt, SQLSRV_FETCH_ASSOC))) {
+        $countAvail = intval($cRow['total']);
+        sqlsrv_free_stmt($cStmt);
+    }
+
+    $msg = count($restoredAssets) > 1 
+        ? count($restoredAssets) . ' assets returned successfully and added back to available stock.' 
+        : 'Asset returned successfully and added back to available stock.';
+
     echo json_encode([
-        'success' => true,
-        'message' => 'Equipment returned successfully and checked into inventory stock.'
+        'success'               => true,
+        'message'               => $msg,
+        'alloc_id'              => $allocId,
+        'return_date'           => $returnDate,
+        'return_condition'      => $returnCondition,
+        'restored_assets'       => $restoredAssets,
+        'restored_accessories'  => $restoredAccessories,
+        'available_stock_count' => $countAvail
     ]);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// ACTION: GET AVAILABLE ASSETS (Fetch current in-stock assets)
+// -----------------------------------------------------------------------------
+if ($action === 'get_available_assets') {
+    $availList = [];
+    $availStmt = sqlsrv_query($conn, "SELECT id, tag, name, category, brand, model, serial, condition, location, specs = (ISNULL(processor,'') + ' • ' + ISNULL(ram,'')) 
+                                      FROM assets 
+                                      WHERE status = 'Available' 
+                                      ORDER BY id DESC");
+    if ($availStmt !== false) {
+        while ($a = sqlsrv_fetch_array($availStmt, SQLSRV_FETCH_ASSOC)) {
+            $availList[] = [
+                'id'        => intval($a['id']),
+                'tag'       => $a['tag'],
+                'name'      => $a['name'],
+                'category'  => $a['category'],
+                'brand'     => $a['brand'],
+                'model'     => $a['model'] ?? '',
+                'serial'    => $a['serial'] ?? '',
+                'condition' => $a['condition'] ?? 'Good',
+                'location'  => $a['location'] ?? 'Storage Depot',
+                'specs'     => trim($a['specs'] ?? '', " •")
+            ];
+        }
+        sqlsrv_free_stmt($availStmt);
+    }
+    echo json_encode(['success' => true, 'count' => count($availList), 'data' => $availList]);
     exit;
 }
 

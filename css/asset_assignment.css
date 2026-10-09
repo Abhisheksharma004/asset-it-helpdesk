@@ -1240,3 +1240,28 @@
     margin-top: 3px;
 }
 
+/* Return & In-Stock Enhancement Styles */
+.action-icon-btn.btn-returned-disabled {
+    background: #ecfdf5 !important;
+    color: #059669 !important;
+    border-color: #a7f3d0 !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.action-icon-btn.btn-returned-disabled:hover {
+    background: #ecfdf5 !important;
+    transform: none !important;
+}
+
+.alloc-stat-card.card-available {
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.alloc-stat-card.card-available:hover {
+    transform: translateY(-2px);
+    border-color: #0891b2;
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.12);
+}
+
