@@ -130,13 +130,16 @@ if (isset($conn) && $conn !== false) {
         while ($row = sqlsrv_fetch_array($assignedStmt, SQLSRV_FETCH_ASSOC)) {
             // Assets decode
             $assetsList = [];
-            if (!empty($row['assets_json'])) {
+            $hasExplicitAssetsJson = ($row['assets_json'] !== null && trim($row['assets_json']) !== '');
+            if ($hasExplicitAssetsJson) {
                 $decodedAssets = json_decode($row['assets_json'], true);
                 if (is_array($decodedAssets)) {
                     $assetsList = $decodedAssets;
                 }
             }
-            if (empty($assetsList) && !empty($row['asset_name'])) {
+
+            // Only fallback to single-asset columns if assets_json was never stored AND a real asset was assigned
+            if (!$hasExplicitAssetsJson && !empty($row['asset_name']) && (!empty($row['asset_id']) || !empty($row['asset_tag']) || intval($row['total_assets']) > 0)) {
                 $assetsList[] = [
                     'id'        => intval($row['asset_id']),
                     'tag'       => $row['asset_tag'] ?? 'AST-000',
@@ -159,10 +162,9 @@ if (isset($conn) && $conn !== false) {
                 }
             }
 
-            $totalAssets = intval($row['total_assets']);
-            if ($totalAssets <= 0) {
-                $totalAssets = count($assetsList);
-            }
+            $totalAssets = (isset($row['total_assets']) && $row['total_assets'] !== null)
+                ? intval($row['total_assets'])
+                : count($assetsList);
 
             $totalAccessories = intval($row['total_accessories']);
             if ($totalAccessories <= 0) {

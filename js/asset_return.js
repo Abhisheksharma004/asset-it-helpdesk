@@ -1317,6 +1317,11 @@
                     .then(res => res.json())
                     .then(res => {
                         if (res.success) {
+                            const actualAssets = Array.isArray(res.returned_assets) ? res.returned_assets : returnedAssetsPayload;
+                            const actualAcc = Array.isArray(res.returned_accessories) ? res.returned_accessories : returnedAccPayload;
+                            const totalReturnedAssetsCount = res.total_returned_assets !== undefined ? res.total_returned_assets : actualAssets.length;
+                            const totalReturnedAccCount = res.total_returned_accessories !== undefined ? res.total_returned_accessories : actualAcc.length;
+
                             const newReturnRecord = {
                                 id: res.return_id || Date.now(),
                                 slip_no: res.return_slip_no || ('RET-' + (cust ? (cust.slips[0] || 'SLIP') : 'SLIP')),
@@ -1337,20 +1342,53 @@
                                 diag_total_count: totalDiag,
                                 checklist: diagChecklistValues,
                                 custody_status: 'Returned',
-                                assets: returnedAssetsPayload,
-                                accessories: returnedAccPayload
+                                total_assets: totalReturnedAssetsCount,
+                                total_accessories: totalReturnedAccCount,
+                                assets: actualAssets,
+                                accessories: actualAcc
                             };
                             returns.unshift(newReturnRecord);
 
-                            // Remove affected allocations from activeAllocations
-                            activeAllocations = activeAllocations.filter(a => !affectedAllocIds.includes(a.id));
-                            // Re-filter activeCustodians
-                            activeCustodians = activeCustodians.filter(c => c.emp_key !== selectedEmpKey);
+                            // Update activeAllocations based on full vs partial returns
+                            const fullyReturnedIds = Array.isArray(res.fully_returned_alloc_ids) ? res.fully_returned_alloc_ids : affectedAllocIds;
+                            const partiallyReturnedList = Array.isArray(res.partially_returned_allocs) ? res.partially_returned_allocs : [];
 
-                            // Remove from active select dropdown
+                            // Remove fully returned allocations
+                            activeAllocations = activeAllocations.filter(a => !fullyReturnedIds.includes(a.id));
+
+                            // Update partially returned allocations
+                            partiallyReturnedList.forEach(p => {
+                                const target = activeAllocations.find(a => a.id === p.id);
+                                if (target) {
+                                    target.assets = p.assets;
+                                    target.accessories = p.accessories;
+                                    target.total_assets = p.total_assets;
+                                    target.total_accessories = p.total_accessories;
+                                }
+                            });
+
+                            // Recompute activeCustodians
+                            activeCustodians = [];
+                            const refreshedCustodians = getActiveCustodiansList();
+
+                            // Rebuild selectActiveAlloc dropdown options
                             if (selectActiveAlloc) {
-                                const optToRemove = selectActiveAlloc.querySelector(`option[value="${selectedEmpKey}"]`);
-                                if (optToRemove) optToRemove.remove();
+                                selectActiveAlloc.innerHTML = '<option value="">-- Select Employee Custodian --</option>';
+                                refreshedCustodians.forEach(c => {
+                                    const opt = document.createElement('option');
+                                    opt.value = c.emp_key;
+                                    opt.dataset.empKey = c.emp_key;
+                                    opt.dataset.empName = c.employee_name;
+                                    opt.dataset.empCode = c.emp_code;
+                                    opt.dataset.dept = c.department;
+                                    opt.dataset.desig = c.designation || 'Staff';
+                                    opt.dataset.slips = JSON.stringify(c.slips || []);
+                                    opt.dataset.allocIds = JSON.stringify(c.alloc_ids || []);
+                                    opt.dataset.assets = JSON.stringify(c.all_assets || []);
+                                    opt.dataset.acc = JSON.stringify(c.all_accessories || []);
+                                    opt.textContent = `${c.employee_name} (${c.emp_code} • ${c.department}) — ${c.slips.length} Slip(s) (${c.all_assets.length} Assets, ${c.all_accessories.length} Acc)`;
+                                    selectActiveAlloc.appendChild(opt);
+                                });
                                 selectActiveAlloc.value = '';
                                 if (allocPreviewBox) allocPreviewBox.style.display = 'none';
                             }
