@@ -139,10 +139,13 @@ if (isset($conn) && $conn !== false) {
                                                 total_assets, total_accessories, assets_json, accessories_json,
                                                 handover_by, agreement_signed, notes, return_notes, transferred_to
                                          FROM asset_assignments
-                                         WHERE custody_status != 'Returned'
+                                         WHERE custody_status NOT IN ('Returned', 'Transferred') AND custody_status NOT LIKE '%Transferred%'
                                          ORDER BY id DESC");
     if ($assignedStmt !== false) {
         while ($row = sqlsrv_fetch_array($assignedStmt, SQLSRV_FETCH_ASSOC)) {
+            if ($row['custody_status'] === 'Returned' || $row['custody_status'] === 'Transferred' || stripos($row['custody_status'] ?? '', 'Transferred') !== false) {
+                continue;
+            }
             // Assets decode
             $assetsList = [];
             $hasExplicitAssetsJson = ($row['assets_json'] !== null && trim($row['assets_json']) !== '');
@@ -448,7 +451,6 @@ include 'includes/topbar.php';
             <select class="asset-filter-select" id="allocStatusFilter">
                 <option value="all">All Custody States</option>
                 <option value="Active">Active Custody</option>
-                <option value="Transferred">Transferred</option>
                 <option value="Due Soon">Due Soon (<30d)</option>
                 <option value="Overdue">Overdue</option>
             </select>

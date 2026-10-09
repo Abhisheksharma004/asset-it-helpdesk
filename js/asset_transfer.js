@@ -772,10 +772,13 @@
                         closeModal(transferModal);
                         showNotification(data.message || `Asset transfer completed successfully under receipt ${data.data.transfer_slip_no}!`, 'success');
 
+                        // Automatically trigger print transfer slip upon transfer creation
+                        directPrintTransferSlip(data.data);
+
                         // Reload page after short delay so updated equipment assignments and custodians are re-indexed
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1200);
+                        }, 2500);
                     } else {
                         showNotification(data.message || 'Failed to complete asset transfer.', 'error');
                     }
@@ -795,6 +798,18 @@
                         `;
                     }
                 });
+            });
+        }
+
+        // Drawer Print Button
+        const drawerPrintBtn = document.getElementById('drawerPrintBtn');
+        if (drawerPrintBtn) {
+            drawerPrintBtn.addEventListener('click', function () {
+                if (activeDrawerTransferId) {
+                    directPrintTransferSlip(activeDrawerTransferId);
+                } else if (transfers.length > 0) {
+                    directPrintTransferSlip(transfers[0].id);
+                }
             });
         }
 
@@ -842,6 +857,441 @@
             }
         });
     }
+
+    // --- Direct Browser Print Transfer Slip (A4 Handover & Relocation Slip) ---
+    function directPrintTransferSlip(id) {
+        let item = null;
+        if (typeof id === 'object' && id !== null) {
+            item = id;
+        } else if (typeof id === 'number') {
+            item = transfers.find(t => t.id === id);
+        } else if (typeof id === 'string') {
+            item = transfers.find(t => t.transfer_slip_no === id || String(t.id) === id);
+        }
+        if (!item && transfers.length > 0) {
+            item = transfers[0];
+        }
+        if (!item) {
+            showNotification('Transfer record not found for printing.', 'warning');
+            return;
+        }
+
+        const slipNo = item.transfer_slip_no || ('TRF-2026-' + String(item.id || 1).padStart(4, '0'));
+        const transferDate = escapeHtml(item.transfer_date || new Date().toISOString().split('T')[0]);
+        const transferType = escapeHtml(item.transfer_type || 'Employee Custody Relocation');
+        const status = escapeHtml(item.status || 'Completed');
+        const reason = escapeHtml(item.reason || 'Official transfer of equipment custody.');
+        const processedBy = escapeHtml(item.processed_by || 'IT Administrator');
+
+        // Source Custodian (Relinquished From)
+        const src = item.source_custodian || {};
+        const srcName = escapeHtml(src.name || item.source_employee_name || 'Previous Custodian');
+        const srcCode = escapeHtml(src.emp_code || item.source_emp_code || '—');
+        const srcDept = escapeHtml(src.department || item.source_department || 'General');
+        const srcDesig = escapeHtml(src.designation || item.source_designation || 'Staff');
+        const srcLoc = escapeHtml(src.location || item.source_location || 'Corporate HQ');
+
+        // Target Custodian (Transferred To)
+        const tgt = item.target_custodian || {};
+        const tgtName = escapeHtml(tgt.name || item.target_employee_name || 'Recipient Employee');
+        const tgtCode = escapeHtml(tgt.emp_code || item.target_emp_code || '—');
+        const tgtDept = escapeHtml(tgt.department || item.target_department || 'General');
+        const tgtDesig = escapeHtml(tgt.designation || item.target_designation || 'Staff');
+        const tgtLoc = escapeHtml(tgt.location || item.target_location || 'Corporate HQ');
+
+        // Assets
+        let assetsList = Array.isArray(item.assets) ? item.assets : [];
+        if (typeof item.assets_json === 'string' && assetsList.length === 0) {
+            try { assetsList = JSON.parse(item.assets_json) || []; } catch(e){}
+        }
+
+        let assetsRows = '';
+        if (assetsList.length === 0) {
+            assetsRows = `<tr><td colspan="7" style="text-align: center; padding: 6px; color: #555; font-style: italic;">No hardware devices in this transfer record.</td></tr>`;
+        } else {
+            assetsRows = assetsList.map((ast, idx) => {
+                const bm = [ast.brand, ast.model].filter(Boolean).join(' ') || '—';
+                return `
+                    <tr>
+                        <td style="text-align: center; width: 30px;">${idx + 1}</td>
+                        <td style="font-family: monospace; font-weight: bold; width: 95px; color: #0093a7;">${escapeHtml(ast.tag || '—')}</td>
+                        <td>
+                            <strong>${escapeHtml(ast.name || 'Hardware Device')}</strong>
+                            ${ast.specs ? `<div style="font-size: 9px; color: #555; margin-top: 1px;">${escapeHtml(ast.specs)}</div>` : ''}
+                        </td>
+                        <td style="width: 90px;">${escapeHtml(ast.category || 'Hardware')}</td>
+                        <td style="width: 105px;">${escapeHtml(bm)}</td>
+                        <td style="font-family: monospace; width: 110px; font-weight: 700;">${escapeHtml(ast.serial || '—')}</td>
+                        <td style="text-align: center; width: 75px;">${escapeHtml(ast.condition || 'Good')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Accessories
+        let accList = Array.isArray(item.accessories) ? item.accessories : [];
+        if (typeof item.accessories_json === 'string' && accList.length === 0) {
+            try { accList = JSON.parse(item.accessories_json) || []; } catch(e){}
+        }
+
+        let accRows = '';
+        if (accList.length === 0) {
+            accRows = `<tr><td colspan="5" style="text-align: center; padding: 6px; color: #555; font-style: italic;">No accessories included in this transfer.</td></tr>`;
+        } else {
+            accRows = accList.map((ac, idx) => {
+                const acName = typeof ac === 'string' ? ac : (ac.name || 'Accessory Item');
+                const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                const acCategory = (typeof ac === 'object' && ac.category) ? ac.category : 'Standard Accessory';
+                const acCondition = (typeof ac === 'object' && ac.condition) ? ac.condition : 'Good';
+                return `
+                    <tr>
+                        <td style="text-align: center; width: 30px;">${idx + 1}</td>
+                        <td><strong>${escapeHtml(acName)}</strong></td>
+                        <td style="width: 180px;">${escapeHtml(acCategory)}</td>
+                        <td style="text-align: center; width: 55px; font-weight: bold;">${escapeHtml(String(acQty))}</td>
+                        <td style="text-align: center; width: 80px;">${escapeHtml(acCondition)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        const printHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Asset Transfer & Relocation Slip - ${slipNo}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 8mm 11mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            font-size: 10.5px;
+            line-height: 1.35;
+            color: #0f172a;
+            background: #ffffff;
+        }
+        .slip-container {
+            width: 100%;
+            margin: 0 auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 7px;
+            page-break-inside: avoid;
+        }
+        th, td {
+            border: 1px solid #334155;
+            padding: 4px 7px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            text-align: left;
+            font-size: 10px;
+            color: #0f172a;
+        }
+        .header-tbl {
+            border: none !important;
+            margin-bottom: 10px;
+        }
+        .header-tbl td {
+            border: none !important;
+            padding: 3px 6px;
+        }
+        .header-logo {
+            width: 22%;
+            text-align: left;
+            vertical-align: middle;
+            border: none !important;
+        }
+        .header-logo img {
+            max-height: 65px;
+            max-width: 160px;
+            object-fit: contain;
+            display: block;
+        }
+        .header-title {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #001938;
+            text-transform: uppercase;
+        }
+        .header-title .sub {
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            margin-top: 1px;
+        }
+        .header-title .doc-name {
+            font-size: 12px;
+            font-weight: 800;
+            margin-top: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            border-top: 1.5px solid #001938;
+            padding-top: 2px;
+            color: #0093A7;
+        }
+        .header-meta {
+            width: 28%;
+            border: none !important;
+            font-size: 10px;
+            line-height: 1.5;
+            vertical-align: middle;
+            text-align: right;
+            background: transparent !important;
+        }
+        .sec-title {
+            background: #f1f5f9;
+            font-weight: 700;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            padding: 3px 7px;
+            border: 1px solid #334155;
+            border-bottom: none;
+            margin-top: 7px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
+        }
+        .lbl {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #334155;
+            width: 18%;
+        }
+        .val {
+            color: #0f172a;
+            width: 32%;
+        }
+        .declaration-box {
+            border: 1px solid #334155;
+            padding: 6px 9px;
+            font-size: 9.5px;
+            color: #334155;
+            background: #f8fafc;
+            margin-top: 7px;
+            line-height: 1.4;
+        }
+        .signatures-tbl {
+            border: 1px solid #334155;
+            border-top: none;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        .signatures-tbl td {
+            border: none;
+            vertical-align: bottom;
+            padding: 22px 10px 8px;
+        }
+        .sig-line {
+            border-top: 1.5px solid #0f172a;
+            padding-top: 3px;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .sig-sub {
+            font-size: 9.5px;
+            color: #64748b;
+            margin-top: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slip-container">
+        <!-- Document Header Table -->
+        <table class="header-tbl">
+            <tr>
+                <td class="header-logo">
+                    <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 65px; max-width: 160px; object-fit: contain;">
+                </td>
+                <td class="header-title">
+                    <h1>VIROS PORTAL</h1>
+                    <div class="sub">IT Asset Management & Helpdesk</div>
+                    <div class="doc-name">EQUIPMENT TRANSFER & CUSTODY RELOCATION SLIP</div>
+                </td>
+                <td class="header-meta">
+                    <div><strong>Transfer Slip:</strong> <span style="font-family: monospace; font-weight: 700;">${slipNo}</span></div>
+                    <div><strong>Date:</strong> ${transferDate}</div>
+                    <div><strong>Status:</strong> <span style="color: #0f172a; font-weight: 700;">${status.toUpperCase()}</span></div>
+                    <div><strong>Type:</strong> ${transferType}</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- 1. Custodian Relocation & Transfer Route -->
+        <div class="sec-title">1. Custodian Relocation & Transfer Route</div>
+        <table>
+            <tr>
+                <th colspan="2" style="width: 50%; font-size: 10.5px;">
+                    SOURCE CUSTODIAN (RELINQUISHED FROM)
+                </th>
+                <th colspan="2" style="width: 50%; font-size: 10.5px;">
+                    TARGET CUSTODIAN (TRANSFERRED TO)
+                </th>
+            </tr>
+            <tr>
+                <td class="lbl" style="width: 16%;">Employee Name</td>
+                <td class="val" style="width: 34%;">
+                    <strong style="color: #0f172a;">${srcName}</strong>
+                    <span style="font-family: monospace; color: #64748b; font-size: 9.5px;">(${srcCode})</span>
+                </td>
+                <td class="lbl" style="width: 16%;">Employee Name</td>
+                <td class="val" style="width: 34%;">
+                    <strong style="color: #0f172a;">${tgtName}</strong>
+                    <span style="font-family: monospace; color: #64748b; font-size: 9.5px;">(${tgtCode})</span>
+                </td>
+            </tr>
+            <tr>
+                <td class="lbl">Designation / Role</td>
+                <td class="val">${srcDesig}</td>
+                <td class="lbl">Designation / Role</td>
+                <td class="val">${tgtDesig}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Department</td>
+                <td class="val">${srcDept}</td>
+                <td class="lbl">Department</td>
+                <td class="val">${tgtDept}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Location / Branch</td>
+                <td class="val">${srcLoc}</td>
+                <td class="lbl">Location / Branch</td>
+                <td class="val">${tgtLoc}</td>
+            </tr>
+        </table>
+
+        <!-- 2. Transferred Hardware Assets -->
+        <div class="sec-title">2. Transferred Hardware Assets (${assetsList.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px; text-align: center;">#</th>
+                    <th style="width: 95px;">Asset Tag</th>
+                    <th>Device Name & Specs</th>
+                    <th style="width: 90px;">Category</th>
+                    <th style="width: 105px;">Brand & Model</th>
+                    <th style="width: 110px;">Serial Number</th>
+                    <th style="width: 75px; text-align: center;">Condition</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${assetsRows}
+            </tbody>
+        </table>
+
+        <!-- 3. Transferred Accessories -->
+        <div class="sec-title">3. Transferred Accessories & Peripherals (${accList.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px; text-align: center;">#</th>
+                    <th>Accessory Item</th>
+                    <th style="width: 180px;">Category / Classification</th>
+                    <th style="width: 55px; text-align: center;">Qty</th>
+                    <th style="width: 80px; text-align: center;">Condition</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${accRows}
+            </tbody>
+        </table>
+
+        <!-- 4. Transfer Terms & Scope -->
+        <div class="sec-title">4. Transfer Terms, Authorization & Remarks</div>
+        <table>
+            <tr>
+                <td class="lbl">Movement Classification</td>
+                <td class="val">${transferType}</td>
+                <td class="lbl">Transfer Date</td>
+                <td class="val">${transferDate}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Transfer Slip Number</td>
+                <td class="val" style="font-family: monospace; font-weight: 700;">${slipNo}</td>
+                <td class="lbl">Authorized By</td>
+                <td class="val">${processedBy}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Transfer Reason / Audit</td>
+                <td class="val" colspan="3">${reason}</td>
+            </tr>
+        </table>
+
+        <!-- 5. Declaration & Tripartite Signatures -->
+        <div class="declaration-box">
+            <strong>Official Custody Transfer Acknowledgment:</strong> We hereby certify that the physical transfer of the equipment and peripherals described above has been performed. Relinquishing custodian (<strong>${srcName}</strong>) releases all custodial responsibility as of <strong>${transferDate}</strong>, and recipient custodian (<strong>${tgtName}</strong>) acknowledges receipt in satisfactory condition and assumes full custody under IT acceptable use policy.
+        </div>
+        <table class="signatures-tbl">
+            <tr>
+                <td style="width: 34%;">
+                    <div class="sig-line">Relinquishing Custodian</div>
+                    <div class="sig-sub">${srcName} (${srcCode})<br>Date: _____________</div>
+                </td>
+                <td style="width: 33%; text-align: center;">
+                    <div class="sig-line">Receiving Custodian</div>
+                    <div class="sig-sub">${tgtName} (${tgtCode})<br>Date: _____________</div>
+                </td>
+                <td style="width: 33%; text-align: right;">
+                    <div class="sig-line">Authorized IT Official / Seal</div>
+                    <div class="sig-sub">${processedBy}<br>IT Asset Management &bull; Date: _____________</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>`;
+
+        // Direct Browser Print via hidden iframe (No on-screen modal)
+        let printIframe = document.getElementById('transferSlipPrintIframe');
+        if (!printIframe) {
+            printIframe = document.createElement('iframe');
+            printIframe.id = 'transferSlipPrintIframe';
+            printIframe.style.position = 'fixed';
+            printIframe.style.right = '0';
+            printIframe.style.bottom = '0';
+            printIframe.style.width = '0';
+            printIframe.style.height = '0';
+            printIframe.style.border = '0';
+            printIframe.style.visibility = 'hidden';
+            document.body.appendChild(printIframe);
+        }
+
+        const frameDoc = printIframe.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(printHtml);
+        frameDoc.close();
+
+        // Directly open the browser's native print modal
+        setTimeout(() => {
+            printIframe.contentWindow.focus();
+            printIframe.contentWindow.print();
+        }, 200);
+    }
+
+    // Expose print functions globally
+    window.directPrintTransferSlip = directPrintTransferSlip;
+    window.printTransferReceipt = directPrintTransferSlip;
+    window.openTransferSlipModal = directPrintTransferSlip;
 
     function init() {
         if (transferModal && transferModal.parentElement !== document.body) {

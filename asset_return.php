@@ -213,11 +213,14 @@ if (isset($conn) && $conn !== false) {
                 'return_notes'      => $row['return_notes'] ?? 'Equipment inspected and returned to storage depot.'
             ];
 
-            if ($row['custody_status'] === 'Returned') {
+            $isReturned = ($row['custody_status'] === 'Returned') || in_array(intval($row['id']), $seenAssignmentIds);
+            $isTransferred = ($row['custody_status'] === 'Transferred') || (stripos($row['custody_status'] ?? '', 'Transferred') !== false);
+
+            if ($isReturned) {
                 if (!in_array(intval($row['id']), $seenAssignmentIds)) {
                     $returnedAllocations[] = $item;
                 }
-            } else {
+            } elseif (!$isTransferred) {
                 $activeAllocations[] = $item;
             }
         }
@@ -274,6 +277,11 @@ foreach ($activeAllocations as $alloc) {
         }
     }
 }
+
+// Keep only custodians who actually hold hardware equipment or accessories
+$activeCustodians = array_values(array_filter($activeCustodians, function ($cust) {
+    return (count($cust['all_assets']) > 0 || count($cust['all_accessories']) > 0);
+}));
 
 // Compute live return metrics
 $returnStats = [
@@ -624,11 +632,6 @@ include 'includes/topbar.php';
                                     <button type="button" class="action-icon-btn btn-qr" title="Print Equipment Return Receipt" onclick="printReturnReceipt(<?php echo $ret['id']; ?>)">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                                     </button>
-                                    <?php if (!empty($ret['assets'])): ?>
-                                        <a href="asset_assignment.php?preselect_asset=<?php echo urlencode($ret['assets'][0]['id']); ?>" class="action-icon-btn btn-return" title="Re-assign Asset to Employee">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
-                                        </a>
-                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

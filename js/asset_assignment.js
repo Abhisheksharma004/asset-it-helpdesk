@@ -119,8 +119,10 @@
 
     function getFilteredAssignments() {
         return assignments.filter(item => {
-            // Do not show returned records in this active allocations table
-            if (item.custody_status === 'Returned') return false;
+            // Do not show returned or transferred records in this active allocations table
+            if (item.custody_status === 'Returned' || item.custody_status === 'Transferred' || (item.custody_status && item.custody_status.includes('Transferred'))) {
+                return false;
+            }
 
             // Tab filter
             if (selectedTab === 'permanent' && item.allocation_type !== 'Permanent') return false;
@@ -138,11 +140,7 @@
 
             // Custody Status filter
             if (selectedStatus !== 'all') {
-                if (selectedStatus === 'Transferred') {
-                    if (item.custody_status !== 'Transferred' && !(item.custody_status && item.custody_status.includes('Transferred'))) {
-                        return false;
-                    }
-                } else if (item.custody_status !== selectedStatus) {
+                if (item.custody_status !== selectedStatus) {
                     return false;
                 }
             }
@@ -173,7 +171,8 @@
         tbody.innerHTML = '';
 
         if (tableCountText) {
-            tableCountText.textContent = `Showing ${list.length} of ${assignments.length} handover slips`;
+            const activeCount = assignments.filter(a => a.custody_status !== 'Returned' && a.custody_status !== 'Transferred' && !(a.custody_status && a.custody_status.includes('Transferred'))).length;
+            tableCountText.textContent = `Showing ${list.length} of ${activeCount} handover slips`;
         }
 
         if (list.length === 0) {
@@ -354,7 +353,8 @@
     }
 
     function updateKPIs() {
-        let total = assignments.length;
+        const activeList = assignments.filter(a => a.custody_status !== 'Returned' && a.custody_status !== 'Transferred' && !(a.custody_status && a.custody_status.includes('Transferred')));
+        let total = activeList.length;
         let permanent = 0;
         let temporary = 0;
         let remote = 0;
@@ -364,7 +364,7 @@
         let totalAccCount = 0;
 
         assignments.forEach(a => {
-            if (a.custody_status === 'Returned') return;
+            if (a.custody_status === 'Returned' || a.custody_status === 'Transferred' || (a.custody_status && a.custody_status.includes('Transferred'))) return;
 
             totalAssetsCount += a.total_assets || (Array.isArray(a.assets) ? a.assets.length : 0);
             totalAccCount += a.total_accessories || (Array.isArray(a.accessories) ? a.accessories.length : 0);

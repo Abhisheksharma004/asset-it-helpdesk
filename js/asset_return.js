@@ -80,9 +80,18 @@
     }
 
     function getActiveCustodiansList() {
-        if (activeCustodians && activeCustodians.length > 0) return activeCustodians;
+        if (activeCustodians && activeCustodians.length > 0) {
+            return activeCustodians.filter(c =>
+                (Array.isArray(c.all_assets) && c.all_assets.length > 0) ||
+                (Array.isArray(c.all_accessories) && c.all_accessories.length > 0)
+            );
+        }
         const map = {};
         activeAllocations.forEach(alloc => {
+            const status = (alloc.custody_status || '').toLowerCase();
+            if (status.includes('returned') || status.includes('transferred')) {
+                return;
+            }
             const key = alloc.emp_code || (alloc.employee_id ? 'ID_' + alloc.employee_id : alloc.employee_name);
             if (!map[key]) {
                 map[key] = {
@@ -115,7 +124,10 @@
                 }
             });
         });
-        activeCustodians = Object.values(map);
+        activeCustodians = Object.values(map).filter(c =>
+            (Array.isArray(c.all_assets) && c.all_assets.length > 0) ||
+            (Array.isArray(c.all_accessories) && c.all_accessories.length > 0)
+        );
         return activeCustodians;
     }
 
@@ -307,15 +319,15 @@
                         </div>
                         <div class="chips-compact-list">
                             ${accList.slice(0, 2).map(acc => {
-                                const accName = typeof acc === 'string' ? acc : (acc.name || 'Item');
-                                const accQty = (typeof acc === 'object' && acc.qty) ? acc.qty : 1;
-                                return `
+                const accName = typeof acc === 'string' ? acc : (acc.name || 'Item');
+                const accQty = (typeof acc === 'object' && acc.qty) ? acc.qty : 1;
+                return `
                                     <span class="chip-acc-tag" title="${escapeHtml(accName)}">
                                         <span>${escapeHtml(accName)}</span>
                                         <span class="chip-acc-qty">${escapeHtml(accQty)}</span>
                                     </span>
                                 `;
-                            }).join('')}
+            }).join('')}
                             ${accList.length > 2 ? `
                                 <span class="chip-more-count" onclick="openReturnDrawer(${ret.id})">+${accList.length - 2} more item(s)</span>
                             ` : ''}
@@ -359,11 +371,6 @@
                         <button type="button" class="action-icon-btn btn-qr" title="Print Equipment Return Receipt" onclick="printReturnReceipt(${ret.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                         </button>
-                        ${assetsList.length > 0 ? `
-                            <a href="asset_assignment.php?preselect_asset=${encodeURIComponent(assetsList[0].id || '')}" class="action-icon-btn btn-return" title="Re-assign Asset to Employee">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
-                            </a>
-                        ` : ''}
                     </div>
                 </td>
             `;
@@ -679,88 +686,374 @@
     // =========================================================================
     window.printReturnReceipt = function (id) {
         const item = returns.find(r => r.id === id);
-        if (!item) return;
+        if (!item) {
+            showNotification('Return record not found for printing.', 'warning');
+            return;
+        }
+
+        const slipNo = item.slip_no || item.return_slip_no || ('RET-2026-' + String(item.id).padStart(4, '0'));
+        const empName = escapeHtml(item.employee_name || '—');
+        const empCode = escapeHtml(item.emp_code || '—');
+        const empDept = escapeHtml(item.department || '—');
+        const empDesig = escapeHtml(item.designation || 'Staff');
+        const empEmail = escapeHtml(item.employee_email || '—');
+        const empLoc = escapeHtml(item.location || 'Headquarters');
+        const allocType = escapeHtml(item.allocation_type || 'Permanent');
+        const assignedDate = escapeHtml(item.assigned_date || '—');
+        const returnDate = escapeHtml(item.return_date || new Date().toISOString().split('T')[0]);
+        const returnCondition = escapeHtml(item.return_condition || item.condition || 'Good');
+        const storageLocation = escapeHtml(item.storage_location || 'Storage Depot (Rack A-01)');
+        const restockStatus = escapeHtml(item.restock_status || 'Restocked in Depot');
+        const processedBy = escapeHtml(item.processed_by || 'IT Administrator');
+        const notes = escapeHtml(item.inspection_notes || item.return_notes || item.notes || 'Equipment returned in verified condition. Hard drive wiped, data sanitized, and restocked into depot inventory.');
+        const passCount = item.diag_pass_count !== undefined ? item.diag_pass_count : 12;
+        const totalCount = item.diag_total_count || 12;
+        const diagRate = `${passCount} / ${totalCount} Passed`;
+
+        // Hardware Devices Table Rows
+        let assetsList = Array.isArray(item.assets) ? [...item.assets] : [];
+        if (assetsList.length === 0 && (item.asset_tag || item.asset_name)) {
+            assetsList.push({
+                tag: item.asset_tag,
+                name: item.asset_name,
+                category: item.category || 'Hardware',
+                brand: item.brand || '',
+                model: item.model || '',
+                serial: item.serial || '',
+                specs: item.specs || '',
+                condition: item.return_condition || item.condition || 'Good'
+            });
+        }
+
+        let assetsRows = '';
+        if (assetsList.length === 0) {
+            assetsRows = `<tr><td colspan="7" style="text-align: center; padding: 7px; color: #64748b; font-style: italic;">No hardware devices attached to this return.</td></tr>`;
+        } else {
+            assetsRows = assetsList.map((ast, idx) => {
+                const bm = [ast.brand, ast.model].filter(Boolean).join(' ') || '—';
+                return `
+                    <tr>
+                        <td style="text-align: center; width: 30px;">${idx + 1}</td>
+                        <td style="font-family: monospace; font-weight: bold; width: 95px;">${escapeHtml(ast.tag || '—')}</td>
+                        <td>
+                            <strong>${escapeHtml(ast.name || 'Device')}</strong>
+                            ${ast.specs ? `<div style="font-size: 9.5px; color: #555; margin-top: 1px;">${escapeHtml(ast.specs)}</div>` : ''}
+                        </td>
+                        <td style="width: 90px;">${escapeHtml(ast.category || 'Hardware')}</td>
+                        <td style="width: 105px;">${escapeHtml(bm)}</td>
+                        <td style="font-family: monospace; width: 110px;">${escapeHtml(ast.serial || '—')}</td>
+                        <td style="text-align: center; width: 80px;">${escapeHtml(ast.condition || item.return_condition || 'Good')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Accessories Table Rows
+        let accList = Array.isArray(item.accessories) ? [...item.accessories] : [];
+        let accRows = '';
+        if (accList.length === 0) {
+            accRows = `<tr><td colspan="5" style="text-align: center; padding: 7px; color: #64748b; font-style: italic;">No accessories attached to this return.</td></tr>`;
+        } else {
+            accRows = accList.map((ac, idx) => {
+                const acName = typeof ac === 'string' ? ac : (ac.name || 'Accessory Item');
+                const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
+                const acCategory = (typeof ac === 'object' && ac.category) ? ac.category : 'Standard Accessory';
+                return `
+                    <tr>
+                        <td style="text-align: center; width: 30px;">${idx + 1}</td>
+                        <td><strong>${escapeHtml(acName)}</strong></td>
+                        <td style="width: 180px;">${escapeHtml(acCategory)}</td>
+                        <td style="text-align: center; width: 55px; font-weight: bold;">${escapeHtml(String(acQty))}</td>
+                        <td style="text-align: center; width: 85px; color: #059669; font-weight: 600;">Restocked in Depot</td>
+                    </tr>
+                `;
+            }).join('');
+        }
 
         const printHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Equipment Return Receipt - ${item.slip_no}</title>
+    <title>Equipment Return Slip - ${slipNo}</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 25px; color: #1e293b; }
-        .receipt-header { border-bottom: 2px solid #059669; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .receipt-title { font-size: 20px; font-weight: 800; color: #001938; }
-        .receipt-badge { font-family: monospace; font-size: 13px; font-weight: 700; background: #ecfdf5; color: #059669; padding: 4px 10px; border-radius: 6px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 13px; }
-        .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12.5px; }
-        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
-        th { background: #f1f5f9; font-weight: 700; font-size: 11px; text-transform: uppercase; }
-        .sig-section { display: flex; justify-content: space-between; margin-top: 40px; font-size: 12px; }
-        .sig-box { width: 220px; border-top: 1px solid #475569; padding-top: 6px; text-align: center; font-weight: 600; }
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #0f172a;
+            background: #ffffff;
+        }
+        .slip-container {
+            width: 100%;
+            margin: 0 auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 9px;
+            page-break-inside: avoid;
+        }
+        th, td {
+            border: 1px solid #334155;
+            padding: 5px 8px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            text-align: left;
+            font-size: 10.5px;
+            color: #0f172a;
+        }
+        .header-tbl {
+            border: none !important;
+            margin-bottom: 12px;
+        }
+        .header-tbl td {
+            border: none !important;
+            padding: 3px 6px;
+        }
+        .header-logo {
+            width: 22%;
+            text-align: left;
+            vertical-align: middle;
+            border: none !important;
+        }
+        .header-logo img {
+            max-height: 65px;
+            max-width: 160px;
+            object-fit: contain;
+            display: block;
+        }
+        .header-title {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #001938;
+            text-transform: uppercase;
+        }
+        .header-title .sub {
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            margin-top: 1px;
+        }
+        .header-title .doc-name {
+            font-size: 12px;
+            font-weight: 800;
+            margin-top: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            border-top: 1.5px solid #001938;
+            padding-top: 2px;
+            color: #0093A7;
+        }
+        .header-meta {
+            width: 28%;
+            border: none !important;
+            font-size: 10px;
+            line-height: 1.5;
+            vertical-align: middle;
+            text-align: right;
+            background: transparent !important;
+        }
+        .sec-title {
+            background: #f1f5f9;
+            font-weight: 700;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            padding: 3px 7px;
+            border: 1px solid #334155;
+            border-bottom: none;
+            margin-top: 7px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
+        }
+        .lbl {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #334155;
+            width: 18%;
+        }
+        .val {
+            color: #0f172a;
+            width: 32%;
+        }
+        .declaration-box {
+            border: 1px solid #334155;
+            padding: 6px 9px;
+            font-size: 9.5px;
+            color: #334155;
+            background: #f8fafc;
+            margin-top: 7px;
+            line-height: 1.4;
+        }
+        .signatures-tbl {
+            border: 1px solid #334155;
+            border-top: none;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        .signatures-tbl td {
+            border: none;
+            vertical-align: bottom;
+            padding: 22px 10px 8px;
+        }
+        .sig-line {
+            border-top: 1.5px solid #0f172a;
+            padding-top: 3px;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .sig-sub {
+            font-size: 9.5px;
+            color: #64748b;
+            margin-top: 1px;
+        }
     </style>
 </head>
 <body>
-    <div class="receipt-header">
-        <div>
-            <div class="receipt-title">IT Equipment Return & Restock Acknowledgment</div>
-            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">VIROS Portal &bull; Enterprise IT Asset Management</div>
-        </div>
-        <div class="receipt-badge">${escapeHtml(item.slip_no)}</div>
-    </div>
-
-    <div class="info-grid">
-        <div class="info-box">
-            <strong>Returning Employee / Custodian:</strong><br>
-            Name: ${escapeHtml(item.employee_name)}<br>
-            Emp Code: ${escapeHtml(item.emp_code)}<br>
-            Department: ${escapeHtml(item.department)}<br>
-            Designation: ${escapeHtml(item.designation)}
-        </div>
-        <div class="info-box">
-            <strong>Return & Restock Metadata:</strong><br>
-            Return Date: ${escapeHtml(item.return_date)}<br>
-            Initial Handover Date: ${escapeHtml(item.assigned_date)}<br>
-            Inspection Condition: <strong>${escapeHtml(item.return_condition || 'Good')}</strong><br>
-            Restock Status: <strong>Restocked into Available Stock</strong>
-        </div>
-    </div>
-
-    <h4 style="margin: 15px 0 5px 0; font-size: 13px;">Returned Hardware Devices:</h4>
-    <table>
-        <thead>
+    <div class="slip-container">
+        <!-- Document Header Table -->
+        <table class="header-tbl">
             <tr>
-                <th>#</th>
-                <th>Asset Tag</th>
-                <th>Device Name</th>
-                <th>Category</th>
-                <th>Serial Number</th>
-                <th>Restock Status</th>
+                <td class="header-logo">
+                    <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 65px; max-width: 160px; object-fit: contain;">
+                </td>
+                <td class="header-title">
+                    <h1>VIROS PORTAL</h1>
+                    <div class="sub">IT Asset Management & Helpdesk</div>
+                    <div class="doc-name">EQUIPMENT RETURN NOC SLIP</div>
+                </td>
+                <td class="header-meta">
+                    <div><strong>Return Slip:</strong> <span style="font-family: monospace; font-weight: 700;">${slipNo}</span></div>
+                    <div><strong>Return Date:</strong> ${returnDate}</div>
+                    <div><strong>Status:</strong> <span style="font-weight: 700;">${restockStatus.toUpperCase()}</span></div>
+                    <div><strong>Type:</strong> ${allocType}</div>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            ${(item.assets || []).map((a, i) => `
-                <tr>
-                    <td>${i + 1}</td>
-                    <td style="font-family: monospace; font-weight: bold;">${escapeHtml(a.tag)}</td>
-                    <td>${escapeHtml(a.name)}</td>
-                    <td>${escapeHtml(a.category || 'Hardware')}</td>
-                    <td style="font-family: monospace;">${escapeHtml(a.serial || '—')}</td>
-                    <td style="color: #059669; font-weight: bold;">Restocked in Depot</td>
-                </tr>
-            `).join('')}
-        </tbody>
-    </table>
+        </table>
 
-    <div class="sig-section">
-        <div class="sig-box">
-            Employee Signature<br>
-            <span style="font-size: 10.5px; color: #64748b;">(${escapeHtml(item.employee_name)})</span>
+        <!-- 1. Relinquishing Custodian / Employee Information -->
+        <div class="sec-title">1. Relinquishing Custodian / Employee Information</div>
+        <table>
+            <tr>
+                <td class="lbl">Employee Name</td>
+                <td class="val"><strong>${empName}</strong></td>
+                <td class="lbl">Employee ID</td>
+                <td class="val" style="font-family: monospace; font-weight: 700;">${empCode}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Designation / Role</td>
+                <td class="val">${empDesig}</td>
+                <td class="lbl">Department</td>
+                <td class="val">${empDept}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Email Address</td>
+                <td class="val">${empEmail}</td>
+                <td class="lbl">Branch / Location</td>
+                <td class="val">${empLoc}</td>
+            </tr>
+        </table>
+
+        <!-- 2. Returned Hardware Assets -->
+        <div class="sec-title">2. Returned Hardware Assets (${assetsList.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px; text-align: center;">#</th>
+                    <th style="width: 95px;">Asset Tag</th>
+                    <th>Device Name & Specs</th>
+                    <th style="width: 90px;">Category</th>
+                    <th style="width: 105px;">Brand & Model</th>
+                    <th style="width: 110px;">Serial Number</th>
+                    <th style="width: 80px; text-align: center;">Condition</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${assetsRows}
+            </tbody>
+        </table>
+
+        <!-- 3. Returned Accessories -->
+        <div class="sec-title">3. Returned Accessories & Peripherals (${accList.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px; text-align: center;">#</th>
+                    <th>Accessory Item</th>
+                    <th style="width: 180px;">Category / Classification</th>
+                    <th style="width: 55px; text-align: center;">Qty</th>
+                    <th style="width: 85px; text-align: center;">Restock Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${accRows}
+            </tbody>
+        </table>
+
+        <!-- 4. Restock Diagnostic & Warehouse Check-In -->
+        <div class="sec-title">4. Restock Diagnostic & Warehouse Check-In</div>
+        <table>
+            <tr>
+                <td class="lbl">Initial Handover</td>
+                <td class="val">${assignedDate}</td>
+                <td class="lbl">Return Date</td>
+                <td class="val">${returnDate}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Returned Condition</td>
+                <td class="val"><strong>${returnCondition}</strong></td>
+                <td class="lbl">Storage Depot Location</td>
+                <td class="val">${storageLocation}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Diagnostic Quality</td>
+                <td class="val"><strong>${diagRate}</strong></td>
+                <td class="lbl">Received & Inspected By</td>
+                <td class="val">${processedBy}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Diagnostic & Inspection Notes</td>
+                <td class="val" colspan="3">${notes}</td>
+            </tr>
+        </table>
+
+        <!-- 5. Declaration & Signatures -->
+        <div class="declaration-box">
+            <strong>Official Custody Relinquishment & Check-In Acknowledgment:</strong> I hereby certify that the hardware assets and accessories specified above have been returned to the IT storage depot. The equipment has been inspected, sanitized, and custody is formally released. The IT Asset Management Department acknowledges receipt and restocks the verified devices into inventory.
         </div>
-        <div class="sig-box">
-            IT Receiving Officer Seal<br>
-            <span style="font-size: 10.5px; color: #64748b;">(Storage Depot Custodian)</span>
-        </div>
+        <table class="signatures-tbl">
+            <tr>
+                <td style="width: 50%;">
+                    <div class="sig-line">Relinquishing Employee Signature</div>
+                    <div class="sig-sub">${empName} (${empCode}) &bull; Date: _____________</div>
+                </td>
+                <td style="width: 50%; text-align: right;">
+                    <div class="sig-line">IT Warehouse Official / Seal</div>
+                    <div class="sig-sub">${processedBy} &bull; Storage Depot &bull; Date: _____________</div>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>`;
@@ -787,8 +1080,11 @@
         setTimeout(() => {
             iframe.contentWindow.focus();
             iframe.contentWindow.print();
-        }, 250);
+        }, 200);
     };
+
+    // Expose print function globally
+    window.directPrintReturnSlip = window.printReturnReceipt;
 
     // =========================================================================
     // EVENT BINDINGS
@@ -1407,6 +1703,13 @@
                                 res.message || 'Equipment returned successfully and checked into available inventory stock!',
                                 'success'
                             );
+
+                            const printSlipId = (res.return_id || newReturnRecord.id);
+                            if (printSlipId) {
+                                setTimeout(() => {
+                                    window.printReturnReceipt(printSlipId);
+                                }, 300);
+                            }
                         } else {
                             showNotification(res.message || 'Failed to process equipment return.', 'danger');
                         }

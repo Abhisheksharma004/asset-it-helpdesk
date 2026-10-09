@@ -94,7 +94,7 @@ if (isset($conn) && $conn !== false) {
                           total_assets, total_accessories, assets_json, accessories_json,
                           handover_by, notes
                    FROM asset_assignments
-                   WHERE custody_status != 'Returned'
+                   WHERE custody_status NOT IN ('Returned', 'Transferred') AND custody_status NOT LIKE '%Transferred%'
                    ORDER BY id DESC";
 
     $allocStmt = sqlsrv_query($conn, $allocQuery);
@@ -245,6 +245,11 @@ foreach ($activeAllocations as $alloc) {
         }
     }
 }
+
+// Keep only source custodians who actually hold hardware equipment or accessories
+$activeCustodians = array_values(array_filter($activeCustodians, function ($cust) {
+    return (count($cust['all_assets']) > 0 || count($cust['all_accessories']) > 0);
+}));
 
 // 5. Fetch Active Asset Transfers from dedicated asset_transfers table
 $transfersList = [];
@@ -908,7 +913,7 @@ include 'includes/topbar.php';
                 <polyline points="16 3 21 3 21 8"></polyline>
                 <line x1="4" y1="20" x2="21" y2="3"></line>
             </svg>
-            Transfer Slip: <span id="drawerTransferSlipTitle" style="color: #4f46e5; margin-left: 4px;">TRF-2026-0001</span>
+            Transfer Slip: <span id="drawerTransferSlipTitle" style="color: var(--cyan-primary); margin-left: 4px;">TRF-2026-0001</span>
         </h3>
         <button type="button" class="modal-close-btn" id="closeTransferDrawerBtn">&times;</button>
     </div>
