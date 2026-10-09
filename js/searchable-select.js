@@ -35,7 +35,7 @@
             // Create wrapper
             const wrapper = document.createElement('div');
             wrapper.className = 'custom-select-wrapper';
-            if (select.classList.contains('filter-select') || select.classList.contains('asset-filter-select')) {
+            if (select.classList.contains('filter-select') || select.classList.contains('asset-filter-select') || select.classList.contains('return-filter-select')) {
                 wrapper.classList.add('is-filter-select');
             }
             if (select.id) {
