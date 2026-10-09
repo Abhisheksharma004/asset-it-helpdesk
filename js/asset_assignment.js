@@ -8,7 +8,7 @@
 
     // In-memory assignment dataset
     let assignments = (typeof window !== 'undefined' && Array.isArray(window.INITIAL_ASSIGNMENTS))
-        ? window.INITIAL_ASSIGNMENTS
+        ? window.INITIAL_ASSIGNMENTS.filter(a => a.custody_status !== 'Returned')
         : [];
 
     let availableAssets = (typeof window !== 'undefined' && Array.isArray(window.AVAILABLE_ASSETS))
@@ -119,6 +119,9 @@
 
     function getFilteredAssignments() {
         return assignments.filter(item => {
+            // Do not show returned records in this active allocations table
+            if (item.custody_status === 'Returned') return false;
+
             // Tab filter
             if (selectedTab === 'permanent' && item.allocation_type !== 'Permanent') return false;
             if (selectedTab === 'temporary' && item.allocation_type !== 'Temporary Loaner') return false;
@@ -126,7 +129,6 @@
             if (selectedTab === 'due_soon') {
                 if (item.custody_status !== 'Due Soon' && item.custody_status !== 'Overdue') return false;
             }
-            if (selectedTab === 'returned' && item.custody_status !== 'Returned') return false;
 
             // Department filter
             if (selectedDept !== 'all' && item.department !== selectedDept) return false;
@@ -328,18 +330,6 @@
                         <button type="button" class="action-icon-btn btn-view" title="View Custody Details & Handover Slip" onclick="openAssignmentDrawer(${item.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                         </button>
-                        ${item.custody_status === 'Returned' ? `
-                            <button type="button" class="action-icon-btn btn-returned-disabled" title="Asset returned and checked-in back to stock" disabled style="opacity: 0.5; cursor: not-allowed; background: #ecfdf5; color: #059669; border-color: #a7f3d0;">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            </button>
-                        ` : `
-                            <button type="button" class="action-icon-btn btn-return" title="Return Asset (Check-In to Inventory Stock)" onclick="openReturnModal(${item.id})">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
-                            </button>
-                        `}
-                        <button type="button" class="action-icon-btn btn-transfer" title="Transfer to Another Custodian" onclick="openTransferModal(${item.id})">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
-                        </button>
                         <button type="button" class="action-icon-btn btn-qr" title="Print Handover Slip Receipt" onclick="openSlipModal(${item.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                         </button>
@@ -361,12 +351,10 @@
         let totalAccCount = 0;
 
         assignments.forEach(a => {
-            if (a.custody_status !== 'Returned') {
-                totalAssetsCount += a.total_assets || (Array.isArray(a.assets) ? a.assets.length : 0);
-                totalAccCount += a.total_accessories || (Array.isArray(a.accessories) ? a.accessories.length : 0);
-            } else {
-                returned++;
-            }
+            if (a.custody_status === 'Returned') return;
+
+            totalAssetsCount += a.total_assets || (Array.isArray(a.assets) ? a.assets.length : 0);
+            totalAccCount += a.total_accessories || (Array.isArray(a.accessories) ? a.accessories.length : 0);
 
             if (a.allocation_type === 'Permanent') permanent++;
             else if (a.allocation_type === 'Temporary Loaner') temporary++;
@@ -1167,13 +1155,6 @@
                 return;
             }
 
-            if (batchSelectedAssets.length === 0) {
-                switchAssignStep('assets');
-                showNotification('Please add at least one hardware asset to the allocation list.', 'danger');
-                const assetSelect = document.getElementById('assignAssetSelect');
-                if (assetSelect) assetSelect.focus();
-                return;
-            }
 
             const policyCheck = document.getElementById('assignPolicyCheck');
             if (policyCheck && !policyCheck.checked) {

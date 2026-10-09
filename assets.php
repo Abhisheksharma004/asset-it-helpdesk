@@ -457,37 +457,6 @@ include 'includes/topbar.php';
         </div>
     </div>
 
-    <!-- Status Tabs Navigation -->
-    <div class="asset-status-tabs">
-        <button type="button" class="status-tab-btn active" data-status="all">
-            All Assets
-            <span class="status-tab-badge" id="tabBadgeAll"><?php echo $stats['total']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-status="in-use">
-            In Use
-            <span class="status-tab-badge" id="tabBadgeInUse"><?php echo $stats['in_use']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-status="available">
-            Available / In Stock
-            <span class="status-tab-badge" id="tabBadgeAvail"><?php echo $stats['available']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-status="maintenance">
-            Under Maintenance
-            <span class="status-tab-badge" id="tabBadgeMaint"><?php echo $stats['maintenance']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-status="expiring" title="Assets with warranty expiring in next 30 days">
-            Warranty Expiring
-            <span class="status-tab-badge" id="tabBadgeExpiring" style="background: #ea580c; color: #fff;"><?php echo $stats['expiring_soon']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-status="reserved">
-            Reserved
-            <span class="status-tab-badge" id="tabBadgeRes"><?php echo $stats['reserved']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-status="retired">
-            Retired / Disposed
-            <span class="status-tab-badge" id="tabBadgeRet"><?php echo $stats['retired']; ?></span>
-        </button>
-    </div>
 
     <!-- Toolbar: Search, Filters & View Toggle -->
     <div class="asset-toolbar">

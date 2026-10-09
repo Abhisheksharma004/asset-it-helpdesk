@@ -124,6 +124,7 @@ if (isset($conn) && $conn !== false) {
                                                 total_assets, total_accessories, assets_json, accessories_json,
                                                 handover_by, agreement_signed, notes, return_notes
                                          FROM asset_assignments
+                                         WHERE custody_status != 'Returned'
                                          ORDER BY id DESC");
     if ($assignedStmt !== false) {
         while ($row = sqlsrv_fetch_array($assignedStmt, SQLSRV_FETCH_ASSOC)) {
@@ -216,12 +217,8 @@ $stats = [
 ];
 
 foreach ($initialAssignments as $item) {
-    if ($item['custody_status'] !== 'Returned') {
-        $stats['total_assets'] += $item['total_assets'];
-        $stats['total_accessories'] += $item['total_accessories'];
-    } else {
-        $stats['returned']++;
-    }
+    $stats['total_assets'] += $item['total_assets'];
+    $stats['total_accessories'] += $item['total_accessories'];
 
     $type = $item['allocation_type'];
     if ($type === 'Permanent') {
@@ -369,33 +366,6 @@ include 'includes/topbar.php';
         </div>
     </div>
 
-    <!-- Allocation Status Navigation Tabs -->
-    <div class="asset-status-tabs">
-        <button type="button" class="status-tab-btn active" data-tab="all">
-            All Allocations
-            <span class="status-tab-badge" id="tabCountAll"><?php echo $stats['total']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="permanent">
-            Permanent
-            <span class="status-tab-badge" id="tabCountPermanent"><?php echo $stats['permanent']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="temporary">
-            Temporary / Loaner
-            <span class="status-tab-badge" id="tabCountTemporary"><?php echo $stats['temporary']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="remote">
-            Remote / WFH
-            <span class="status-tab-badge" id="tabCountRemote"><?php echo $stats['remote']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="due_soon" style="border-left: 2px solid #fdba74;">
-            Due Soon / Overdue
-            <span class="status-tab-badge" id="tabCountDueSoon" style="background: #ea580c; color: #fff;"><?php echo $stats['due_soon']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="returned" style="border-left: 2px solid #a7f3d0;">
-            Returned to Stock
-            <span class="status-tab-badge" id="tabCountReturned" style="background: #059669; color: #fff;"><?php echo $stats['returned']; ?></span>
-        </button>
-    </div>
 
     <!-- Search & Filter Toolbar -->
     <div class="asset-toolbar" style="margin-bottom: 16px;">
@@ -611,18 +581,6 @@ include 'includes/topbar.php';
                                 <div class="action-buttons-wrap" style="justify-content: flex-end; padding-right: 6px;">
                                     <button type="button" class="action-icon-btn btn-view" title="View Custody Details & Handover Slip" onclick="openAssignmentDrawer(<?php echo $row['id']; ?>)">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                    </button>
-                                    <?php if ($row['custody_status'] === 'Returned'): ?>
-                                        <button type="button" class="action-icon-btn btn-returned-disabled" title="Asset returned and checked-in back to stock" disabled style="opacity: 0.5; cursor: not-allowed; background: #ecfdf5; color: #059669; border-color: #a7f3d0;">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                        </button>
-                                    <?php else: ?>
-                                        <button type="button" class="action-icon-btn btn-return" title="Return Asset (Check-In to Inventory Stock)" onclick="openReturnModal(<?php echo $row['id']; ?>)">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
-                                        </button>
-                                    <?php endif; ?>
-                                    <button type="button" class="action-icon-btn btn-transfer" title="Transfer to Another Custodian" onclick="openTransferModal(<?php echo $row['id']; ?>)">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
                                     </button>
                                     <button type="button" class="action-icon-btn btn-qr" title="Print Handover Slip Receipt" onclick="openSlipModal(<?php echo $row['id']; ?>)">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -921,7 +879,7 @@ include 'includes/topbar.php';
                 <!-- Tab Pane 2: Asset Detail -->
                 <div class="modal-tab-pane" id="modal_pane_assets">
                     <div class="modal-form-group">
-                        <label for="assignAssetSelect">Choose In-Stock Asset to Add *</label>
+                        <label for="assignAssetSelect">Choose In-Stock Asset to Add</label>
                         <div class="batch-asset-picker-row">
                             <select id="assignAssetSelect">
                                 <option value="">-- Choose In-Stock Asset to Add --</option>

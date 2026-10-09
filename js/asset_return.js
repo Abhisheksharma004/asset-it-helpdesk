@@ -520,10 +520,21 @@
         if (dCondition) dCondition.textContent = item.return_condition || item.condition || 'Good';
 
         const dAllocType = document.getElementById('drawerAllocType');
-        if (dAllocType) dAllocType.textContent = item.allocation_type;
+        if (dAllocType) dAllocType.textContent = item.allocation_type || 'Permanent';
+
+        const dLoc = document.getElementById('drawerLocation');
+        if (dLoc) dLoc.textContent = item.storage_location || 'Storage Depot (Rack A-01)';
+
+        const dDiagRate = document.getElementById('drawerDiagRate');
+        if (dDiagRate) {
+            const passCount = item.diag_pass_count !== undefined ? item.diag_pass_count : 12;
+            const totalCount = item.diag_total_count || 12;
+            dDiagRate.textContent = `${passCount} / ${totalCount} Passed`;
+            dDiagRate.style.color = (passCount === totalCount) ? '#059669' : '#ea580c';
+        }
 
         const dNotes = document.getElementById('drawerNotes');
-        if (dNotes) dNotes.textContent = item.return_notes || item.notes || 'Equipment returned in good condition.';
+        if (dNotes) dNotes.textContent = item.inspection_notes || item.return_notes || item.notes || 'Equipment returned in good condition.';
 
         // Hardware Devices
         const devWrap = document.getElementById('drawerDevicesWrap');
@@ -1154,6 +1165,22 @@
                     submitBtn.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:6px;"></span> Restocking...';
                 }
 
+                const diagChecklistValues = {
+                    diag_power_boot: document.getElementById('chkPower')?.checked ? 1 : 0,
+                    diag_display: document.getElementById('chkDisplay')?.checked ? 1 : 0,
+                    diag_battery: document.getElementById('chkBattery')?.checked ? 1 : 0,
+                    diag_keyboard_trackpad: document.getElementById('chkKeyboard')?.checked ? 1 : 0,
+                    diag_ports_audio: document.getElementById('chkPorts')?.checked ? 1 : 0,
+                    diag_connectivity: document.getElementById('chkConnectivity')?.checked ? 1 : 0,
+                    diag_storage_wiped: document.getElementById('chkWipe')?.checked ? 1 : 0,
+                    diag_locks_removed: document.getElementById('chkLocks')?.checked ? 1 : 0,
+                    diag_data_backup: document.getElementById('chkBackup')?.checked ? 1 : 0,
+                    diag_body_hinges: document.getElementById('chkChassis')?.checked ? 1 : 0,
+                    diag_oem_charger: document.getElementById('chkCharger')?.checked ? 1 : 0,
+                    diag_asset_tag: document.getElementById('chkAssetTag')?.checked ? 1 : 0
+                };
+                const custodianSignoff = document.getElementById('returnPolicyCheck')?.checked ? 1 : 0;
+
                 fetch('api/asset_assignment.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1164,6 +1191,11 @@
                         return_condition: retCond,
                         storage_location: retDepot,
                         return_notes: retNotes,
+                        inspection_notes: customNotes || '',
+                        checklist: diagChecklistValues,
+                        diag_pass_count: passedDiag,
+                        diag_total_count: totalDiag,
+                        custodian_signoff: custodianSignoff,
                         returned_asset_ids: checkedAssetElements.map(c => c.value),
                         returned_accessories: checkedAccElements.map(c => c.value)
                     })
@@ -1180,9 +1212,17 @@
 
                             if (movedItem) {
                                 movedItem.custody_status = 'Returned';
+                                movedItem.return_slip_no = res.return_slip_no || ('RET-' + movedItem.slip_no);
+                                movedItem.slip_no = res.return_slip_no || movedItem.slip_no;
+                                movedItem.original_slip_no = movedItem.slip_no;
                                 movedItem.return_date = retDate;
                                 movedItem.return_condition = retCond;
+                                movedItem.storage_location = retDepot;
                                 movedItem.return_notes = retNotes;
+                                movedItem.inspection_notes = customNotes || '';
+                                movedItem.diag_pass_count = passedDiag;
+                                movedItem.diag_total_count = totalDiag;
+                                movedItem.checklist = diagChecklistValues;
                                 returns.unshift(movedItem);
 
                                 // Remove from active select dropdown

@@ -50,7 +50,82 @@ if (isset($conn) && $conn !== false) {
         sqlsrv_free_stmt($stockStmt);
     }
 
-    // 4. Fetch all allocations to segregate into Returned and Currently Active
+    // 4. Fetch processed returns from dedicated asset_returns table
+    $seenAssignmentIds = [];
+    $returnsSql = "SELECT id, return_slip_no, assignment_id, original_slip_no,
+                          employee_id, employee_name, emp_code, department, designation, allocation_type,
+                          CONVERT(VARCHAR(10), assigned_date, 120) AS assigned_date,
+                          CONVERT(VARCHAR(10), return_date, 120) AS return_date,
+                          storage_location, return_condition, restock_status,
+                          diag_power_boot, diag_display, diag_battery, diag_keyboard_trackpad, diag_ports_audio, diag_connectivity,
+                          diag_storage_wiped, diag_locks_removed, diag_data_backup, diag_body_hinges, diag_oem_charger, diag_asset_tag,
+                          diag_pass_count, diag_total_count, diag_checklist_json,
+                          total_returned_assets, total_returned_accessories,
+                          returned_assets_json, returned_accessories_json,
+                          inspection_notes, custodian_signoff, processed_by,
+                          CONVERT(VARCHAR(19), created_at, 120) AS created_at
+                   FROM asset_returns
+                   ORDER BY id DESC";
+    $retStmt = sqlsrv_query($conn, $returnsSql);
+    if ($retStmt !== false) {
+        while ($r = sqlsrv_fetch_array($retStmt, SQLSRV_FETCH_ASSOC)) {
+            $assetsList = !empty($r['returned_assets_json']) ? (json_decode($r['returned_assets_json'], true) ?: []) : [];
+            $accList = !empty($r['returned_accessories_json']) ? (json_decode($r['returned_accessories_json'], true) ?: []) : [];
+            $chkList = !empty($r['diag_checklist_json']) ? (json_decode($r['diag_checklist_json'], true) ?: []) : [];
+
+            if (!empty($r['assignment_id'])) {
+                $seenAssignmentIds[] = intval($r['assignment_id']);
+            }
+
+            $returnedAllocations[] = [
+                'id'                 => intval($r['id']),
+                'return_slip_no'     => $r['return_slip_no'],
+                'slip_no'            => $r['return_slip_no'],
+                'original_slip_no'   => $r['original_slip_no'],
+                'assignment_id'      => $r['assignment_id'] ? intval($r['assignment_id']) : null,
+                'employee_id'        => $r['employee_id'] ? intval($r['employee_id']) : null,
+                'employee_name'      => $r['employee_name'],
+                'emp_code'           => $r['emp_code'] ?? 'EMP-0000',
+                'department'         => $r['department'] ?? 'General',
+                'designation'        => $r['designation'] ?? 'Staff',
+                'allocation_type'    => $r['allocation_type'] ?? 'Permanent',
+                'assigned_date'      => $r['assigned_date'] ?? '-',
+                'return_date'        => $r['return_date'],
+                'storage_location'   => $r['storage_location'] ?? 'Storage Depot',
+                'custody_status'     => 'Returned',
+                'return_condition'   => $r['return_condition'] ?? 'Good',
+                'restock_status'     => $r['restock_status'] ?? 'Restocked in Stock',
+                'diag_pass_count'    => intval($r['diag_pass_count'] ?? 12),
+                'diag_total_count'   => intval($r['diag_total_count'] ?? 12),
+                'checklist'          => $chkList,
+                'diag_flags'         => [
+                    'power'        => (bool)$r['diag_power_boot'],
+                    'display'      => (bool)$r['diag_display'],
+                    'battery'      => (bool)$r['diag_battery'],
+                    'keyboard'     => (bool)$r['diag_keyboard_trackpad'],
+                    'ports'        => (bool)$r['diag_ports_audio'],
+                    'connectivity' => (bool)$r['diag_connectivity'],
+                    'wipe'         => (bool)$r['diag_storage_wiped'],
+                    'locks'        => (bool)$r['diag_locks_removed'],
+                    'backup'       => (bool)$r['diag_data_backup'],
+                    'chassis'      => (bool)$r['diag_body_hinges'],
+                    'charger'      => (bool)$r['diag_oem_charger'],
+                    'tag'          => (bool)$r['diag_asset_tag']
+                ],
+                'total_assets'       => intval($r['total_returned_assets']),
+                'total_accessories'  => intval($r['total_returned_accessories']),
+                'assets'             => $assetsList,
+                'accessories'        => $accList,
+                'inspection_notes'   => $r['inspection_notes'] ?? '',
+                'return_notes'       => $r['inspection_notes'] ?? 'Equipment inspected and returned.',
+                'processed_by'       => $r['processed_by'] ?? 'IT Administrator',
+                'created_at'         => $r['created_at']
+            ];
+        }
+        sqlsrv_free_stmt($retStmt);
+    }
+
+    // 5. Fetch all allocations to get Active assignments and legacy returns
     $allocQuery = "SELECT id, slip_no, asset_id, asset_tag, asset_name, category, brand, model, serial, specs,
                           employee_id, employee_name, emp_code, employee_email, department, designation, location,
                           CONVERT(VARCHAR(10), assigned_date, 120) AS assigned_date,
@@ -112,6 +187,7 @@ if (isset($conn) && $conn !== false) {
             $item = [
                 'id'                => intval($row['id']),
                 'slip_no'           => $row['slip_no'],
+                'original_slip_no'  => $row['slip_no'],
                 'employee_id'       => $row['employee_id'] ? intval($row['employee_id']) : null,
                 'employee_name'     => $row['employee_name'],
                 'emp_code'          => $row['emp_code'] ?? 'EMP-0000',
@@ -136,7 +212,9 @@ if (isset($conn) && $conn !== false) {
             ];
 
             if ($row['custody_status'] === 'Returned') {
-                $returnedAllocations[] = $item;
+                if (!in_array(intval($row['id']), $seenAssignmentIds)) {
+                    $returnedAllocations[] = $item;
+                }
             } else {
                 $activeAllocations[] = $item;
             }
@@ -201,10 +279,10 @@ include 'includes/topbar.php';
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Export CSV
             </button>
-            <a href="asset_assignment.php" class="btn-secondary" title="Go to Asset Assignment Workspace">
+            <button type="button" class="btn-secondary" onclick="window.location.href='asset_assignment.php'" title="Go to Asset Assignment Workspace">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
-                Assign Asset
-            </a>
+                <span>Assign Asset</span>
+            </button>
             <button type="button" class="btn-primary" id="openProcessReturnBtn" title="Process new hardware return from employee">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="9 14 4 9 9 4"></polyline>
@@ -285,25 +363,6 @@ include 'includes/topbar.php';
         </div>
     </div>
 
-    <!-- Return Status Navigation Tabs -->
-    <div class="asset-status-tabs">
-        <button type="button" class="status-tab-btn active" data-tab="all">
-            All Return Receipts
-            <span class="status-tab-badge" id="tabCountAll"><?php echo $returnStats['total_returned']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="restocked" style="border-left: 2px solid #a7f3d0;">
-            Restocked in Stock
-            <span class="status-tab-badge" id="tabCountRestocked" style="background: #059669; color: #fff;"><?php echo $returnStats['restocked_good']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="repair" style="border-left: 2px solid #fdba74;">
-            Needs Repair / Service
-            <span class="status-tab-badge" id="tabCountRepair" style="background: #ea580c; color: #fff;"><?php echo $returnStats['needs_repair']; ?></span>
-        </button>
-        <button type="button" class="status-tab-btn" data-tab="pending_custody" style="border-left: 2px solid #cbd5e1;">
-            Active Loaners Pending Return
-            <span class="status-tab-badge" id="tabCountPending"><?php echo $returnStats['active_custodians']; ?></span>
-        </button>
-    </div>
 
     <!-- Search & Filter Toolbar -->
     <div class="asset-toolbar" style="margin-bottom: 16px;">
@@ -852,6 +911,14 @@ include 'includes/topbar.php';
                 <div class="drawer-spec-item">
                     <div class="label">Allocation Type</div>
                     <div class="value" id="drawerAllocType">-</div>
+                </div>
+                <div class="drawer-spec-item">
+                    <div class="label">Depot Storage Shelf</div>
+                    <div class="value" id="drawerLocation">-</div>
+                </div>
+                <div class="drawer-spec-item">
+                    <div class="label">Diagnostic Quality</div>
+                    <div class="value" id="drawerDiagRate" style="color: #059669; font-weight: 700;">12 / 12 Passed</div>
                 </div>
             </div>
         </div>

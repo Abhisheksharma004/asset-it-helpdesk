@@ -34,8 +34,9 @@
     line-height: 1.5;
 }
 
-.return-header-actions {
-    display: flex;
+.return-header-actions,
+.header-action-group {
+    display: inline-flex;
     align-items: center;
     gap: 10px;
 }
