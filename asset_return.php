@@ -223,12 +223,62 @@ if (isset($conn) && $conn !== false) {
     }
 }
 
+// Compute unique active custodians grouping all their slips, assets & accessories
+$activeCustodians = [];
+foreach ($activeAllocations as $alloc) {
+    $empKey = !empty($alloc['emp_code']) ? $alloc['emp_code'] : ($alloc['employee_id'] ? 'ID_'.$alloc['employee_id'] : $alloc['employee_name']);
+    if (!isset($activeCustodians[$empKey])) {
+        $activeCustodians[$empKey] = [
+            'emp_key'        => $empKey,
+            'employee_id'    => $alloc['employee_id'],
+            'employee_name'  => $alloc['employee_name'],
+            'emp_code'       => $alloc['emp_code'],
+            'employee_email' => $alloc['employee_email'] ?? '',
+            'department'     => $alloc['department'],
+            'designation'    => $alloc['designation'],
+            'location'       => $alloc['location'] ?? 'Corporate HQ',
+            'allocation_type'=> $alloc['allocation_type'] ?? 'Permanent',
+            'assigned_date'  => $alloc['assigned_date'],
+            'alloc_ids'      => [],
+            'slips'          => [],
+            'all_assets'     => [],
+            'all_accessories'=> []
+        ];
+    }
+    if (!in_array($alloc['id'], $activeCustodians[$empKey]['alloc_ids'])) {
+        $activeCustodians[$empKey]['alloc_ids'][] = $alloc['id'];
+    }
+    if (!in_array($alloc['slip_no'], $activeCustodians[$empKey]['slips'])) {
+        $activeCustodians[$empKey]['slips'][] = $alloc['slip_no'];
+    }
+    foreach ($alloc['assets'] as $ast) {
+        $ast['slip_no'] = $alloc['slip_no'];
+        $ast['alloc_id'] = $alloc['id'];
+        $activeCustodians[$empKey]['all_assets'][] = $ast;
+    }
+    foreach ($alloc['accessories'] as $acc) {
+        if (is_array($acc)) {
+            $acc['slip_no'] = $alloc['slip_no'];
+            $acc['alloc_id'] = $alloc['id'];
+            $activeCustodians[$empKey]['all_accessories'][] = $acc;
+        } else {
+            $activeCustodians[$empKey]['all_accessories'][] = [
+                'name'     => $acc,
+                'qty'      => 1,
+                'category' => 'Accessories',
+                'slip_no'  => $alloc['slip_no'],
+                'alloc_id' => $alloc['id']
+            ];
+        }
+    }
+}
+
 // Compute live return metrics
 $returnStats = [
     'total_returned'     => count($returnedAllocations),
     'restocked_good'     => 0,
     'needs_repair'       => 0,
-    'active_custodians'  => count($activeAllocations),
+    'active_custodians'  => count($activeCustodians),
     'available_stock'    => $availableStockCount
 ];
 
@@ -631,30 +681,29 @@ include 'includes/topbar.php';
                 
                 <!-- Tab Pane 1: Custodian & Return Details -->
                 <div class="modal-tab-pane active" id="modal_pane_custodian">
-                    <!-- Choose active allocation to return -->
+                    <!-- Choose employee custodian to return from -->
                     <div class="modal-form-group" style="margin-bottom: 14px;">
-                        <label for="selectActiveAlloc">Choose Active Allocation / Employee Custodian *</label>
+                        <label for="selectActiveAlloc">Choose Active Employee Custodian *</label>
                         <select id="selectActiveAlloc" required style="width: 100%;">
-                            <option value="">-- Select Handover Slip / Employee --</option>
-                            <?php foreach ($activeAllocations as $act): ?>
-                                <option value="<?php echo $act['id']; ?>"
-                                        data-slip="<?php echo htmlspecialchars($act['slip_no']); ?>"
-                                        data-emp="<?php echo htmlspecialchars($act['employee_name']); ?>"
-                                        data-code="<?php echo htmlspecialchars($act['emp_code']); ?>"
-                                        data-dept="<?php echo htmlspecialchars($act['department']); ?>"
-                                        data-desig="<?php echo htmlspecialchars($act['designation'] ?? 'Staff'); ?>"
-                                        data-type="<?php echo htmlspecialchars($act['allocation_type'] ?? 'Permanent'); ?>"
-                                        data-date="<?php echo htmlspecialchars($act['assigned_date'] ?? ''); ?>"
-                                        data-notes="<?php echo htmlspecialchars($act['notes'] ?? ''); ?>"
-                                        data-assets='<?php echo json_encode($act['assets'], JSON_HEX_APOS | JSON_HEX_QUOT); ?>'
-                                        data-acc='<?php echo json_encode($act['accessories'], JSON_HEX_APOS | JSON_HEX_QUOT); ?>'>
-                                    <?php echo htmlspecialchars($act['slip_no']); ?> • <?php echo htmlspecialchars($act['employee_name']); ?> (<?php echo htmlspecialchars($act['emp_code']); ?> - <?php echo htmlspecialchars($act['department']); ?>)
+                            <option value="">-- Select Employee Custodian --</option>
+                            <?php foreach ($activeCustodians as $cust): ?>
+                                <option value="<?php echo htmlspecialchars($cust['emp_key']); ?>"
+                                        data-emp-key="<?php echo htmlspecialchars($cust['emp_key']); ?>"
+                                        data-emp-name="<?php echo htmlspecialchars($cust['employee_name']); ?>"
+                                        data-emp-code="<?php echo htmlspecialchars($cust['emp_code']); ?>"
+                                        data-dept="<?php echo htmlspecialchars($cust['department']); ?>"
+                                        data-desig="<?php echo htmlspecialchars($cust['designation'] ?? 'Staff'); ?>"
+                                        data-slips='<?php echo json_encode($cust['slips'], JSON_HEX_APOS | JSON_HEX_QUOT); ?>'
+                                        data-alloc-ids='<?php echo json_encode($cust['alloc_ids'], JSON_HEX_APOS | JSON_HEX_QUOT); ?>'
+                                        data-assets='<?php echo json_encode($cust['all_assets'], JSON_HEX_APOS | JSON_HEX_QUOT); ?>'
+                                        data-acc='<?php echo json_encode($cust['all_accessories'], JSON_HEX_APOS | JSON_HEX_QUOT); ?>'>
+                                    <?php echo htmlspecialchars($cust['employee_name']); ?> (<?php echo htmlspecialchars($cust['emp_code']); ?> • <?php echo htmlspecialchars($cust['department']); ?>) — <?php echo count($cust['slips']); ?> Slip(s) (<?php echo count($cust['all_assets']); ?> Assets, <?php echo count($cust['all_accessories']); ?> Acc)
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
 
-                    <!-- Live Custodian Card Preview (Matches empPreviewBox in assignAssetModal) -->
+                    <!-- Live Custodian Card Preview -->
                     <div class="preview-summary-card" id="allocPreviewBox" style="display: none; margin-bottom: 16px;">
                         <div class="preview-summary-title">Custodian Summary</div>
                         <div style="display: flex; align-items: center; gap: 14px;">
@@ -663,11 +712,12 @@ include 'includes/topbar.php';
                                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                     <span style="font-size: 14.5px; font-weight: 700; color: var(--navy-primary);" id="previewEmpName">-</span>
                                     <span class="emp-code-badge" id="previewEmpCode">-</span>
-                                    <span class="alloc-pill permanent" id="previewAllocType">Permanent</span>
+                                    <span class="alloc-pill permanent" id="previewAllocType">Active Custodian</span>
                                 </div>
                                 <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;" id="previewEmpMeta">-</div>
-                                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
-                                    Handover Slip: <span class="slip-badge" id="previewSlipBadge" style="padding: 1px 6px; font-size: 11px;">-</span> • <span id="previewHandoverDate">Assigned: -</span>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span>Active Slips:</span>
+                                    <div id="previewSlipsBadges" style="display: inline-flex; gap: 4px; flex-wrap: wrap;"></div>
                                 </div>
                             </div>
                         </div>
@@ -701,11 +751,12 @@ include 'includes/topbar.php';
                                         <th style="width: 36px; text-align: center;">
                                             <input type="checkbox" id="selectAllReturnItems" checked title="Select All">
                                         </th>
+                                        <th style="width: 130px;">Handover Slip</th>
                                         <th>Item &amp; Description</th>
-                                        <th style="width: 90px; text-align: center;">Type</th>
-                                        <th style="width: 155px;">Tag / Serial No</th>
+                                        <th style="width: 85px; text-align: center;">Type</th>
+                                        <th style="width: 145px;">Tag / Serial No</th>
                                         <th style="width: 50px; text-align: center;">Qty</th>
-                                        <th style="width: 100px; text-align: center;">Status</th>
+                                        <th style="width: 85px; text-align: center;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="previewItemsTbody">
@@ -948,6 +999,7 @@ include 'includes/topbar.php';
 <script>
     window.RETURNED_DATA = <?php echo json_encode($returnedAllocations, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     window.ACTIVE_DATA = <?php echo json_encode($activeAllocations, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    window.ACTIVE_CUSTODIANS = <?php echo json_encode(array_values($activeCustodians), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 </script>
 
 <?php

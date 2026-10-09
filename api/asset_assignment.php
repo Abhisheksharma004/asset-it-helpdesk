@@ -586,26 +586,55 @@ if ($action === 'assign' || $action === 'create') {
 // -----------------------------------------------------------------------------
 if ($action === 'return') {
     $allocId = isset($_POST['alloc_id']) ? intval($_POST['alloc_id']) : (isset($input['alloc_id']) ? intval($input['alloc_id']) : 0);
+    $allocIds = [];
+    if (!empty($input['alloc_ids']) && is_array($input['alloc_ids'])) {
+        $allocIds = array_map('intval', $input['alloc_ids']);
+    } elseif (!empty($_POST['alloc_ids']) && is_array($_POST['alloc_ids'])) {
+        $allocIds = array_map('intval', $_POST['alloc_ids']);
+    } elseif ($allocId > 0) {
+        $allocIds = [$allocId];
+    }
+    if (empty($allocIds) && $allocId > 0) {
+        $allocIds = [$allocId];
+    }
+    if ($allocId <= 0 && !empty($allocIds)) {
+        $allocId = $allocIds[0];
+    }
+
     $returnDate = trim($_POST['return_date'] ?? $input['return_date'] ?? date('Y-m-d'));
     $returnCondition = trim($_POST['return_condition'] ?? $input['return_condition'] ?? 'Good');
     $storageLocation = trim($_POST['storage_location'] ?? $input['storage_location'] ?? 'Storage Depot (Rack A-01)');
     $returnNotes = trim($_POST['return_notes'] ?? $input['return_notes'] ?? 'Equipment checked-in and verified.');
 
-    if ($allocId <= 0) {
+    if ($allocId <= 0 && empty($allocIds)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid allocation ID.']);
+        echo json_encode(['success' => false, 'message' => 'Invalid allocation or custodian selection.']);
         exit;
     }
 
-    $stmt = sqlsrv_query($conn, "SELECT id, slip_no, asset_id, asset_tag, asset_name, category, brand, model, serial, specs, employee_id, employee_name, emp_code, employee_email, department, designation, location, allocation_type, CONVERT(VARCHAR(10), assigned_date, 120) AS assigned_date, assets_json, accessories_json, custody_status FROM asset_assignments WHERE id = ?", [$allocId]);
-    $alloc = ($stmt !== false) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
-    if ($stmt !== false) sqlsrv_free_stmt($stmt);
+    // Fetch all related allocation records
+    $inPlaceholders = implode(',', array_fill(0, count($allocIds), '?'));
+    $stmt = sqlsrv_query($conn, "SELECT id, slip_no, asset_id, asset_tag, asset_name, category, brand, model, serial, specs, employee_id, employee_name, emp_code, employee_email, department, designation, location, allocation_type, CONVERT(VARCHAR(10), assigned_date, 120) AS assigned_date, assets_json, accessories_json, custody_status FROM asset_assignments WHERE id IN ($inPlaceholders)", $allocIds);
+    $allocsList = [];
+    $allSlips = [];
+    if ($stmt !== false) {
+        while ($aRow = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $allocsList[] = $aRow;
+            if (!in_array($aRow['slip_no'], $allSlips)) {
+                $allSlips[] = $aRow['slip_no'];
+            }
+        }
+        sqlsrv_free_stmt($stmt);
+    }
 
-    if (!$alloc) {
+    if (empty($allocsList)) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Allocation record not found.']);
+        echo json_encode(['success' => false, 'message' => 'Allocation record(s) not found.']);
         exit;
     }
+
+    $alloc = $allocsList[0];
+    $combinedSlips = implode(', ', $allSlips);
 
     // Diagnostic Checklist & Sign-off values from Form
     $checklist = $input['checklist'] ?? $_POST['checklist'] ?? [];
@@ -635,59 +664,96 @@ if ($action === 'return') {
         ? 'Under Service / Repair' 
         : 'Restocked to Stock';
 
-    // Filter requested assets to return
+    // Detailed returned assets
+    $returnedAssetsInput = $input['returned_assets'] ?? $_POST['returned_assets'] ?? [];
     $returnedAssetIds = $input['returned_asset_ids'] ?? $_POST['returned_asset_ids'] ?? [];
     if (!is_array($returnedAssetIds)) $returnedAssetIds = [];
     $returnedAssetIds = array_map('intval', $returnedAssetIds);
 
-    // Filter requested accessories to return
-    $returnedAccNames = $input['returned_accessories'] ?? $_POST['returned_accessories'] ?? [];
-    if (!is_array($returnedAccNames)) $returnedAccNames = [];
-
-    // All assigned assets
-    $allAssets = [];
-    if (!empty($alloc['assets_json'])) {
-        $allAssets = json_decode($alloc['assets_json'], true) ?: [];
-    }
-    if (empty($allAssets) && !empty($alloc['asset_id'])) {
-        $allAssets[] = [
-            'id'       => intval($alloc['asset_id']),
-            'tag'      => $alloc['asset_tag'] ?? '',
-            'name'     => $alloc['asset_name'] ?? '',
-            'category' => $alloc['category'] ?? '',
-            'brand'    => $alloc['brand'] ?? '',
-            'model'    => $alloc['model'] ?? '',
-            'serial'   => $alloc['serial'] ?? '',
-            'specs'    => $alloc['specs'] ?? ''
-        ];
-    }
-
-    // Specific returned assets
+    // Build complete returnedAssetsList
     $returnedAssetsList = [];
-    foreach ($allAssets as $ast) {
-        $astId = intval($ast['id'] ?? 0);
-        if (empty($returnedAssetIds) || in_array($astId, $returnedAssetIds)) {
-            $returnedAssetsList[] = $ast;
+    if (!empty($returnedAssetsInput) && is_array($returnedAssetsInput)) {
+        foreach ($returnedAssetsInput as $rAst) {
+            $rId = intval($rAst['id'] ?? 0);
+            $returnedAssetsList[] = [
+                'id'       => $rId,
+                'tag'      => $rAst['tag'] ?? '',
+                'name'     => $rAst['name'] ?? '',
+                'category' => $rAst['category'] ?? 'Hardware',
+                'brand'    => $rAst['brand'] ?? '',
+                'model'    => $rAst['model'] ?? '',
+                'serial'   => $rAst['serial'] ?? '—',
+                'specs'    => $rAst['specs'] ?? '',
+                'slip_no'  => $rAst['slip_no'] ?? ($alloc['slip_no'] ?? '')
+            ];
+            if ($rId > 0 && !in_array($rId, $returnedAssetIds)) {
+                $returnedAssetIds[] = $rId;
+            }
         }
-    }
-    if (empty($returnedAssetsList)) {
-        $returnedAssetsList = $allAssets;
+    } else {
+        // Fallback from all allocations
+        foreach ($allocsList as $aItem) {
+            $aAssets = json_decode($aItem['assets_json'] ?? '[]', true) ?: [];
+            if (empty($aAssets) && !empty($aItem['asset_id'])) {
+                $aAssets[] = [
+                    'id'       => intval($aItem['asset_id']),
+                    'tag'      => $aItem['asset_tag'] ?? '',
+                    'name'     => $aItem['asset_name'] ?? '',
+                    'category' => $aItem['category'] ?? '',
+                    'brand'    => $aItem['brand'] ?? '',
+                    'model'    => $aItem['model'] ?? '',
+                    'serial'   => $aItem['serial'] ?? '',
+                    'specs'    => $aItem['specs'] ?? ''
+                ];
+            }
+            foreach ($aAssets as $ast) {
+                $astId = intval($ast['id'] ?? 0);
+                if (empty($returnedAssetIds) || in_array($astId, $returnedAssetIds)) {
+                    $ast['slip_no'] = $aItem['slip_no'];
+                    $returnedAssetsList[] = $ast;
+                }
+            }
+        }
     }
 
-    // Specific returned accessories
-    $allAccs = [];
-    if (!empty($alloc['accessories_json'])) {
-        $allAccs = json_decode($alloc['accessories_json'], true) ?: [];
-    }
+    // Detailed returned accessories
+    $returnedAccInput = $input['returned_accessories'] ?? $_POST['returned_accessories'] ?? [];
     $returnedAccList = [];
-    foreach ($allAccs as $ac) {
-        $acName = is_array($ac) ? ($ac['name'] ?? '') : (string)$ac;
-        if (empty($returnedAccNames) || in_array($acName, $returnedAccNames)) {
-            $returnedAccList[] = $ac;
+    if (!empty($returnedAccInput) && is_array($returnedAccInput)) {
+        foreach ($returnedAccInput as $rAcc) {
+            if (is_array($rAcc)) {
+                $returnedAccList[] = [
+                    'name'     => $rAcc['name'] ?? 'Accessory',
+                    'qty'      => intval($rAcc['qty'] ?? 1),
+                    'category' => $rAcc['category'] ?? 'Accessories',
+                    'slip_no'  => $rAcc['slip_no'] ?? ($alloc['slip_no'] ?? '')
+                ];
+            } else {
+                $returnedAccList[] = [
+                    'name'     => (string)$rAcc,
+                    'qty'      => 1,
+                    'category' => 'Accessories',
+                    'slip_no'  => $alloc['slip_no'] ?? ''
+                ];
+            }
         }
-    }
-    if (empty($returnedAccList) && !empty($allAccs)) {
-        $returnedAccList = $allAccs;
+    } else {
+        foreach ($allocsList as $aItem) {
+            $aAccs = json_decode($aItem['accessories_json'] ?? '[]', true) ?: [];
+            foreach ($aAccs as $ac) {
+                if (is_array($ac)) {
+                    $ac['slip_no'] = $aItem['slip_no'];
+                    $returnedAccList[] = $ac;
+                } else {
+                    $returnedAccList[] = [
+                        'name'     => (string)$ac,
+                        'qty'      => 1,
+                        'category' => 'Accessories',
+                        'slip_no'  => $aItem['slip_no']
+                    ];
+                }
+            }
+        }
     }
 
     $totalReturnedAssets = count($returnedAssetsList);
@@ -728,7 +794,7 @@ if ($action === 'return') {
                )";
 
     $retParams = [
-        $returnSlipNo, $allocId, $alloc['slip_no'],
+        $returnSlipNo, $allocId, $combinedSlips,
         $alloc['employee_id'], $alloc['employee_name'], $alloc['emp_code'], $alloc['department'], $alloc['designation'], $alloc['allocation_type'], $alloc['assigned_date'],
         $returnDate, $storageLocation, $returnCondition, $restockStatus,
         $chkPower, $chkDisplay, $chkBattery, $chkKeyboard, $chkPorts, $chkConn,
@@ -750,14 +816,16 @@ if ($action === 'return') {
         exit;
     }
 
-    // 3. Mark custody_status = 'Returned' in asset_assignments
-    $updAlloc = sqlsrv_query($conn, "UPDATE asset_assignments 
-                                     SET custody_status = 'Returned',
-                                         return_date = ?,
-                                         return_condition = ?,
-                                         return_notes = ?,
-                                         updated_at = GETDATE()
-                                     WHERE id = ?", [$returnDate, $returnCondition, $returnNotes, $allocId]);
+    // 3. Mark custody_status = 'Returned' in all affected asset_assignments
+    foreach ($allocIds as $aId) {
+        sqlsrv_query($conn, "UPDATE asset_assignments 
+                             SET custody_status = 'Returned',
+                                 return_date = ?,
+                                 return_condition = ?,
+                                 return_notes = ?,
+                                 updated_at = GETDATE()
+                             WHERE id = ?", [$returnDate, $returnCondition, $returnNotes, $aId]);
+    }
 
     // 4. Restore returned assets to 'Available' in assets table
     $assetStatus = (strpos($condLower, 'repair') !== false) ? 'Maintenance' : ((strpos($condLower, 'damag') !== false) ? 'Damaged' : 'Available');

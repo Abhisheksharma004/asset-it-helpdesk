@@ -8,6 +8,7 @@
 
     let returns = Array.isArray(window.RETURNED_DATA) ? window.RETURNED_DATA : [];
     let activeAllocations = Array.isArray(window.ACTIVE_DATA) ? window.ACTIVE_DATA : [];
+    let activeCustodians = Array.isArray(window.ACTIVE_CUSTODIANS) ? window.ACTIVE_CUSTODIANS : [];
 
     // Filter states
     let searchTerm = '';
@@ -76,6 +77,46 @@
         } else {
             alert(msg);
         }
+    }
+
+    function getActiveCustodiansList() {
+        if (activeCustodians && activeCustodians.length > 0) return activeCustodians;
+        const map = {};
+        activeAllocations.forEach(alloc => {
+            const key = alloc.emp_code || (alloc.employee_id ? 'ID_' + alloc.employee_id : alloc.employee_name);
+            if (!map[key]) {
+                map[key] = {
+                    emp_key: key,
+                    employee_id: alloc.employee_id,
+                    employee_name: alloc.employee_name,
+                    emp_code: alloc.emp_code,
+                    employee_email: alloc.employee_email,
+                    department: alloc.department,
+                    designation: alloc.designation,
+                    location: alloc.location,
+                    allocation_type: alloc.allocation_type,
+                    assigned_date: alloc.assigned_date,
+                    alloc_ids: [],
+                    slips: [],
+                    all_assets: [],
+                    all_accessories: []
+                };
+            }
+            if (!map[key].alloc_ids.includes(alloc.id)) map[key].alloc_ids.push(alloc.id);
+            if (!map[key].slips.includes(alloc.slip_no)) map[key].slips.push(alloc.slip_no);
+            (alloc.assets || []).forEach(a => {
+                map[key].all_assets.push({ ...a, slip_no: alloc.slip_no, alloc_id: alloc.id });
+            });
+            (alloc.accessories || []).forEach(acc => {
+                if (typeof acc === 'object') {
+                    map[key].all_accessories.push({ ...acc, slip_no: alloc.slip_no, alloc_id: alloc.id });
+                } else {
+                    map[key].all_accessories.push({ name: acc, qty: 1, category: 'Accessories', slip_no: alloc.slip_no, alloc_id: alloc.id });
+                }
+            });
+        });
+        activeCustodians = Object.values(map);
+        return activeCustodians;
     }
 
     function openModal(modal) {
@@ -621,8 +662,15 @@
         window.switchReturnModalTab('custodian');
         openModal(processReturnModal);
         if (selectActiveAlloc) {
-            selectActiveAlloc.value = allocId;
-            selectActiveAlloc.dispatchEvent(new Event('change'));
+            const custodians = getActiveCustodiansList();
+            const targetCust = custodians.find(c => c.alloc_ids && c.alloc_ids.includes(allocId));
+            if (targetCust) {
+                selectActiveAlloc.value = targetCust.emp_key;
+                selectActiveAlloc.dispatchEvent(new Event('change'));
+            } else {
+                selectActiveAlloc.value = allocId;
+                selectActiveAlloc.dispatchEvent(new Event('change'));
+            }
         }
     };
 
@@ -850,7 +898,7 @@
             });
         }
 
-        // When active allocation is chosen in return modal
+        // When employee custodian is chosen in return modal
         if (selectActiveAlloc) {
             selectActiveAlloc.addEventListener('change', function () {
                 const val = this.value;
@@ -859,59 +907,65 @@
                     return;
                 }
 
-                // Look up in activeAllocations or option datasets
-                const allocId = parseInt(val, 10);
-                const alloc = activeAllocations.find(a => a.id === allocId);
+                // Look up in activeCustodians list or option datasets
+                const custodians = getActiveCustodiansList();
+                const cust = custodians.find(c => c.emp_key === val || c.emp_code === val);
                 const opt = this.selectedOptions[0];
 
-                const slip = (alloc && alloc.slip_no) || (opt && opt.dataset.slip) || 'SLIP';
-                const emp = (alloc && alloc.employee_name) || (opt && opt.dataset.emp) || 'Staff';
-                const code = (alloc && alloc.emp_code) || (opt && opt.dataset.code) || 'EMP';
-                const dept = (alloc && alloc.department) || (opt && opt.dataset.dept) || 'General';
-                const desig = (alloc && alloc.designation) || (opt && opt.dataset.desig) || 'Employee';
-                const allocType = (alloc && alloc.allocation_type) || (opt && opt.dataset.type) || 'Permanent';
-                const assignedDate = (alloc && alloc.assigned_date) || (opt && opt.dataset.date) || '-';
-                const notes = (alloc && alloc.notes) || (opt && opt.dataset.notes) || '';
+                const empName = (cust && cust.employee_name) || (opt && opt.dataset.empName) || 'Employee';
+                const empCode = (cust && cust.emp_code) || (opt && opt.dataset.empCode) || 'EMP';
+                const dept = (cust && cust.department) || (opt && opt.dataset.dept) || 'General';
+                const desig = (cust && cust.designation) || (opt && opt.dataset.desig) || 'Staff';
+
+                let slips = [];
+                if (cust && Array.isArray(cust.slips)) {
+                    slips = cust.slips;
+                } else if (opt && opt.dataset.slips) {
+                    try { slips = JSON.parse(opt.dataset.slips); } catch (e) { slips = []; }
+                }
 
                 let assets = [];
-                if (alloc && Array.isArray(alloc.assets)) {
-                    assets = alloc.assets;
+                if (cust && Array.isArray(cust.all_assets)) {
+                    assets = cust.all_assets;
                 } else if (opt && opt.dataset.assets) {
                     try { assets = JSON.parse(opt.dataset.assets); } catch (e) { assets = []; }
                 }
 
                 let accessories = [];
-                if (alloc && Array.isArray(alloc.accessories)) {
-                    accessories = alloc.accessories;
+                if (cust && Array.isArray(cust.all_accessories)) {
+                    accessories = cust.all_accessories;
                 } else if (opt && opt.dataset.acc) {
                     try { accessories = JSON.parse(opt.dataset.acc); } catch (e) { accessories = []; }
                 }
 
                 // Preview DOM references
-                const pSlip = document.getElementById('previewSlipBadge');
+                const pSlipsBadges = document.getElementById('previewSlipsBadges');
                 const pCode = document.getElementById('previewEmpCode');
                 const pType = document.getElementById('previewAllocType');
-                const pDate = document.getElementById('previewHandoverDate');
                 const pName = document.getElementById('previewEmpName');
                 const pMeta = document.getElementById('previewEmpMeta');
                 const pAvatar = document.getElementById('previewEmpAvatar');
                 const tabItemBadge = document.getElementById('returnTabItemBadge');
                 const pTbody = document.getElementById('previewItemsTbody');
-                const pNotesWrap = document.getElementById('previewNotesWrap');
-                const pNotesText = document.getElementById('previewNotesText');
                 const selectAllChk = document.getElementById('selectAllReturnItems');
                 const selectionSummary = document.getElementById('previewSelectionSummary');
 
-                if (pSlip) pSlip.textContent = slip;
-                if (pCode) pCode.textContent = code;
-                if (pType) pType.textContent = allocType;
-                if (pDate) pDate.textContent = `Assigned Date: ${assignedDate}`;
-                if (pName) pName.textContent = emp;
+                if (pCode) pCode.textContent = empCode;
+                if (pType) pType.textContent = `${slips.length} Active Slip(s)`;
+                if (pName) pName.textContent = empName;
                 if (pMeta) pMeta.textContent = `${dept} • ${desig}`;
 
+                if (pSlipsBadges) {
+                    if (slips.length > 0) {
+                        pSlipsBadges.innerHTML = slips.map(s => `<span class="slip-badge" style="background:#e0f2fe;color:#0284c7;font-weight:700;font-size:11px;padding:2px 7px;border-radius:4px;border:1px solid #bae6fd;">${escapeHtml(s)}</span>`).join('');
+                    } else {
+                        pSlipsBadges.innerHTML = '<span style="color:#94a3b8;font-style:italic;">No active slips</span>';
+                    }
+                }
+
                 if (pAvatar) {
-                    pAvatar.textContent = getInitials(emp);
-                    pAvatar.style.background = getAvatarColor(emp);
+                    pAvatar.textContent = getInitials(empName);
+                    pAvatar.style.background = getAvatarColor(empName);
                 }
 
                 const totalItemsCount = assets.length + accessories.length;
@@ -952,7 +1006,7 @@
                     }
                 }
 
-                // Render Table Rows for All Assets and Accessories
+                // Render Table Rows for All Assets and Accessories across all slips
                 if (pTbody) {
                     pTbody.innerHTML = '';
                     const totalRows = assets.length + accessories.length;
@@ -960,20 +1014,36 @@
                     if (totalRows === 0) {
                         pTbody.innerHTML = `
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12.5px; font-style: italic;">
-                                    No hardware assets or accessories attached to this slip.
+                                <td colspan="7" style="text-align: center; padding: 22px; color: var(--text-muted); font-size: 13px; font-style: italic;">
+                                    No hardware assets or accessories currently assigned to this employee.
                                 </td>
                             </tr>
                         `;
                     } else {
-                        // 1. Hardware Devices Rows
+                        // 1. Hardware Devices Rows (with Handover Slip column)
                         assets.forEach((a, idx) => {
                             const tr = document.createElement('tr');
                             tr.className = 'return-item-row is-checked';
                             tr.id = `row_asset_${a.id || idx}`;
+                            const aSlip = a.slip_no || 'SLIP';
                             tr.innerHTML = `
                                 <td style="text-align: center;">
-                                    <input type="checkbox" class="return-item-check check-asset" value="${a.id}" data-tag="${escapeHtml(a.tag)}" checked>
+                                    <input type="checkbox" class="return-item-check check-asset" 
+                                        value="${a.id}" 
+                                        data-tag="${escapeHtml(a.tag || '')}" 
+                                        data-name="${escapeHtml(a.name || '')}"
+                                        data-category="${escapeHtml(a.category || '')}"
+                                        data-brand="${escapeHtml(a.brand || '')}"
+                                        data-model="${escapeHtml(a.model || '')}"
+                                        data-serial="${escapeHtml(a.serial || '')}"
+                                        data-slip="${escapeHtml(aSlip)}"
+                                        data-alloc-id="${a.alloc_id || ''}"
+                                        checked>
+                                </td>
+                                <td>
+                                    <span class="slip-badge" style="background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:4px;font-weight:700;font-size:11px;border:1px solid #bae6fd;display:inline-block;">
+                                        ${escapeHtml(aSlip)}
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="item-main-title">${escapeHtml(a.name || 'Hardware Asset')}</div>
@@ -994,18 +1064,31 @@
                             pTbody.appendChild(tr);
                         });
 
-                        // 2. Accessories Rows
+                        // 2. Accessories Rows (with Handover Slip column)
                         accessories.forEach((ac, idx) => {
                             const acName = typeof ac === 'string' ? ac : (ac.name || ac.accessory_name || 'Item');
                             const acQty = (typeof ac === 'object' && ac.qty) ? ac.qty : 1;
                             const acCat = (typeof ac === 'object' && ac.category) ? ac.category : '';
+                            const acSlip = (typeof ac === 'object' && ac.slip_no) ? ac.slip_no : 'SLIP';
+                            const acAllocId = (typeof ac === 'object' && ac.alloc_id) ? ac.alloc_id : '';
 
                             const tr = document.createElement('tr');
                             tr.className = 'return-item-row is-checked';
                             tr.id = `row_acc_${idx}`;
                             tr.innerHTML = `
                                 <td style="text-align: center;">
-                                    <input type="checkbox" class="return-item-check check-acc" value="${escapeHtml(acName)}" data-qty="${escapeHtml(acQty)}" checked>
+                                    <input type="checkbox" class="return-item-check check-acc" 
+                                        value="${escapeHtml(acName)}" 
+                                        data-qty="${escapeHtml(acQty)}" 
+                                        data-category="${escapeHtml(acCat)}"
+                                        data-slip="${escapeHtml(acSlip)}"
+                                        data-alloc-id="${escapeHtml(acAllocId)}"
+                                        checked>
+                                </td>
+                                <td>
+                                    <span class="slip-badge" style="background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:4px;font-weight:700;font-size:11px;border:1px solid #cbd5e1;display:inline-block;">
+                                        ${escapeHtml(acSlip)}
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="item-main-title">${escapeHtml(acName)}</div>
@@ -1100,17 +1183,6 @@
                 }
 
                 updateChecklistSummary();
-
-                // Render Original Notes
-                if (pNotesWrap && pNotesText) {
-                    if (notes && notes.trim().length > 0) {
-                        pNotesText.textContent = notes;
-                        pNotesWrap.style.display = 'block';
-                    } else {
-                        pNotesWrap.style.display = 'none';
-                    }
-                }
-
                 if (allocPreviewBox) allocPreviewBox.style.display = 'block';
             });
         }
@@ -1119,11 +1191,14 @@
         if (processReturnForm) {
             processReturnForm.addEventListener('submit', function (e) {
                 e.preventDefault();
-                const allocId = parseInt(selectActiveAlloc ? selectActiveAlloc.value : 0, 10);
-                if (!allocId) {
-                    showNotification('Please select an active handover allocation to return.', 'warning');
+                const selectedEmpKey = selectActiveAlloc ? selectActiveAlloc.value : '';
+                if (!selectedEmpKey) {
+                    showNotification('Please select an active employee custodian to return equipment from.', 'warning');
                     return;
                 }
+
+                const custodians = getActiveCustodiansList();
+                const cust = custodians.find(c => c.emp_key === selectedEmpKey || c.emp_code === selectedEmpKey);
 
                 // Check that at least one item is selected for return
                 const checkedAssetElements = Array.from(document.querySelectorAll('#previewItemsTbody .check-asset:checked'));
@@ -1135,10 +1210,47 @@
                     return;
                 }
 
+                // Collect affected alloc_ids and detailed objects
+                const affectedAllocIdsSet = new Set();
+                const returnedAssetsPayload = [];
+                checkedAssetElements.forEach(c => {
+                    const aId = parseInt(c.dataset.allocId || 0, 10);
+                    if (aId) affectedAllocIdsSet.add(aId);
+                    returnedAssetsPayload.push({
+                        id: parseInt(c.value, 10),
+                        tag: c.dataset.tag || '',
+                        name: c.dataset.name || '',
+                        category: c.dataset.category || 'Hardware',
+                        brand: c.dataset.brand || '',
+                        model: c.dataset.model || '',
+                        serial: c.dataset.serial || '',
+                        slip_no: c.dataset.slip || '',
+                        alloc_id: aId
+                    });
+                });
+
+                const returnedAccPayload = [];
+                checkedAccElements.forEach(c => {
+                    const aId = parseInt(c.dataset.allocId || 0, 10);
+                    if (aId) affectedAllocIdsSet.add(aId);
+                    returnedAccPayload.push({
+                        name: c.value,
+                        qty: parseInt(c.dataset.qty || 1, 10),
+                        category: c.dataset.category || 'Accessories',
+                        slip_no: c.dataset.slip || '',
+                        alloc_id: aId
+                    });
+                });
+
+                let affectedAllocIds = Array.from(affectedAllocIdsSet);
+                if (affectedAllocIds.length === 0 && cust && Array.isArray(cust.alloc_ids)) {
+                    affectedAllocIds = cust.alloc_ids.map(id => parseInt(id, 10));
+                }
+
                 const retDate = document.getElementById('modalReturnDate')?.value || new Date().toISOString().split('T')[0];
                 const retCond = document.getElementById('modalReturnCondition')?.value || 'Good';
                 const retDepot = document.getElementById('modalStorageDepot')?.value || 'Storage Depot (Rack A-01)';
-                
+
                 // Diagnostic check result compilation
                 const allDiagChecks = Array.from(document.querySelectorAll('.diag-check'));
                 const totalDiag = allDiagChecks.length;
@@ -1154,7 +1266,7 @@
                     }
                 }
 
-                const checkedAssetTags = checkedAssetElements.map(c => c.dataset.tag).filter(Boolean);
+                const checkedAssetTags = returnedAssetsPayload.map(c => c.tag).filter(Boolean);
                 const itemsReport = `Checked-in: ${checkedAssetElements.length} device(s)${checkedAssetTags.length ? ' (' + checkedAssetTags.join(', ') + ')' : ''}, ${checkedAccElements.length} accessory item(s).`;
                 const customNotes = document.getElementById('modalReturnNotes')?.value?.trim();
                 const retNotes = customNotes ? `${customNotes} | ${diagReport} ${itemsReport}` : `${diagReport} Condition: ${retCond}. Placed in ${retDepot}. ${itemsReport}`;
@@ -1186,7 +1298,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'return',
-                        alloc_id: allocId,
+                        alloc_ids: affectedAllocIds,
+                        alloc_id: affectedAllocIds[0] || 0,
                         return_date: retDate,
                         return_condition: retCond,
                         storage_location: retDepot,
@@ -1196,42 +1309,50 @@
                         diag_pass_count: passedDiag,
                         diag_total_count: totalDiag,
                         custodian_signoff: custodianSignoff,
-                        returned_asset_ids: checkedAssetElements.map(c => c.value),
-                        returned_accessories: checkedAccElements.map(c => c.value)
+                        returned_asset_ids: checkedAssetElements.map(c => parseInt(c.value, 10)),
+                        returned_assets: returnedAssetsPayload,
+                        returned_accessories: returnedAccPayload
                     })
                 })
                     .then(res => res.json())
                     .then(res => {
                         if (res.success) {
-                            // Find allocation in activeAllocations
-                            const foundIdx = activeAllocations.findIndex(a => a.id === allocId);
-                            let movedItem = null;
-                            if (foundIdx >= 0) {
-                                movedItem = activeAllocations.splice(foundIdx, 1)[0];
-                            }
+                            const newReturnRecord = {
+                                id: res.return_id || Date.now(),
+                                slip_no: res.return_slip_no || ('RET-' + (cust ? (cust.slips[0] || 'SLIP') : 'SLIP')),
+                                return_slip_no: res.return_slip_no || ('RET-' + (cust ? (cust.slips[0] || 'SLIP') : 'SLIP')),
+                                original_slip_no: (cust && cust.slips) ? cust.slips.join(', ') : 'SLIP',
+                                employee_name: cust ? cust.employee_name : 'Staff',
+                                emp_code: cust ? cust.emp_code : 'EMP',
+                                department: cust ? cust.department : 'General',
+                                designation: cust ? cust.designation : 'Staff',
+                                allocation_type: cust ? cust.allocation_type || 'Permanent' : 'Permanent',
+                                assigned_date: cust ? (cust.assigned_date || retDate) : retDate,
+                                return_date: retDate,
+                                return_condition: retCond,
+                                storage_location: retDepot,
+                                return_notes: retNotes,
+                                inspection_notes: customNotes || '',
+                                diag_pass_count: passedDiag,
+                                diag_total_count: totalDiag,
+                                checklist: diagChecklistValues,
+                                custody_status: 'Returned',
+                                assets: returnedAssetsPayload,
+                                accessories: returnedAccPayload
+                            };
+                            returns.unshift(newReturnRecord);
 
-                            if (movedItem) {
-                                movedItem.custody_status = 'Returned';
-                                movedItem.return_slip_no = res.return_slip_no || ('RET-' + movedItem.slip_no);
-                                movedItem.slip_no = res.return_slip_no || movedItem.slip_no;
-                                movedItem.original_slip_no = movedItem.slip_no;
-                                movedItem.return_date = retDate;
-                                movedItem.return_condition = retCond;
-                                movedItem.storage_location = retDepot;
-                                movedItem.return_notes = retNotes;
-                                movedItem.inspection_notes = customNotes || '';
-                                movedItem.diag_pass_count = passedDiag;
-                                movedItem.diag_total_count = totalDiag;
-                                movedItem.checklist = diagChecklistValues;
-                                returns.unshift(movedItem);
+                            // Remove affected allocations from activeAllocations
+                            activeAllocations = activeAllocations.filter(a => !affectedAllocIds.includes(a.id));
+                            // Re-filter activeCustodians
+                            activeCustodians = activeCustodians.filter(c => c.emp_key !== selectedEmpKey);
 
-                                // Remove from active select dropdown
-                                if (selectActiveAlloc) {
-                                    const optToRemove = selectActiveAlloc.querySelector(`option[value="${allocId}"]`);
-                                    if (optToRemove) optToRemove.remove();
-                                    selectActiveAlloc.value = '';
-                                    if (allocPreviewBox) allocPreviewBox.style.display = 'none';
-                                }
+                            // Remove from active select dropdown
+                            if (selectActiveAlloc) {
+                                const optToRemove = selectActiveAlloc.querySelector(`option[value="${selectedEmpKey}"]`);
+                                if (optToRemove) optToRemove.remove();
+                                selectActiveAlloc.value = '';
+                                if (allocPreviewBox) allocPreviewBox.style.display = 'none';
                             }
 
                             // Update in-stock count
