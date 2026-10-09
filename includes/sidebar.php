@@ -100,11 +100,6 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                         <span>Employee Master</span>
                     </a>
                 </li>
-                <li>
-                    <a href="#master-status" class="submenu-link <?php echo ($active_page === 'master_status') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Status & Priority Master')">
-                        <span>Status & Priority</span>
-                    </a>
-                </li>
             </ul>
         </li>
 
@@ -157,25 +152,15 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                     </a>
                 </li>
                 <li>
-                    <a href="#asset-repair" class="submenu-link <?php echo ($active_page === 'asset_repair') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Repair')">
-                        <span>Asset Repair</span>
-                    </a>
-                </li>
-                <li>
                     <a href="#software-licenses" class="submenu-link <?php echo in_array($active_page, ['software', 'software_licenses']) ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Software & Licenses')">
                         <span>Software Licenses</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#asset-barcode" class="submenu-link <?php echo ($active_page === 'asset_barcode') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Label & Barcode Management')">
-                        <span>Asset Label & Barcode</span>
                     </a>
                 </li>
             </ul>
         </li>
 
         <!-- Inventory Stock (Single Item) -->
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a href="#inventory" class="nav-link <?php echo ($active_page === 'inventory') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Inventory Stock')">
                 <span class="nav-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -186,7 +171,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                 </span>
                 <span class="nav-text">Inventory Stock</span>
             </a>
-        </li>
+        </li> -->
 
         <!-- DROPDOWN 2: Support Tickets -->
         <li class="nav-item nav-item-dropdown <?php echo $is_tickets_open ? 'open' : ''; ?>">
@@ -228,7 +213,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
         </li>
 
         <!-- Maintenance & AMC (Single Item) -->
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a href="#maintenance" class="nav-link <?php echo ($active_page === 'maintenance') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Maintenance & AMC')">
                 <span class="nav-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -237,7 +222,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
                 </span>
                 <span class="nav-text">Maintenance & AMC</span>
             </a>
-        </li>
+        </li> -->
 
         <!-- DROPDOWN 3: Reports & Analytics -->
         <li class="nav-item nav-item-dropdown <?php echo $is_reports_open ? 'open' : ''; ?>">
