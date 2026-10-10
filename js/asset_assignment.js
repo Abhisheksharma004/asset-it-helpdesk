@@ -1318,11 +1318,6 @@
         const kpiAvail = document.getElementById('kpiAvailableAssets');
         if (kpiAvail) kpiAvail.textContent = availableAssets.length;
 
-        // Also refresh in-stock modal if open
-        if (typeof renderInStockModalTable === 'function') {
-            const inStockSearch = document.getElementById('inStockSearchInput');
-            renderInStockModalTable(inStockSearch ? inStockSearch.value : '');
-        }
     };
 
     // Quick Assign an In-Stock Asset directly to an employee
@@ -2124,106 +2119,6 @@
             });
         });
 
-        // In-Stock Assets Modal Controller
-        const inStockModal = document.getElementById('availableAssetsModal');
-        const inStockSearchInput = document.getElementById('inStockSearchInput');
-        const inStockTbody = document.getElementById('inStockAssetsTbody');
-        const inStockCountText = document.getElementById('inStockModalCountText');
-
-        window.renderInStockModalTable = function (filterText = '') {
-            if (!inStockTbody) return;
-            inStockTbody.innerHTML = '';
-
-            const q = (filterText || '').trim().toLowerCase();
-            const filtered = availableAssets.filter(a => {
-                if (!q) return true;
-                return (a.tag && a.tag.toLowerCase().includes(q)) ||
-                    (a.name && a.name.toLowerCase().includes(q)) ||
-                    (a.category && a.category.toLowerCase().includes(q)) ||
-                    (a.serial && a.serial.toLowerCase().includes(q)) ||
-                    (a.model && a.model.toLowerCase().includes(q)) ||
-                    (a.brand && a.brand.toLowerCase().includes(q));
-            });
-
-            if (inStockCountText) {
-                inStockCountText.textContent = `${availableAssets.length} Assets`;
-            }
-
-            if (filtered.length === 0) {
-                inStockTbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 32px 14px; color: var(--text-muted);">
-                            <div style="font-size: 26px; margin-bottom: 6px;">📦</div>
-                            <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">No In-Stock Assets Found</div>
-                            <div style="font-size: 12px; margin-top: 4px;">${q ? 'No available assets match your filter term.' : 'All registered hardware units are currently allocated.'}</div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            filtered.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>
-                        <div class="tbl-asset-cell">
-                            <div class="batch-asset-icon" style="background:#e0f2fe; color:#0284c7;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                            </div>
-                            <div class="tbl-asset-info">
-                                <div style="display:flex; align-items:center; gap:6px;">
-                                    <span class="asset-tag-badge">${escapeHtml(a.tag)}</span>
-                                    <span class="tbl-asset-name">${escapeHtml(a.name)}</span>
-                                </div>
-                                <span class="tbl-asset-category">${escapeHtml(a.category || 'Hardware')}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div style="font-size:12px; font-weight:600; color:var(--text-primary);">${escapeHtml(a.model || a.brand || 'Standard')}</div>
-                        <div style="font-size:11px; font-family:monospace; color:var(--text-muted);">SN: ${escapeHtml(a.serial || '—')}</div>
-                    </td>
-                    <td>
-                        <span style="font-size:11.5px; background:#ecfdf5; color:#059669; padding:2px 8px; border-radius:10px; font-weight:600; border:1px solid #a7f3d0;">
-                            ${escapeHtml(a.condition || 'Good')}
-                        </span>
-                    </td>
-                    <td>
-                        <span style="font-size:11.5px; color:var(--text-secondary);">${escapeHtml(a.location || 'Storage Depot')}</span>
-                    </td>
-                    <td style="text-align: center;">
-                        <button type="button" class="btn-primary" style="padding: 5px 12px; font-size: 11.5px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" onclick="closeModal(document.getElementById('availableAssetsModal')); quickAssignAsset(${a.id});">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            Assign to Staff
-                        </button>
-                    </td>
-                `;
-                inStockTbody.appendChild(tr);
-            });
-        };
-
-        // "Ready to Assign" card click -> opens In-Stock modal
-        const cardAvailable = document.getElementById('cardAvailableInStock');
-        if (cardAvailable) {
-            cardAvailable.addEventListener('click', function () {
-                if (typeof window.renderInStockModalTable === 'function') {
-                    window.renderInStockModalTable();
-                }
-                openModal(inStockModal);
-            });
-        }
-
-        document.getElementById('closeAvailableAssetsModalBtn')?.addEventListener('click', () => closeModal(inStockModal));
-        document.getElementById('closeAvailableModalFooterBtn')?.addEventListener('click', () => closeModal(inStockModal));
-
-        if (inStockSearchInput) {
-            inStockSearchInput.addEventListener('input', function () {
-                if (typeof window.renderInStockModalTable === 'function') {
-                    window.renderInStockModalTable(this.value);
-                }
-            });
-        }
-
         // Modal Open Buttons
         const openAssignBtn = document.getElementById('openAssignModalBtn');
         if (openAssignBtn) {
@@ -2317,12 +2212,11 @@
                 closeModal(returnModal);
                 closeModal(transferModal);
                 closeModal(slipModal);
-                closeModal(inStockModal);
                 window.closeAssignmentDrawer();
             }
         });
 
-        [assignModal, returnModal, transferModal, slipModal, inStockModal].forEach(modal => {
+        [assignModal, returnModal, transferModal, slipModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) {
@@ -2334,9 +2228,8 @@
     }
 
     function init() {
-        const inStockModal = document.getElementById('availableAssetsModal');
         // Relocate all modals directly into <body> to prevent sidebar / main-wrapper positioning constraints
-        [assignModal, returnModal, transferModal, slipModal, inStockModal].forEach(modal => {
+        [assignModal, returnModal, transferModal, slipModal].forEach(modal => {
             if (modal && modal.parentElement !== document.body) {
                 document.body.appendChild(modal);
             }

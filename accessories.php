@@ -313,9 +313,6 @@ include 'includes/topbar.php';
                                 <td><?php echo $statusBadge; ?></td>
                                 <td>
                                     <div class="action-buttons-wrap" style="justify-content: flex-end; padding-right: 6px;">
-                                        <button class="action-icon-btn btn-view" title="Issue to Staff" onclick="window.accMgr.openIssue(<?php echo $item['id']; ?>)" <?php echo $inStock === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''; ?>>
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                                        </button>
                                         <button class="action-icon-btn btn-edit" title="Edit Accessory" onclick="window.accMgr.openEdit(<?php echo $item['id']; ?>)">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                         </button>
