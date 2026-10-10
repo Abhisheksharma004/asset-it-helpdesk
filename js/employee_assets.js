@@ -6,7 +6,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     initAssetFilters();
     initAssetSearch();
-    initRequestModal();
 });
 
 // Category Pill Filter
@@ -103,42 +102,6 @@ function openHandoverSlipModal(itemData) {
 // Print / Download Handover Slip
 function printHandoverSlip() {
     window.print();
-}
-
-// Equipment Request Modal
-function openEquipmentRequestModal() {
-    const modal = document.getElementById('equipmentRequestModal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function initRequestModal() {
-    const form = document.getElementById('equipmentRequestForm');
-    if (!form) return;
-
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        const btn = form.querySelector('button[type="submit"]');
-        const origText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
-
-        setTimeout(() => {
-            btn.disabled = false;
-            btn.innerHTML = origText;
-            closeModal('equipmentRequestModal');
-            form.reset();
-
-            // Success feedback
-            if (typeof showPortalToast === 'function') {
-                showPortalToast('Equipment request submitted successfully to IT Ops!', 'success');
-            } else {
-                alert('Your equipment requisition has been received and routed to the IT Procurement Queue (Ticket ID: REQ-2026-0814).');
-            }
-        }, 900);
-    });
 }
 
 // Generic Close Modal

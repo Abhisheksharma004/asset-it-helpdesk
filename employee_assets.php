@@ -349,14 +349,7 @@ include 'includes/employee_topbar.php';
         </div>
 
         <div class="assets-hero-actions">
-            <button type="button" class="btn-hero-action" onclick="openEquipmentRequestModal()">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Request Equipment
-            </button>
-            <a href="employee_profile.php" class="btn-hero-action secondary">
+            <a href="employee_profile.php" class="btn-hero-action">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
@@ -423,11 +416,6 @@ include 'includes/employee_topbar.php';
                 </svg>
                 Registered IT Inventory & Custody Receipts
             </h2>
-
-            <button type="button" class="btn-primary" onclick="openEquipmentRequestModal()" style="padding: 8px 16px; font-size: 12.5px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Requisition New Asset
-            </button>
         </div>
 
         <!-- Filter & Search Toolbar -->
@@ -477,7 +465,7 @@ include 'includes/employee_topbar.php';
                                         No IT Assets Currently in Custody
                                     </div>
                                     <div style="font-size: 12.5px; color: var(--text-muted); max-width: 460px; line-height: 1.4;">
-                                        You currently have no hardware units or workstation peripherals registered in your custody. You can requisition equipment anytime using the button above.
+                                        You currently have no hardware units or workstation peripherals registered in your custody.
                                     </div>
                                 </div>
                             </td>
@@ -682,79 +670,6 @@ include 'includes/employee_topbar.php';
                 </button>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Request Equipment / Requisition Modal -->
-<div class="modal-overlay" id="equipmentRequestModal" style="display: none; z-index: 9999;">
-    <div class="modal-box" style="max-width: 520px; border-top: 4px solid var(--cyan-primary);">
-        <div class="modal-header" style="padding: 18px 24px 14px; border-bottom: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 147, 167, 0.12); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                </div>
-                <div>
-                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
-                        Request Equipment or Asset Requisition
-                    </h3>
-                    <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
-                        Submit hardware or workstation accessory requisition to IT Ops.
-                    </p>
-                </div>
-            </div>
-            <button type="button" class="modal-close-btn" onclick="closeModal('equipmentRequestModal')">&times;</button>
-        </div>
-
-        <form id="equipmentRequestForm">
-            <div class="modal-body" style="padding: 24px;">
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Asset Category *
-                    </label>
-                    <select id="reqCategory" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="">Select Asset Category</option>
-                        <option value="Laptop / Workstation">Laptop / Workstation Upgrade</option>
-                        <option value="External Monitor">External Monitor / Display</option>
-                        <option value="Docking Station">Universal Docking Station</option>
-                        <option value="Keyboard & Mouse">Wireless Keyboard / Ergonomic Mouse</option>
-                        <option value="Headset / Audio">Noise Cancelling Headset</option>
-                    </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Requirement / Preferred Specification *
-                    </label>
-                    <input type="text" id="reqItemName" required placeholder="e.g. Dual 4K USB-C Dock or 32GB RAM Laptop" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Business Justification / Reason *
-                    </label>
-                    <textarea id="reqReason" required rows="3" placeholder="Briefly describe project requirement or reason for upgrade..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Priority / Urgency
-                    </label>
-                    <select id="reqPriority" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="Medium">Standard - Within 3 to 5 business days</option>
-                        <option value="High">Urgent - Client project dependency (1-2 days)</option>
-                        <option value="Low">Low - Planned future requirement</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
-                <button type="button" class="btn-secondary" onclick="closeModal('equipmentRequestModal')">Cancel</button>
-                <button type="submit" class="btn-primary" style="padding: 9px 22px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Submit Request</span>
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 
