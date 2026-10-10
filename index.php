@@ -81,7 +81,6 @@ if (!empty($_SESSION['logged_in'])) {
             <button type="submit" class="login-btn">
                 Sign In
             </button>
-
         </form>
 
         <div class="login-footer">

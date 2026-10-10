@@ -47,6 +47,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
             </a>
         </li>
 
+
         <!-- Master (Dropdown) -->
         <li class="nav-item nav-item-dropdown <?php echo $is_master_open ? 'open' : ''; ?>">
             <a href="javascript:void(0)" class="nav-link dropdown-toggle <?php echo $is_master_open ? 'active' : ''; ?>">

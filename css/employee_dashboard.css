@@ -1,0 +1,383 @@
+/* ==========================================================================
+   VIROS Asset & IT Service Desk - Employee Dashboard Specific Styles
+   Inherits base tokens from dashboard.css
+   ========================================================================== */
+
+/* Category Filter Tabs in Card Header */
+.emp-filter-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.emp-tab-btn {
+    background: transparent;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.emp-tab-btn:hover {
+    color: var(--navy-primary);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.emp-tab-btn.active {
+    background: #ffffff;
+    color: var(--cyan-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.emp-tab-count {
+    background: rgba(0, 147, 167, 0.1);
+    color: var(--cyan-primary);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.emp-tab-btn.active .emp-tab-count {
+    background: var(--cyan-primary);
+    color: #ffffff;
+}
+
+/* Quick Action Tiles Widget */
+.emp-quick-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px 20px;
+}
+
+.emp-action-tile {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+    width: 100%;
+}
+
+.emp-action-tile:hover {
+    background: #ffffff;
+    border-color: var(--cyan-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 147, 167, 0.12);
+}
+
+.emp-action-tile .tile-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.emp-action-tile .tile-icon.cyan {
+    background: var(--cyan-light);
+    color: var(--cyan-primary);
+}
+
+.emp-action-tile .tile-icon.amber {
+    background: var(--warning-light);
+    color: var(--warning);
+}
+
+.emp-action-tile .tile-icon.navy {
+    background: #e6edf5;
+    color: var(--navy-primary);
+}
+
+.emp-action-tile .tile-icon.green {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.emp-action-tile .tile-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--navy-primary);
+    line-height: 1.25;
+}
+
+.emp-action-tile .tile-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.3;
+}
+
+/* IT Helpdesk Desk Info Widget */
+.it-support-card-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.it-support-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.it-support-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: var(--navy-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.it-support-text {
+    flex: 1;
+}
+
+.it-support-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.it-support-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Printable Handover Slip Modal Specifics */
+.handover-slip-sheet {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 24px;
+    font-family: Arial, sans-serif;
+    color: #0f172a;
+}
+
+.slip-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--navy-primary);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+}
+
+.slip-company-info h3 {
+    font-size: 18px;
+    color: var(--navy-primary);
+    margin: 0 0 2px 0;
+    font-weight: 800;
+}
+
+.slip-company-info p {
+    font-size: 11.5px;
+    color: #64748b;
+    margin: 0;
+}
+
+.slip-title-box {
+    text-align: right;
+}
+
+.slip-title-box .slip-doc-no {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cyan-primary);
+    font-family: monospace;
+}
+
+.slip-title-box .slip-date {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.slip-grid-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+}
+
+.slip-grid-item span {
+    color: #64748b;
+    font-size: 11px;
+    display: block;
+}
+
+.slip-grid-item strong {
+    color: var(--navy-primary);
+    font-size: 13px;
+}
+
+.slip-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 12px;
+}
+
+.slip-table th, .slip-table td {
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.slip-table th {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: var(--navy-primary);
+}
+
+.slip-terms-box {
+    font-size: 11px;
+    color: #64748b;
+    border-left: 3px solid var(--cyan-primary);
+    padding: 8px 12px;
+    background: #f8fafc;
+    margin-bottom: 20px;
+    line-height: 1.45;
+}
+
+.slip-signatures-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.slip-sig-box {
+    width: 200px;
+    text-align: center;
+}
+
+.slip-sig-line {
+    border-top: 1px solid #475569;
+    margin-top: 36px;
+    padding-top: 4px;
+    font-size: 11.5px;
+    color: #334155;
+    font-weight: 600;
+}
+
+/* Modal Form Controls */
+.modal-form-group {
+    margin-bottom: 14px;
+}
+
+.modal-form-group label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+}
+
+.modal-input, .modal-select, .modal-textarea {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    background: #ffffff;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.modal-input:focus, .modal-select:focus, .modal-textarea:focus {
+    outline: none;
+    border-color: var(--cyan-primary);
+    box-shadow: 0 0 0 3px rgba(0, 147, 167, 0.15);
+}
+
+.modal-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.btn-secondary {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--navy-primary);
+}
+
+.btn-primary {
+    background: var(--cyan-primary);
+    border: none;
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 147, 167, 0.25);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary:hover {
+    background: var(--navy-primary);
+    transform: translateY(-1px);
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #handoverSlipPrintArea, #handoverSlipPrintArea * {
+        visibility: visible;
+    }
+    #handoverSlipPrintArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
