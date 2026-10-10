@@ -12,55 +12,107 @@ $extra_js    = ['js/employee_dashboard.js', 'js/employee_assets.js'];
 // Include Database Configuration
 require_once __DIR__ . '/config/db.php';
 
-// Default Active Employee Details
-$activeEmployee = [
-    'name'        => $_SESSION['user_name'] ?? 'Abhishek Ranjan',
-    'code'        => $_SESSION['user_username'] ?? 'VE015',
-    'designation' => 'Senior Software Engineer',
-    'department'  => $_SESSION['user_dept'] ?? 'Information Technology',
-    'email'       => $_SESSION['user_email'] ?? 'abhishekkumarranjan965@gmail.com',
-    'phone'       => '+91 98765 43210',
-    'location'    => 'Bangalore HQ (Floor 3)',
-    'joining_date'=> '15 Jan 2024',
-    'status'      => 'Active',
-    'custody'     => 'Verified & Active'
-];
+// Dynamically resolve target employee (Session or GET request or Top 1 in DB)
+$targetEmpId   = !empty($_GET['id']) ? intval($_GET['id']) : (!empty($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0);
+$targetEmpMail = !empty($_GET['email']) ? trim($_GET['email']) : (!empty($_SESSION['user_email']) ? trim($_SESSION['user_email']) : '');
+$targetEmpCode = !empty($_GET['emp']) ? trim($_GET['emp']) : (!empty($_SESSION['user_username']) ? trim($_SESSION['user_username']) : '');
 
-// Fetch live employee data if connected
-if (isset($conn) && $conn !== false && !empty($_SESSION['user_id'])) {
-    $currStmt = sqlsrv_query(
-        $conn, 
-        "SELECT e.*, d.department_name, l.location_name 
-         FROM employees e 
-         LEFT JOIN departments d ON e.department_id = d.id 
-         LEFT JOIN locations l ON e.location_id = l.id 
-         WHERE e.id = ? OR LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)", 
-        [$_SESSION['user_id'], $_SESSION['user_email'] ?? '', $_SESSION['user_username'] ?? '']
-    );
-    if ($currStmt && ($currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC))) {
+$activeEmployee = null;
+
+if (isset($conn) && $conn !== false) {
+    $currStmt = null;
+
+    // 1. Fetch matching employee if session or parameter is present
+    if ($targetEmpId > 0 || !empty($targetEmpMail) || !empty($targetEmpCode)) {
+        $currStmt = sqlsrv_query(
+            $conn, 
+            "SELECT e.*, d.department_name, l.location_name 
+             FROM employees e 
+             LEFT JOIN departments d ON e.department_id = d.id 
+             LEFT JOIN locations l ON e.location_id = l.id 
+             WHERE e.id = ? OR LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)", 
+            [$targetEmpId, $targetEmpMail, $targetEmpCode]
+        );
+    }
+
+    // 2. Fallback: if session was not set or no match, fetch first active employee from database
+    if (!$currStmt || !($currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC))) {
+        $currStmt = sqlsrv_query(
+            $conn,
+            "SELECT TOP 1 e.*, d.department_name, l.location_name 
+             FROM employees e 
+             LEFT JOIN departments d ON e.department_id = d.id 
+             LEFT JOIN locations l ON e.location_id = l.id 
+             WHERE e.status = 'Active' OR e.status IS NULL 
+             ORDER BY e.id ASC"
+        );
+        if ($currStmt) {
+            $currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC);
+        }
+    }
+
+    if (!empty($currRow)) {
         $fullName = trim(($currRow['first_name'] ?? '') . ' ' . ($currRow['last_name'] ?? ''));
-        $joinDateFormatted = '15 Jan 2024';
+
+        // Dynamic Date Formatter from Database
+        $joinDateFormatted = 'Not Provided';
         if (!empty($currRow['joining_date'])) {
             $joinDateFormatted = is_object($currRow['joining_date']) 
                 ? $currRow['joining_date']->format('d M Y') 
                 : date('d M Y', strtotime($currRow['joining_date']));
+        } elseif (!empty($currRow['created_at'])) {
+            $joinDateFormatted = is_object($currRow['created_at']) 
+                ? $currRow['created_at']->format('d M Y') 
+                : date('d M Y', strtotime($currRow['created_at']));
         }
 
         $activeEmployee = [
-            'id'           => $currRow['id'],
-            'name'         => $fullName ?: ($_SESSION['user_name'] ?? 'Employee'),
-            'code'         => $currRow['emp_code'] ?? 'EMP-000',
-            'designation'  => $currRow['designation'] ?: 'Staff Member',
-            'department'   => $currRow['department_name'] ?: ($_SESSION['user_dept'] ?? 'General'),
-            'email'        => $currRow['email'] ?? $_SESSION['user_email'],
-            'phone'        => $currRow['phone'] ?: '+91 98765 43210',
-            'location'     => $currRow['location_name'] ?: 'Bangalore HQ (Floor 3)',
+            'id'           => (int)$currRow['id'],
+            'name'         => $fullName ?: 'Employee',
+            'code'         => $currRow['emp_code'] ?? 'EMP-001',
+            'designation'  => !empty($currRow['designation']) ? $currRow['designation'] : 'Staff Member',
+            'department'   => !empty($currRow['department_name']) ? $currRow['department_name'] : 'General',
+            'email'        => $currRow['email'] ?? '',
+            'phone'        => !empty($currRow['phone']) ? $currRow['phone'] : 'Not Provided',
+            'location'     => !empty($currRow['location_name']) ? $currRow['location_name'] : 'Corporate Office',
             'joining_date' => $joinDateFormatted,
             'status'       => $currRow['status'] ?? 'Active',
-            'custody'      => ($currRow['status'] === 'Active') ? 'Verified & Active' : 'Inactive'
+            'custody'      => (strtolower(trim($currRow['status'] ?? '')) === 'active') ? 'Verified & Active' : 'Inactive'
         ];
-        sqlsrv_free_stmt($currStmt);
+
+        // Ensure session has active employee credentials for seamless actions
+        if (empty($_SESSION['user_id'])) {
+            $_SESSION['user_id']        = $activeEmployee['id'];
+            $_SESSION['user_name']      = $activeEmployee['name'];
+            $_SESSION['user_username']  = $activeEmployee['code'];
+            $_SESSION['user_email']     = $activeEmployee['email'];
+            $_SESSION['user_role']      = 'Employee';
+            $_SESSION['user_dept']      = $activeEmployee['department'];
+            $_SESSION['logged_in']      = true;
+            $_SESSION['is_first_login'] = 0;
+        }
+
+        if ($currStmt) {
+            sqlsrv_free_stmt($currStmt);
+        }
     }
+}
+
+// Fallback in case database was unreachable
+if (!$activeEmployee) {
+    $activeEmployee = [
+        'id'           => 1,
+        'name'         => $_SESSION['user_name'] ?? 'Employee Member',
+        'code'         => $_SESSION['user_username'] ?? 'EMP-001',
+        'designation'  => 'Staff Member',
+        'department'   => $_SESSION['user_dept'] ?? 'General',
+        'email'        => $_SESSION['user_email'] ?? 'employee@viros.in',
+        'phone'        => 'Not Provided',
+        'location'     => 'Corporate Office',
+        'joining_date' => 'Not Provided',
+        'status'       => 'Active',
+        'custody'      => 'Verified & Active'
+    ];
 }
 
 // Compute initials for Avatar
@@ -71,102 +123,205 @@ foreach (explode(' ', trim($activeEmployee['name'])) as $w) {
 }
 if (empty($avatarInitials)) $avatarInitials = 'EM';
 
-// Employee Allocated Inventory Items (Rich UI Dataset)
-$allocatedItems = [
-    [
-        'tag'       => 'AST2026001',
-        'name'      => 'Dell Latitude 5420 Laptop',
-        'specs'     => 'Intel Core i7-1185G7 • 16GB RAM • 512GB NVMe SSD • Windows 11 Pro',
-        'category'  => 'Computing / Laptop',
-        'type'      => 'hardware',
-        'serial'    => 'C02G40PZMD6T',
-        'date'      => '15 Jan 2025',
-        'condition' => 'Excellent',
-        'status'    => 'In Active Custody',
-        'badge'     => 'badge-resolved',
-        'icon_type' => 'laptop'
-    ],
-    [
-        'tag'       => 'AST2026048',
-        'name'      => 'Dell UltraSharp 24" USB-C Hub Monitor',
-        'specs'     => '1920x1080 IPS • USB-C 90W Power Delivery • Height Adjustable Stand',
-        'category'  => 'External Display',
-        'type'      => 'hardware',
-        'serial'    => 'CN-04D792-742',
-        'date'      => '15 Jan 2025',
-        'condition' => 'Excellent',
-        'status'    => 'In Active Custody',
-        'badge'     => 'badge-resolved',
-        'icon_type' => 'monitor'
-    ],
-    [
-        'tag'       => 'ACC-1002',
-        'name'      => 'Dell WD19S USB-C Docking Station',
-        'specs'     => '130W Power Delivery • Dual DisplayPort 1.4 • HDMI 2.0b • Gigabit LAN',
-        'category'  => 'Docking Station',
-        'type'      => 'accessory',
-        'serial'    => 'WD19-98124-IN',
-        'date'      => '16 Jan 2025',
-        'condition' => 'Good',
-        'status'    => 'Issued & In Use',
-        'badge'     => 'badge-progress',
-        'icon_type' => 'dock'
-    ],
-    [
-        'tag'       => 'ACC-1009',
-        'name'      => 'Logitech MX Keys Advanced Wireless Keyboard',
-        'specs'     => 'Bluetooth & Logi Bolt Receiver • Smart Backlit Keys • Rechargeable USB-C',
-        'category'  => 'Input Peripheral',
-        'type'      => 'accessory',
-        'serial'    => 'SN-829104-MX',
-        'date'      => '16 Jan 2025',
-        'condition' => 'Good',
-        'status'    => 'Issued & In Use',
-        'badge'     => 'badge-progress',
-        'icon_type' => 'keyboard'
-    ],
-    [
-        'tag'       => 'ACC-1014',
-        'name'      => 'Logitech MX Master 3S Wireless Mouse',
-        'specs'     => '8,000 DPI Darkfield Sensor • Quiet Clicks • MagSpeed Electromagnetic Scroll',
-        'category'  => 'Input Peripheral',
-        'type'      => 'accessory',
-        'serial'    => 'SN-772109-MS',
-        'date'      => '16 Jan 2025',
-        'condition' => 'Good',
-        'status'    => 'Issued & In Use',
-        'badge'     => 'badge-progress',
-        'icon_type' => 'mouse'
-    ],
-    [
-        'tag'       => 'LIC-2001',
-        'name'      => 'Microsoft 365 E5 Enterprise Cloud License',
-        'specs'     => 'Office Apps Desktop & Web • Exchange Online • Microsoft Teams • Defender Suite',
-        'category'  => 'Productivity Suite',
-        'type'      => 'software',
-        'serial'    => 'SSO Provisioned (' . htmlspecialchars($activeEmployee['email']) . ')',
-        'date'      => '10 Jan 2025',
-        'condition' => 'Valid',
-        'status'    => 'Active Subscription',
-        'badge'     => 'badge-resolved',
-        'icon_type' => 'software'
-    ],
-    [
-        'tag'       => 'LIC-2015',
-        'name'      => 'JetBrains All Products Pack Corporate',
-        'specs'     => 'IntelliJ IDEA Ultimate • PhpStorm • WebStorm • PyCharm • DataGrip',
-        'category'  => 'Developer Tooling',
-        'type'      => 'software',
-        'serial'    => 'JB-LICENSE-KEY-9941',
-        'date'      => '12 Jan 2025',
-        'condition' => 'Valid',
-        'status'    => 'Active Subscription',
-        'badge'     => 'badge-resolved',
-        'icon_type' => 'software'
-    ]
-];
+// -----------------------------------------------------------------------------
+// DYNAMIC FETCH: Active Employee Allocated Inventory (Assets, Accessories, Software)
+// -----------------------------------------------------------------------------
+$allocatedItems = [];
+$seenTags       = [];
 
-// Calculate item counts
+if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
+    $empId   = $activeEmployee['id'];
+    $empEmail= $activeEmployee['email'];
+    $empCode = $activeEmployee['code'];
+    $empName = $activeEmployee['name'];
+
+    // 1. Fetch Active Handover Slips & Allocated Items from asset_assignments
+    $assignSql = "SELECT a.* 
+                  FROM asset_assignments a 
+                  WHERE (a.employee_id = ? OR LOWER(a.employee_email) = LOWER(?) OR LOWER(a.emp_code) = LOWER(?))
+                    AND a.custody_status = 'Active'
+                  ORDER BY a.id DESC";
+    $assignStmt = sqlsrv_query($conn, $assignSql, [$empId, $empEmail, $empCode]);
+
+    if ($assignStmt) {
+        while ($r = sqlsrv_fetch_array($assignStmt, SQLSRV_FETCH_ASSOC)) {
+            $assignedDate = 'Recent';
+            if (!empty($r['assigned_date'])) {
+                $assignedDate = is_object($r['assigned_date']) 
+                    ? $r['assigned_date']->format('d M Y') 
+                    : date('d M Y', strtotime($r['assigned_date']));
+            }
+
+            // Primary Allocated Hardware Asset
+            if (!empty($r['asset_tag']) && !in_array($r['asset_tag'], $seenTags)) {
+                $seenTags[] = $r['asset_tag'];
+                $catLower   = strtolower($r['category'] ?? '');
+                $nameLower  = strtolower($r['asset_name'] ?? '');
+
+                $iconType = 'hardware';
+                if (strpos($catLower, 'laptop') !== false || strpos($nameLower, 'laptop') !== false) {
+                    $iconType = 'laptop';
+                } elseif (strpos($catLower, 'monitor') !== false || strpos($nameLower, 'monitor') !== false || strpos($catLower, 'display') !== false) {
+                    $iconType = 'monitor';
+                }
+
+                $specs = !empty($r['specs']) ? $r['specs'] : trim(($r['brand'] ?? '') . ' ' . ($r['model'] ?? ''));
+
+                $allocatedItems[] = [
+                    'tag'       => $r['asset_tag'],
+                    'name'      => !empty($r['asset_name']) ? $r['asset_name'] : 'Corporate Hardware Unit',
+                    'specs'     => $specs ?: 'Configured computing system',
+                    'category'  => !empty($r['category']) ? $r['category'] : 'Computing Unit',
+                    'type'      => 'hardware',
+                    'serial'    => !empty($r['serial']) ? $r['serial'] : 'S/N: Not Specified',
+                    'date'      => $assignedDate,
+                    'condition' => !empty($r['condition']) ? $r['condition'] : 'Good',
+                    'status'    => 'In Active Custody',
+                    'badge'     => 'badge-resolved',
+                    'icon_type' => $iconType,
+                    'slip_no'   => $r['slip_no']
+                ];
+            }
+
+            // Additional Bundled Hardware Assets from assets_json
+            if (!empty($r['assets_json'])) {
+                $bundledAssets = json_decode($r['assets_json'], true);
+                if (is_array($bundledAssets)) {
+                    foreach ($bundledAssets as $ba) {
+                        $baTag = $ba['tag'] ?? '';
+                        if (!empty($baTag) && !in_array($baTag, $seenTags)) {
+                            $seenTags[] = $baTag;
+                            $baCatLower = strtolower($ba['category'] ?? '');
+                            $baIcon = (strpos($baCatLower, 'laptop') !== false) ? 'laptop' : ((strpos($baCatLower, 'monitor') !== false) ? 'monitor' : 'hardware');
+
+                            $allocatedItems[] = [
+                                'tag'       => $baTag,
+                                'name'      => $ba['name'] ?? 'Hardware Unit',
+                                'specs'     => $ba['specs'] ?? ($ba['brand'] . ' ' . ($ba['model'] ?? '')),
+                                'category'  => $ba['category'] ?? 'Hardware',
+                                'type'      => 'hardware',
+                                'serial'    => !empty($ba['serial']) ? $ba['serial'] : 'S/N: N/A',
+                                'date'      => $assignedDate,
+                                'condition' => $ba['condition'] ?? 'Good',
+                                'status'    => 'In Active Custody',
+                                'badge'     => 'badge-resolved',
+                                'icon_type' => $baIcon,
+                                'slip_no'   => $r['slip_no']
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Bundled Peripherals & Accessories from accessories_json
+            if (!empty($r['accessories_json'])) {
+                $accList = json_decode($r['accessories_json'], true);
+                if (is_array($accList)) {
+                    foreach ($accList as $acc) {
+                        $accTag = !empty($acc['sku']) ? $acc['sku'] : ('ACC-' . ($acc['id'] ?? uniqid()));
+                        if (in_array($accTag, $seenTags)) continue;
+                        $seenTags[] = $accTag;
+
+                        $accName  = $acc['name'] ?? 'Workstation Accessory';
+                        $accCat   = $acc['category'] ?? 'Peripheral';
+                        $accBrand = $acc['brand'] ?? '';
+                        $accQty   = $acc['qty'] ?? 1;
+
+                        $catLower = strtolower($accCat . ' ' . $accName);
+                        $iconType = 'dock';
+                        if (strpos($catLower, 'keyboard') !== false) $iconType = 'keyboard';
+                        elseif (strpos($catLower, 'mouse') !== false) $iconType = 'mouse';
+                        elseif (strpos($catLower, 'headset') !== false || strpos($catLower, 'audio') !== false) $iconType = 'headset';
+
+                        $allocatedItems[] = [
+                            'tag'       => $accTag,
+                            'name'      => $accName,
+                            'specs'     => ($accBrand ? $accBrand . ' • ' : '') . 'Qty: ' . $accQty . ' Unit(s)',
+                            'category'  => $accCat ?: 'Workstation Accessory',
+                            'type'      => 'accessory',
+                            'serial'    => 'SKU: ' . $accTag,
+                            'date'      => $assignedDate,
+                            'condition' => 'Good',
+                            'status'    => 'Issued & In Use',
+                            'badge'     => 'badge-progress',
+                            'icon_type' => $iconType,
+                            'slip_no'   => $r['slip_no']
+                        ];
+                    }
+                }
+            }
+        }
+        sqlsrv_free_stmt($assignStmt);
+    }
+
+    // 2. Also check assets table directly (where assigned_to matches employee name or code)
+    $assetSql = "SELECT ast.* FROM assets ast WHERE (LOWER(ast.assigned_to) = LOWER(?) OR LOWER(ast.assigned_to) = LOWER(?)) AND ast.status = 'In Use'";
+    $assetStmt = sqlsrv_query($conn, $assetSql, [$empName, $empCode]);
+    if ($assetStmt) {
+        while ($ast = sqlsrv_fetch_array($assetStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($ast['tag']) && !in_array($ast['tag'], $seenTags)) {
+                $seenTags[] = $ast['tag'];
+                $specsParts = array_filter([$ast['processor'] ?? '', $ast['ram'] ?? '', $ast['storage'] ?? '', $ast['os'] ?? '']);
+                $specs = !empty($specsParts) ? implode(' • ', $specsParts) : trim(($ast['brand'] ?? '') . ' ' . ($ast['model'] ?? ''));
+
+                $catLower = strtolower($ast['category'] ?? '');
+                $iconType = (strpos($catLower, 'laptop') !== false) ? 'laptop' : ((strpos($catLower, 'monitor') !== false) ? 'monitor' : 'hardware');
+
+                $astDate = 'Recent';
+                if (!empty($ast['updated_at'])) {
+                    $astDate = is_object($ast['updated_at']) ? $ast['updated_at']->format('d M Y') : date('d M Y', strtotime($ast['updated_at']));
+                }
+
+                $allocatedItems[] = [
+                    'tag'       => $ast['tag'],
+                    'name'      => $ast['name'],
+                    'specs'     => $specs ?: 'Hardware computing unit',
+                    'category'  => $ast['category'] ?: 'Hardware',
+                    'type'      => 'hardware',
+                    'serial'    => !empty($ast['serial']) ? $ast['serial'] : 'S/N: Not Specified',
+                    'date'      => $astDate,
+                    'condition' => !empty($ast['condition']) ? $ast['condition'] : 'Good',
+                    'status'    => 'In Active Custody',
+                    'badge'     => 'badge-resolved',
+                    'icon_type' => $iconType,
+                    'slip_no'   => 'HS-' . $ast['tag']
+                ];
+            }
+        }
+        sqlsrv_free_stmt($assetStmt);
+    }
+
+    // 3. Dynamic Software Licenses from software_licenses table
+    $licSql = "SELECT TOP 3 * FROM software_licenses WHERE status = 'Active' OR status IS NULL ORDER BY id ASC";
+    $licStmt = sqlsrv_query($conn, $licSql);
+    if ($licStmt) {
+        while ($sl = sqlsrv_fetch_array($licStmt, SQLSRV_FETCH_ASSOC)) {
+            $slTag = 'LIC-' . str_pad($sl['id'], 4, '0', STR_PAD_LEFT);
+            $licDate = 'Active';
+            if (!empty($sl['created_at'])) {
+                $licDate = is_object($sl['created_at']) ? $sl['created_at']->format('d M Y') : date('d M Y', strtotime($sl['created_at']));
+            }
+
+            $allocatedItems[] = [
+                'tag'       => $slTag,
+                'name'      => $sl['software_name'],
+                'specs'     => !empty($sl['publisher']) ? ($sl['publisher'] . ' • ' . ($sl['version'] ?? 'Latest')) : ($sl['category'] ?? 'Corporate Cloud License'),
+                'category'  => $sl['category'] ?: 'Software Tool',
+                'type'      => 'software',
+                'serial'    => !empty($sl['license_key']) ? $sl['license_key'] : ('Corporate SSO (' . $empEmail . ')'),
+                'date'      => $licDate,
+                'condition' => 'Valid',
+                'status'    => 'Active Subscription',
+                'badge'     => 'badge-resolved',
+                'icon_type' => 'software',
+                'slip_no'   => 'LIC-DOC-' . $sl['id']
+            ];
+        }
+        sqlsrv_free_stmt($licStmt);
+    }
+}
+
+// Compute dynamic item counters
 $totalAssetCount = count($allocatedItems);
 $hardwareCount   = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'hardware'));
 $accessoryCount  = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'accessory'));
@@ -356,73 +511,93 @@ include 'includes/employee_topbar.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($allocatedItems as $item): ?>
-                        <tr class="emp-asset-row" data-type="<?php echo $item['type']; ?>">
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <div class="asset-item-icon-box">
-                                        <?php if ($item['icon_type'] === 'laptop'): ?>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="2" y1="20" x2="22" y2="20"></line></svg>
-                                        <?php elseif ($item['icon_type'] === 'monitor'): ?>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                                        <?php elseif ($item['icon_type'] === 'dock'): ?>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m4-6v6M8 8h8a2 2 0 0 1 2 2v2a6 6 0 0 1-12 0v-2a2 2 0 0 1 2-2zm4 10v4"></path></svg>
-                                        <?php elseif ($item['icon_type'] === 'keyboard'): ?>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>
-                                        <?php elseif ($item['icon_type'] === 'mouse'): ?>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="7"></rect><line x1="12" y1="6" x2="12" y2="10"></line></svg>
-                                        <?php else: ?>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"></circle><path d="m21 2-9.6 9.6"></path><path d="m15.5 7.5 3 3"></path></svg>
-                                        <?php endif; ?>
+                    <?php if (empty($allocatedItems)): ?>
+                        <tr>
+                            <td colspan="6" style="padding: 48px 20px; text-align: center; color: var(--text-muted);">
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #94a3b8; margin-bottom: 12px;">
+                                        <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                    <div style="font-size: 14.5px; font-weight: 700; color: var(--navy-primary); margin-bottom: 4px;">
+                                        No IT Assets Currently in Custody
                                     </div>
-                                    <div>
-                                        <div style="font-weight: 700; color: var(--navy-primary); font-size: 13.5px;">
-                                            <?php echo htmlspecialchars($item['name']); ?>
-                                        </div>
-                                        <div style="margin-top: 3px;">
-                                            <span class="asset-tag-pill"><?php echo htmlspecialchars($item['tag']); ?></span>
-                                        </div>
+                                    <div style="font-size: 12.5px; color: var(--text-muted); max-width: 460px; line-height: 1.4;">
+                                        You currently have no hardware units, workstation peripherals, or licenses registered in your custody. You can requisition equipment anytime using the button above.
                                     </div>
                                 </div>
-                            </td>
-
-                            <td>
-                                <div style="font-size: 13px; font-weight: 600; color: var(--navy-primary);">
-                                    <?php echo htmlspecialchars($item['category']); ?>
-                                </div>
-                                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.35;">
-                                    <?php echo htmlspecialchars($item['specs']); ?>
-                                </div>
-                            </td>
-
-                            <td>
-                                <span class="asset-serial-pill">
-                                    <?php echo htmlspecialchars($item['serial']); ?>
-                                </span>
-                            </td>
-
-                            <td>
-                                <span style="font-size: 12.5px; font-weight: 500; color: var(--text-secondary);">
-                                    <?php echo htmlspecialchars($item['date']); ?>
-                                </span>
-                            </td>
-
-                            <td>
-                                <span class="badge <?php echo $item['badge']; ?>" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">
-                                    <?php echo htmlspecialchars($item['status']); ?>
-                                </span>
-                            </td>
-
-                            <td style="text-align: right; padding-right: 24px;">
-                                <button type="button" class="btn-action-slip" 
-                                    onclick='openHandoverSlipModal(<?php echo json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)'
-                                    title="View & Print Official Handover Slip">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                    Handover Slip
-                                </button>
                             </td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php else: ?>
+                        <?php foreach ($allocatedItems as $item): ?>
+                            <tr class="emp-asset-row" data-type="<?php echo $item['type']; ?>">
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div class="asset-item-icon-box">
+                                            <?php if ($item['icon_type'] === 'laptop'): ?>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="2" y1="20" x2="22" y2="20"></line></svg>
+                                            <?php elseif ($item['icon_type'] === 'monitor'): ?>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                            <?php elseif ($item['icon_type'] === 'dock'): ?>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m4-6v6M8 8h8a2 2 0 0 1 2 2v2a6 6 0 0 1-12 0v-2a2 2 0 0 1 2-2zm4 10v4"></path></svg>
+                                            <?php elseif ($item['icon_type'] === 'keyboard'): ?>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>
+                                            <?php elseif ($item['icon_type'] === 'mouse'): ?>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="7"></rect><line x1="12" y1="6" x2="12" y2="10"></line></svg>
+                                            <?php else: ?>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"></circle><path d="m21 2-9.6 9.6"></path><path d="m15.5 7.5 3 3"></path></svg>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 700; color: var(--navy-primary); font-size: 13.5px;">
+                                                <?php echo htmlspecialchars($item['name']); ?>
+                                            </div>
+                                            <div style="margin-top: 3px;">
+                                                <span class="asset-tag-pill"><?php echo htmlspecialchars($item['tag']); ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div style="font-size: 13px; font-weight: 600; color: var(--navy-primary);">
+                                        <?php echo htmlspecialchars($item['category']); ?>
+                                    </div>
+                                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.35;">
+                                        <?php echo htmlspecialchars($item['specs']); ?>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="asset-serial-pill">
+                                        <?php echo htmlspecialchars($item['serial']); ?>
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span style="font-size: 12.5px; font-weight: 500; color: var(--text-secondary);">
+                                        <?php echo htmlspecialchars($item['date']); ?>
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="badge <?php echo $item['badge']; ?>" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">
+                                        <?php echo htmlspecialchars($item['status']); ?>
+                                    </span>
+                                </td>
+
+                                <td style="text-align: right; padding-right: 24px;">
+                                    <button type="button" class="btn-action-slip" 
+                                        onclick='openHandoverSlipModal(<?php echo json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)'
+                                        title="View & Print Official Handover Slip">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        Handover Slip
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
 
