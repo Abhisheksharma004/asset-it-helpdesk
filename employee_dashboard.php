@@ -498,7 +498,10 @@ include 'includes/employee_topbar.php';
                             Track repair requests, peripheral orders, and service desk tickets
                         </div>
                     </div>
-                    <div class="card-header-actions">
+                    <div class="card-header-actions" style="display: flex; gap: 8px;">
+                        <a href="employee_tickets.php" class="quick-action-btn" style="height: 32px; padding: 0 12px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--border-color); color: var(--navy-primary);">
+                            View All Tickets
+                        </a>
                         <button type="button" class="quick-action-btn" onclick="openEmployeeTicketModal()" style="height: 32px; padding: 0 12px; font-size: 12px;">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             Raise New Ticket
