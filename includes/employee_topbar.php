@@ -149,30 +149,14 @@ if (!empty($allocatedItems)) {
                     <input type="text" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-                    <div class="form-group">
-                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Category *</label>
-                        <select class="modal-select" id="ticketCategorySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                            <option value="Hardware / Laptop & PC">Hardware / Laptop & PC</option>
-                            <option value="Screen / Display Failure">Screen / Display Failure</option>
-                            <option value="Battery & Power Issue">Battery & Power Issue</option>
-                            <option value="Operating System / Blue Screen">Operating System / Crash</option>
-                            <option value="Network & VPN Gateway">Network & VPN Gateway</option>
-                            <option value="Identity & SSO Access">Identity & SSO Access</option>
-                            <option value="Peripherals / Cables & Docks">Peripherals & Docks</option>
-                            <option value="General Technical Assistance">General IT Query</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
-                        <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                            <option value="Medium" selected>Medium (Standard 24h SLA)</option>
-                            <option value="High">High (Impacting Daily Work)</option>
-                            <option value="Urgent">Urgent (System Down / Critical)</option>
-                            <option value="Low">Low (General Query)</option>
-                        </select>
-                    </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
+                    <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                        <option value="Medium" selected>Medium (Standard 24h SLA)</option>
+                        <option value="High">High (Impacting Daily Work)</option>
+                        <option value="Urgent">Urgent (System Down / Critical)</option>
+                        <option value="Low">Low (General Query)</option>
+                    </select>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 16px;">
