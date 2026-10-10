@@ -47,6 +47,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const addLocationSelect = document.getElementById("addLocation");
     const addJoiningDateInput = document.getElementById("addJoiningDate");
     const addStatusSelect = document.getElementById("addStatus");
+    const addPasswordInput = document.getElementById("addPassword");
+    const copyAddPasswordBtn = document.getElementById("copyAddPasswordBtn");
 
     // Edit Modal Elements
     const editModal = document.getElementById("editEmployeeModal");
@@ -64,6 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const editLocationSelect = document.getElementById("editLocation");
     const editJoiningDateInput = document.getElementById("editJoiningDate");
     const editStatusSelect = document.getElementById("editStatus");
+    const editPasswordInput = document.getElementById("editPassword");
 
     // Profile Quick-View Modal Elements
     const profileModal = document.getElementById("viewProfileModal");
@@ -81,6 +84,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const profileEmail = document.getElementById("profileEmail");
     const profilePhone = document.getElementById("profilePhone");
     const profileJoiningDate = document.getElementById("profileJoiningDate");
+    const profilePassword = document.getElementById("profilePassword");
+    const copyProfilePasswordBtn = document.getElementById("copyProfilePasswordBtn");
     const profileCreatedDate = document.getElementById("profileCreatedDate");
     let currentProfileEmpId = null;
 
@@ -187,16 +192,55 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    // Default password formula: First Name @ Employee Code (e.g. Abhishek@VE015)
+    function updateAddPasswordDefault() {
+        if (!addPasswordInput) return;
+        const fn = (addFirstNameInput?.value || "").trim();
+        const code = (addEmpCodeInput?.value || "").trim();
+        if (fn || code) {
+            addPasswordInput.value = `${fn}@${code}`;
+        } else {
+            addPasswordInput.value = "";
+        }
+    }
+
+    if (addFirstNameInput) {
+        addFirstNameInput.addEventListener("input", updateAddPasswordDefault);
+    }
+    if (addEmpCodeInput) {
+        addEmpCodeInput.addEventListener("input", updateAddPasswordDefault);
+    }
+
+    if (copyAddPasswordBtn) {
+        copyAddPasswordBtn.addEventListener("click", function () {
+            if (addPasswordInput && addPasswordInput.value) {
+                navigator.clipboard.writeText(addPasswordInput.value);
+                if (typeof showToast === "function") showToast("Default password copied to clipboard!", "success");
+            }
+        });
+    }
+
+    if (copyProfilePasswordBtn) {
+        copyProfilePasswordBtn.addEventListener("click", function () {
+            if (profilePassword && profilePassword.textContent && profilePassword.textContent !== "—") {
+                navigator.clipboard.writeText(profilePassword.textContent);
+                if (typeof showToast === "function") showToast("Employee password copied to clipboard!", "success");
+            }
+        });
+    }
+
     // Open Add Modal
     if (openAddModalBtn) {
         openAddModalBtn.addEventListener("click", function () {
             addEmployeeForm.reset();
+            if (addPasswordInput) addPasswordInput.value = "";
             // Pre-fetch next code
             fetch("api/employees.php?action=get_next_code")
                 .then(res => res.json())
                 .then(res => {
                     if (res.success && res.next_code && addEmpCodeInput) {
                         addEmpCodeInput.value = res.next_code;
+                        updateAddPasswordDefault();
                     }
                 })
                 .catch(() => {});
@@ -461,7 +505,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 department_id: addDepartmentSelect.value,
                 location_id: addLocationSelect.value,
                 joining_date: addJoiningDateInput.value,
-                status: addStatusSelect.value
+                status: addStatusSelect.value,
+                password: addPasswordInput ? addPasswordInput.value.trim() : ""
             };
 
             const submitBtn = addEmployeeForm.querySelector('button[type="submit"]');
@@ -480,6 +525,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (res.success) {
                     closeModal(addModal);
                     addEmployeeForm.reset();
+                    if (addPasswordInput) addPasswordInput.value = "";
                     if (typeof showToast === "function") showToast(res.message || "Employee registered successfully!", "success");
                     loadEmployees();
                 } else {
@@ -525,6 +571,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (profileEmail) profileEmail.textContent = emp.email || "—";
         if (profilePhone) profilePhone.textContent = emp.phone || "—";
         if (profileJoiningDate) profileJoiningDate.textContent = emp.joining_date || "—";
+        if (profilePassword) profilePassword.textContent = emp.password || `${emp.first_name || ""}@${emp.emp_code || ""}`;
         if (profileCreatedDate) profileCreatedDate.textContent = emp.created_date || emp.created_at || "—";
 
         openModal(profileModal);
@@ -546,6 +593,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (editLocationSelect) editLocationSelect.value = emp.location_id || "";
         if (editJoiningDateInput) editJoiningDateInput.value = emp.joining_date_raw || "";
         if (editStatusSelect) editStatusSelect.value = emp.status || "Active";
+        if (editPasswordInput) editPasswordInput.value = "";
 
         openModal(editModal);
         setTimeout(() => editFirstNameInput && editFirstNameInput.focus(), 100);
@@ -570,6 +618,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 joining_date: editJoiningDateInput.value,
                 status: editStatusSelect.value
             };
+
+            if (editPasswordInput && editPasswordInput.value.trim()) {
+                payload.password = editPasswordInput.value.trim();
+            }
 
             const submitBtn = editEmployeeForm.querySelector('button[type="submit"]');
             if (submitBtn) {

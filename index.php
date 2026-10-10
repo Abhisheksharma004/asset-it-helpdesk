@@ -3,7 +3,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 if (!empty($_SESSION['logged_in'])) {
-    header("Location: dashboard.php");
+    if (strtolower($_SESSION['user_role'] ?? '') === 'employee') {
+        header("Location: employee_dashboard.php");
+    } else {
+        header("Location: dashboard.php");
+    }
     exit;
 }
 ?>

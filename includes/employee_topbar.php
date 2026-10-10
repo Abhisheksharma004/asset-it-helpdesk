@@ -63,8 +63,16 @@ if (empty($emp_initials)) $emp_initials = 'EM';
                 <span class="badge-dot" style="background: #10b981;"></span>
             </button>
 
+            <!-- Change Password Action -->
+            <button class="icon-btn" title="Change Account Password" onclick="if(typeof openChangePasswordModal === 'function') openChangePasswordModal();" style="border-radius: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </button>
+
             <!-- Employee User Pill -->
-            <div class="user-pill" onclick="if(typeof showToast === 'function') showToast('Logged in as <?php echo htmlspecialchars($emp_topbar_name); ?> (<?php echo htmlspecialchars($emp_topbar_code); ?>) • Employee Portal', 'info');">
+            <div class="user-pill" onclick="if(typeof openEmployeeProfileModal === 'function') openEmployeeProfileModal();" title="Click to view full employee profile & security" style="cursor: pointer;">
                 <div class="avatar" style="background: var(--cyan-primary);"><?php echo htmlspecialchars($emp_initials); ?></div>
                 <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
                     <span class="user-info" style="font-size: 12.5px;"><?php echo htmlspecialchars($emp_topbar_name); ?></span>

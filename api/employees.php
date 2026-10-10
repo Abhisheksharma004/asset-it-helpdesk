@@ -60,6 +60,17 @@ BEGIN
 END";
 sqlsrv_query($conn, $tableSetupSql);
 
+// Ensure password and password_hash columns exist in employees table
+$passColSql = "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('employees') AND name = 'password')
+BEGIN
+    ALTER TABLE employees ADD password NVARCHAR(255) NULL;
+END
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('employees') AND name = 'password_hash')
+BEGIN
+    ALTER TABLE employees ADD password_hash NVARCHAR(255) NULL;
+END";
+sqlsrv_query($conn, $passColSql);
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 /**
@@ -109,6 +120,7 @@ if ($method === 'GET') {
                    CONVERT(VARCHAR(10), e.joining_date, 120) AS joining_date_raw,
                    CONVERT(VARCHAR(10), e.joining_date, 105) AS joining_date,
                    e.status,
+                   e.password,
                    d.department_name,
                    l.location_name,
                    CONVERT(VARCHAR(10), e.created_at, 105) AS created_at,
@@ -153,6 +165,9 @@ if ($method === 'GET') {
 
     $employees = [];
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        if (empty($row['password'])) {
+            $row['password'] = trim($row['first_name'] ?? '') . '@' . trim($row['emp_code'] ?? '');
+        }
         $employees[] = $row;
     }
     sqlsrv_free_stmt($stmt);
@@ -238,6 +253,7 @@ if ($method === 'POST') {
         $designation    = trim($data['designation'] ?? '');
         $joining_date   = !empty($data['joining_date']) ? trim($data['joining_date']) : null;
         $status         = trim($data['status'] ?? 'Active');
+        $rawPassword    = trim($data['password'] ?? '');
 
         // Validation
         if ($first_name === '') {
@@ -279,9 +295,15 @@ if ($method === 'POST') {
             exit;
         }
 
-        // Insert employee
-        $insertSql = "INSERT INTO employees (emp_code, first_name, last_name, email, phone, department_id, location_id, designation, joining_date, status, created_at, updated_at) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
+        // Compute default password if empty: "First Name@Employee Code" e.g. "Abhishek@VE015"
+        if ($rawPassword === '') {
+            $rawPassword = $first_name . '@' . $emp_code;
+        }
+        $passwordHash = password_hash($rawPassword, PASSWORD_DEFAULT);
+
+        // Insert employee (with is_first_login = 1)
+        $insertSql = "INSERT INTO employees (emp_code, first_name, last_name, email, phone, department_id, location_id, designation, joining_date, status, password, password_hash, is_first_login, created_at, updated_at) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, GETDATE(), GETDATE())";
         $insertParams = [
             $emp_code, 
             $first_name, 
@@ -292,7 +314,9 @@ if ($method === 'POST') {
             $location_id, 
             ($designation !== '' ? $designation : null), 
             $joining_date, 
-            $status
+            $status,
+            $rawPassword,
+            $passwordHash
         ];
 
         $insertStmt = sqlsrv_query($conn, $insertSql, $insertParams);
@@ -304,10 +328,42 @@ if ($method === 'POST') {
 
         $newId = getLastInsertId($conn);
 
+        // Fetch department name for users table
+        $deptName = 'General';
+        if ($department_id) {
+            $dStmt = sqlsrv_query($conn, "SELECT department_name FROM departments WHERE id = ?", [$department_id]);
+            if ($dStmt && ($dRow = sqlsrv_fetch_array($dStmt, SQLSRV_FETCH_ASSOC))) {
+                $deptName = $dRow['department_name'] ?? 'General';
+            }
+        }
+
+        // Sync with users table so employee can log in immediately (with is_first_login = 1)
+        $uChk = sqlsrv_query($conn, "SELECT id FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)", [$email, $emp_code]);
+        if ($uChk && $uRow = sqlsrv_fetch_array($uChk, SQLSRV_FETCH_ASSOC)) {
+            sqlsrv_query($conn, "UPDATE users SET username = ?, password_hash = ?, full_name = ?, role = 'Employee', department = ?, is_active = ?, is_first_login = 1, updated_at = GETDATE() WHERE id = ?", [
+                $emp_code,
+                $passwordHash,
+                trim($first_name . ' ' . $last_name),
+                $deptName,
+                ($status === 'Active' ? 1 : 0),
+                $uRow['id']
+            ]);
+        } else {
+            sqlsrv_query($conn, "INSERT INTO users (username, email, password_hash, full_name, role, department, is_active, is_first_login, created_at, updated_at) VALUES (?, ?, ?, ?, 'Employee', ?, ?, 1, GETDATE(), GETDATE())", [
+                $emp_code,
+                $email,
+                $passwordHash,
+                trim($first_name . ' ' . $last_name),
+                $deptName,
+                ($status === 'Active' ? 1 : 0)
+            ]);
+        }
+
         echo json_encode([
-            'success'     => true,
-            'message'     => "Employee '{$first_name} " . ($last_name ? $last_name . " " : "") . "({$emp_code})' added successfully.",
-            'employee_id' => $newId
+            'success'          => true,
+            'message'          => "Employee '{$first_name} " . ($last_name ? $last_name . " " : "") . "({$emp_code})' added successfully. Default Password: {$rawPassword}",
+            'employee_id'      => $newId,
+            'default_password' => $rawPassword
         ]);
         exit;
     }
@@ -325,6 +381,7 @@ if ($method === 'POST') {
         $designation    = trim($data['designation'] ?? '');
         $joining_date   = !empty($data['joining_date']) ? trim($data['joining_date']) : null;
         $status         = trim($data['status'] ?? 'Active');
+        $rawPassword    = trim($data['password'] ?? '');
 
         if ($id <= 0 || $first_name === '') {
             http_response_code(400);
@@ -341,6 +398,12 @@ if ($method === 'POST') {
         if (!in_array($status, ['Active', 'Inactive'])) {
             $status = 'Active';
         }
+
+        // Fetch old employee data to update users table accurately
+        $oldStmt = sqlsrv_query($conn, "SELECT emp_code, email FROM employees WHERE id = ?", [$id]);
+        $oldRow = $oldStmt ? sqlsrv_fetch_array($oldStmt, SQLSRV_FETCH_ASSOC) : null;
+        $oldEmail = $oldRow['email'] ?? '';
+        $oldCode  = $oldRow['emp_code'] ?? '';
 
         // Check duplicate emp_code for other employees
         $checkCodeSql = "SELECT id FROM employees WHERE LOWER(LTRIM(RTRIM(emp_code))) = LOWER(?) AND id <> ?";
@@ -360,30 +423,59 @@ if ($method === 'POST') {
             exit;
         }
 
-        $updateSql = "UPDATE employees 
-                      SET emp_code = ?, first_name = ?, last_name = ?, email = ?, phone = ?, 
-                          department_id = ?, location_id = ?, designation = ?, joining_date = ?, 
-                          status = ?, updated_at = GETDATE()
-                      WHERE id = ?";
-        $updateParams = [
-            $emp_code, 
-            $first_name, 
-            ($last_name !== '' ? $last_name : null), 
-            $email, 
-            ($phone !== '' ? $phone : null), 
-            $department_id, 
-            $location_id, 
-            ($designation !== '' ? $designation : null), 
-            $joining_date, 
-            $status, 
-            $id
-        ];
+        if ($rawPassword !== '') {
+            $passHash = password_hash($rawPassword, PASSWORD_DEFAULT);
+            $updateSql = "UPDATE employees 
+                          SET emp_code = ?, first_name = ?, last_name = ?, email = ?, phone = ?, 
+                              department_id = ?, location_id = ?, designation = ?, joining_date = ?, 
+                              status = ?, password = ?, password_hash = ?, updated_at = GETDATE()
+                          WHERE id = ?";
+            $updateParams = [
+                $emp_code, $first_name, ($last_name !== '' ? $last_name : null), $email, ($phone !== '' ? $phone : null),
+                $department_id, $location_id, ($designation !== '' ? $designation : null), $joining_date,
+                $status, $rawPassword, $passHash, $id
+            ];
+        } else {
+            $updateSql = "UPDATE employees 
+                          SET emp_code = ?, first_name = ?, last_name = ?, email = ?, phone = ?, 
+                              department_id = ?, location_id = ?, designation = ?, joining_date = ?, 
+                              status = ?, updated_at = GETDATE()
+                          WHERE id = ?";
+            $updateParams = [
+                $emp_code, $first_name, ($last_name !== '' ? $last_name : null), $email, ($phone !== '' ? $phone : null),
+                $department_id, $location_id, ($designation !== '' ? $designation : null), $joining_date,
+                $status, $id
+            ];
+        }
 
         $updateStmt = sqlsrv_query($conn, $updateSql, $updateParams);
         if ($updateStmt === false) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Failed to update employee details.', 'errors' => sqlsrv_errors()]);
             exit;
+        }
+
+        // Fetch department name
+        $deptName = 'General';
+        if ($department_id) {
+            $dStmt = sqlsrv_query($conn, "SELECT department_name FROM departments WHERE id = ?", [$department_id]);
+            if ($dStmt && ($dRow = sqlsrv_fetch_array($dStmt, SQLSRV_FETCH_ASSOC))) {
+                $deptName = $dRow['department_name'] ?? 'General';
+            }
+        }
+
+        // Update corresponding users table entry
+        $uChk = sqlsrv_query($conn, "SELECT id FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)", [$email, $emp_code, $oldEmail, $oldCode]);
+        if ($uChk && $uRow = sqlsrv_fetch_array($uChk, SQLSRV_FETCH_ASSOC)) {
+            if ($rawPassword !== '') {
+                sqlsrv_query($conn, "UPDATE users SET username = ?, email = ?, password_hash = ?, full_name = ?, department = ?, is_active = ?, updated_at = GETDATE() WHERE id = ?", [
+                    $emp_code, $email, $passHash, trim($first_name . ' ' . $last_name), $deptName, ($status === 'Active' ? 1 : 0), $uRow['id']
+                ]);
+            } else {
+                sqlsrv_query($conn, "UPDATE users SET username = ?, email = ?, full_name = ?, department = ?, is_active = ?, updated_at = GETDATE() WHERE id = ?", [
+                    $emp_code, $email, trim($first_name . ' ' . $last_name), $deptName, ($status === 'Active' ? 1 : 0), $uRow['id']
+                ]);
+            }
         }
 
         echo json_encode([
@@ -402,12 +494,21 @@ if ($method === 'POST') {
             exit;
         }
 
+        // Fetch employee info first to remove from users table
+        $infoStmt = sqlsrv_query($conn, "SELECT emp_code, email FROM employees WHERE id = ?", [$id]);
+        $info = $infoStmt ? sqlsrv_fetch_array($infoStmt, SQLSRV_FETCH_ASSOC) : null;
+
         $delSql = "DELETE FROM employees WHERE id = ?";
         $delStmt = sqlsrv_query($conn, $delSql, [$id]);
         if ($delStmt === false) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Failed to delete employee.', 'errors' => sqlsrv_errors()]);
             exit;
+        }
+
+        // Clean up or deactivate in users table
+        if ($info) {
+            sqlsrv_query($conn, "DELETE FROM users WHERE (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) AND role = 'Employee'", [$info['email'], $info['emp_code']]);
         }
 
         echo json_encode([
@@ -427,7 +528,7 @@ if ($method === 'POST') {
         }
 
         // Fetch current status
-        $q = sqlsrv_query($conn, "SELECT status FROM employees WHERE id = ?", [$id]);
+        $q = sqlsrv_query($conn, "SELECT emp_code, email, status FROM employees WHERE id = ?", [$id]);
         $row = $q ? sqlsrv_fetch_array($q, SQLSRV_FETCH_ASSOC) : null;
         if (!$row) {
             http_response_code(404);
@@ -443,6 +544,13 @@ if ($method === 'POST') {
             echo json_encode(['success' => false, 'message' => 'Failed to update employee status.']);
             exit;
         }
+
+        // Update is_active in users table
+        sqlsrv_query($conn, "UPDATE users SET is_active = ?, updated_at = GETDATE() WHERE (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) AND role = 'Employee'", [
+            ($newStatus === 'Active' ? 1 : 0),
+            $row['email'],
+            $row['emp_code']
+        ]);
 
         echo json_encode([
             'success'    => true,
@@ -600,13 +708,29 @@ if ($method === 'POST') {
                 continue;
             }
 
+            // Generate default password: First Name@Employee Code
+            $defaultPass = $first_name . '@' . $emp_code;
+            $passHash = password_hash($defaultPass, PASSWORD_DEFAULT);
+
             // Insert new employee
-            $iSql = "INSERT INTO employees (emp_code, first_name, last_name, email, phone, department_id, location_id, designation, joining_date, status, created_at, updated_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
-            $iParams = [$emp_code, $first_name, ($last_name !== '' ? $last_name : null), $email, ($phone !== '' ? $phone : null), $deptId, $locId, ($designation !== '' ? $designation : null), $formattedDate, $status];
+            $iSql = "INSERT INTO employees (emp_code, first_name, last_name, email, phone, department_id, location_id, designation, joining_date, status, password, password_hash, created_at, updated_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
+            $iParams = [$emp_code, $first_name, ($last_name !== '' ? $last_name : null), $email, ($phone !== '' ? $phone : null), $deptId, $locId, ($designation !== '' ? $designation : null), $formattedDate, $status, $defaultPass, $passHash];
             $iStmt = sqlsrv_query($conn, $iSql, $iParams);
             if ($iStmt !== false) {
                 $inserted++;
+
+                // Sync with users table
+                $uChk = sqlsrv_query($conn, "SELECT id FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)", [$email, $emp_code]);
+                if ($uChk && $uRow = sqlsrv_fetch_array($uChk, SQLSRV_FETCH_ASSOC)) {
+                    sqlsrv_query($conn, "UPDATE users SET username = ?, password_hash = ?, full_name = ?, role = 'Employee', is_active = ?, updated_at = GETDATE() WHERE id = ?", [
+                        $emp_code, $passHash, trim($first_name . ' ' . $last_name), ($status === 'Active' ? 1 : 0), $uRow['id']
+                    ]);
+                } else {
+                    sqlsrv_query($conn, "INSERT INTO users (username, email, password_hash, full_name, role, department, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 'Employee', ?, ?, GETDATE(), GETDATE())", [
+                        $emp_code, $email, $passHash, trim($first_name . ' ' . $last_name), ($deptInput ?: 'General'), ($status === 'Active' ? 1 : 0)
+                    ]);
+                }
             } else {
                 $errors[] = "Row {$rowNum}: Error saving {$email}.";
                 $skipped++;

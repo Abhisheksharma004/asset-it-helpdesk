@@ -48,7 +48,7 @@ if (empty($identifier) || empty($password)) {
 }
 
 // Prepare query to search by email or username
-$sql = "SELECT id, username, email, password_hash, full_name, role, department, is_active 
+$sql = "SELECT id, username, email, password_hash, full_name, role, department, is_active, is_first_login, last_login 
         FROM users 
         WHERE email = ? OR username = ?";
 $params = [$identifier, $identifier];
@@ -97,6 +97,9 @@ if (!password_verify($password, $user['password_hash'])) {
     exit;
 }
 
+// Check if first-time login
+$isFirstLogin = (isset($user['is_first_login']) && (int)$user['is_first_login'] === 1) || empty($user['last_login']);
+
 // Handle Session Management
 if (session_status() === PHP_SESSION_NONE) {
     if ($remember) {
@@ -116,12 +119,14 @@ if (session_status() === PHP_SESSION_NONE) {
 session_regenerate_id(true);
 
 // Store user session data
-$_SESSION['user_id']    = (int)$user['id'];
-$_SESSION['user_name']  = $user['full_name'];
-$_SESSION['user_email'] = $user['email'];
-$_SESSION['user_role']  = $user['role'];
-$_SESSION['user_dept']  = $user['department'] ?? '';
-$_SESSION['logged_in']  = true;
+$_SESSION['user_id']        = (int)$user['id'];
+$_SESSION['user_name']      = $user['full_name'];
+$_SESSION['user_username']  = $user['username'] ?? '';
+$_SESSION['user_email']     = $user['email'];
+$_SESSION['user_role']      = $user['role'];
+$_SESSION['user_dept']      = $user['department'] ?? '';
+$_SESSION['is_first_login'] = $isFirstLogin ? 1 : 0;
+$_SESSION['logged_in']      = true;
 
 // Update last login timestamp in SQL Server
 $updateSql = "UPDATE users SET last_login = GETDATE() WHERE id = ?";
@@ -130,18 +135,27 @@ if ($updateStmt !== false) {
     sqlsrv_free_stmt($updateStmt);
 }
 
+// Redirect based on role
+$isEmployee = (strtolower(trim($user['role'] ?? '')) === 'employee');
+$redirectUrl = $isEmployee 
+    ? ('employee_dashboard.php' . ($isFirstLogin ? '?first_login=1' : '')) 
+    : 'dashboard.php';
+
 // Return successful response
 http_response_code(200);
 echo json_encode([
-    'success'  => true,
-    'message'  => 'Login successful! Redirecting to dashboard...',
-    'redirect' => 'dashboard.php',
-    'user'     => [
-        'id'         => (int)$user['id'],
-        'name'       => $user['full_name'],
-        'email'      => $user['email'],
-        'role'       => $user['role'],
-        'department' => $user['department']
+    'success'        => true,
+    'message'        => 'Login successful! Redirecting...',
+    'redirect'       => $redirectUrl,
+    'is_first_login' => $isFirstLogin,
+    'user'           => [
+        'id'             => (int)$user['id'],
+        'username'       => $user['username'] ?? '',
+        'name'           => $user['full_name'],
+        'email'          => $user['email'],
+        'role'           => $user['role'],
+        'department'     => $user['department'],
+        'is_first_login' => $isFirstLogin
     ]
 ]);
 exit;

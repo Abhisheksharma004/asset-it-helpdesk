@@ -46,7 +46,21 @@ $activeEmployee = [
     'custody'     => 'Verified & Active'
 ];
 
-if (!empty($availableEmployees)) {
+if (isset($conn) && $conn !== false && !empty($_SESSION['user_email'])) {
+    $currStmt = sqlsrv_query($conn, "SELECT e.*, d.department_name, l.location_name FROM employees e LEFT JOIN departments d ON e.department_id = d.id LEFT JOIN locations l ON e.location_id = l.id WHERE LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)", [$_SESSION['user_email'], $_SESSION['user_username'] ?? '']);
+    if ($currStmt && ($currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC))) {
+        $fullName = trim(($currRow['first_name'] ?? '') . ' ' . ($currRow['last_name'] ?? ''));
+        $activeEmployee = [
+            'name'        => $fullName ?: ($_SESSION['user_name'] ?? 'Employee'),
+            'code'        => $currRow['emp_code'] ?? 'EMP-000',
+            'designation' => $currRow['designation'] ?: 'Staff Member',
+            'department'  => $currRow['department_name'] ?: ($_SESSION['user_dept'] ?? 'General'),
+            'email'       => $currRow['email'] ?? $_SESSION['user_email'],
+            'location'    => $currRow['location_name'] ?: 'HQ',
+            'custody'     => ($currRow['status'] === 'Active') ? 'Verified & Active' : 'Inactive'
+        ];
+    }
+} elseif (!empty($availableEmployees)) {
     if ($selectedEmpId > 0) {
         foreach ($availableEmployees as $ae) {
             if ($ae['id'] === $selectedEmpId) {
@@ -209,6 +223,22 @@ $recentTickets = [
         'tech'      => 'IT Procurement Team'
     ]
 ];
+
+// Check if this is the employee's first login
+$isFirstLogin = false;
+if (isset($_GET['first_login']) && $_GET['first_login'] == '1') {
+    $isFirstLogin = true;
+} elseif (!empty($_SESSION['is_first_login'])) {
+    $isFirstLogin = true;
+} elseif (isset($conn) && $conn !== false && !empty($_SESSION['user_id'])) {
+    $chkFl = sqlsrv_query($conn, "SELECT is_first_login FROM users WHERE id = ?", [$_SESSION['user_id']]);
+    if ($chkFl && ($flRow = sqlsrv_fetch_array($chkFl, SQLSRV_FETCH_ASSOC))) {
+        if ((int)($flRow['is_first_login'] ?? 0) === 1) {
+            $isFirstLogin = true;
+        }
+    }
+}
+$body_attributes = $isFirstLogin ? 'data-first-login="1"' : '';
 
 // Include Modular Layout Components
 include 'includes/header.php';
@@ -1038,8 +1068,97 @@ include 'includes/employee_topbar.php';
             <div style="font-size: 11.5px; color: var(--text-muted);">
                 Need to update details? Contact HR / IT Administrator.
             </div>
-            <button type="button" class="btn-primary modal-cancel-btn">Close</button>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('employeeProfileModal'); openChangePasswordModal();" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Change Password
+                </button>
+                <button type="button" class="btn-primary modal-cancel-btn">Close</button>
+            </div>
         </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+     MODAL 5: FIRST-TIME LOGIN & CHANGE PASSWORD MODAL
+     ========================================================================= -->
+<div class="modal-overlay" id="changePasswordModal" style="display: none; z-index: 9999;">
+    <div class="modal-box" style="max-width: 460px; border-top: 4px solid var(--cyan-primary);">
+        <div class="modal-header" style="padding: 18px 20px 14px; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 147, 167, 0.12); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 id="pwdModalTitle" style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
+                        <?php echo $isFirstLogin ? 'Set Your New Password' : 'Change Account Password'; ?>
+                    </h3>
+                    <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
+                        <?php echo $isFirstLogin ? 'First login security setup for your portal account.' : 'Update your portal login credentials.'; ?>
+                    </p>
+                </div>
+            </div>
+            <?php if (!$isFirstLogin): ?>
+                <button type="button" class="modal-close-btn" onclick="closeModal('changePasswordModal')">&times;</button>
+            <?php endif; ?>
+        </div>
+
+        <form id="changePasswordForm">
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="currentPasswordInput" style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
+                        Current / Default Password *
+                    </label>
+                    <div style="position: relative;">
+                        <input type="password" id="currentPasswordInput" required placeholder="Enter current default password" style="width: 100%; padding: 10px 60px 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box;">
+                        <button type="button" class="pwd-toggle-btn" onclick="toggleInputType('currentPasswordInput', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 4px 6px;">
+                            Show
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="newPasswordInput" style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
+                        New Password * <span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">(Min. 6 characters)</span>
+                    </label>
+                    <div style="position: relative;">
+                        <input type="password" id="newPasswordInput" required minlength="6" placeholder="Enter new password" style="width: 100%; padding: 10px 60px 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box;">
+                        <button type="button" class="pwd-toggle-btn" onclick="toggleInputType('newPasswordInput', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 4px 6px;">
+                            Show
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label for="confirmPasswordInput" style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
+                        Confirm New Password *
+                    </label>
+                    <div style="position: relative;">
+                        <input type="password" id="confirmPasswordInput" required minlength="6" placeholder="Re-enter new password" style="width: 100%; padding: 10px 60px 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box;">
+                        <button type="button" class="pwd-toggle-btn" onclick="toggleInputType('confirmPasswordInput', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 4px 6px;">
+                            Show
+                        </button>
+                    </div>
+                    <small id="pwdMatchMsg" style="display: block; margin-top: 4px; font-size: 11px;"></small>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
+                <?php if (!$isFirstLogin): ?>
+                    <button type="button" class="btn-secondary" onclick="closeModal('changePasswordModal')">Cancel</button>
+                <?php endif; ?>
+                <button type="submit" class="btn-primary" id="savePasswordBtn" style="padding: 9px 20px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Save Password & Continue</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

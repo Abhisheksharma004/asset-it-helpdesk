@@ -34,7 +34,6 @@ if (!isset($page_title)) {
             <link rel="stylesheet" href="<?php echo htmlspecialchars($css_file . '?v=' . $css_ver); ?>">
         <?php endforeach; ?>
     <?php endif; ?>
-</head>
-<body>
+<body <?php echo !empty($body_attributes) ? $body_attributes : ''; ?>>
 
 <div class="app-container">
