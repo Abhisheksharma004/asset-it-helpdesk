@@ -19,8 +19,9 @@
 
 </div> <!-- End .app-container -->
 
+<?php if (!isset($active_page) || strpos($active_page, 'employee_') !== 0): ?>
 <!-- ==================== QUICK TICKET MODAL ==================== -->
-<div class="modal-overlay" id="ticketModal">
+<div class="modal-overlay" id="ticketModal" style="display: none;">
     <div class="modal-box">
         <div class="modal-header">
             <h3>Create New Service Desk Ticket</h3>
@@ -71,6 +72,7 @@
         </form>
     </div>
 </div>
+<?php endif; ?>
 
 <!-- Core Scripts -->
 <script src="js/toast.js?v=<?php echo file_exists(__DIR__ . '/../js/toast.js') ? filemtime(__DIR__ . '/../js/toast.js') : time(); ?>"></script>
