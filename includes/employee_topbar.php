@@ -169,6 +169,12 @@ if (!empty($allocatedItems)) {
                     </div>
                 </div>
 
+                <!-- 5. Incident Date & Time -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Incident Date & Time *</label>
+                    <input type="datetime-local" class="modal-input" id="ticketDateTimeInput" value="<?php echo date('Y-m-d\TH:i'); ?>" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none; background: #fff; color: var(--text-primary); font-family: inherit;">
+                </div>
+
             </div>
             <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
                 <button type="button" class="btn-secondary" onclick="closeModal('employeeTicketModal')">Cancel</button>
@@ -201,6 +207,15 @@ window.openEmployeeTicketModal = function (assetTag = '') {
             assetSelect.value = assetTag;
         }
     }
+
+    // Ensure datetime input has default current timestamp if blank
+    const dtInput = document.getElementById('ticketDateTimeInput');
+    if (dtInput && !dtInput.value) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        dtInput.value = now.toISOString().slice(0, 16);
+    }
+
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 };

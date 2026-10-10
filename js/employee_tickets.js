@@ -126,8 +126,14 @@ function initNewTicketForm() {
 
             // Insert new row into the table dynamically
             const tbody = document.querySelector('#empTicketsTable tbody');
-            const newTktId = 'TKT-2026-' + Math.floor(1000 + Math.random() * 9000);
-            const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const rawDt = document.getElementById('ticketDateTimeInput')?.value;
+            let dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            if (rawDt) {
+                const parsedDate = new Date(rawDt);
+                if (!isNaN(parsedDate.getTime())) {
+                    dateStr = parsedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                }
+            }
 
             let pBadgeClass = 'badge-medium';
             if (priorityVal === 'Urgent') pBadgeClass = 'badge-urgent';
