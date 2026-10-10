@@ -315,40 +315,6 @@ include 'includes/employee_topbar.php';
         <span class="current">My Allocated Assets</span>
     </nav>
 
-    <!-- Hero Asset Banner Card -->
-    <div class="assets-hero-card">
-        <div class="assets-hero-left">
-            <div class="assets-hero-icon-box">
-                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>
-            </div>
-            <div class="assets-hero-info">
-                <h1>My Allocated IT Assets</h1>
-                <p>
-                    Official computing hardware and workstation peripherals registered in the custody of 
-                    <strong><?php echo htmlspecialchars($activeEmployee['name']); ?></strong> (<?php echo htmlspecialchars($activeEmployee['code']); ?>).
-                </p>
-                <div class="assets-tags-wrap">
-                    <span class="asset-hero-tag">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="22.01"></line><line x1="15" y1="22" x2="15" y2="22.01"></line></svg>
-                        <?php echo htmlspecialchars($activeEmployee['department']); ?>
-                    </span>
-                    <span class="asset-hero-tag">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                        <?php echo htmlspecialchars($activeEmployee['location']); ?>
-                    </span>
-                    <span class="asset-hero-tag status-active">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
-                        Custody Verified & Compliant
-                    </span>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Metric Summary Stats Row (SVG Icons Only) -->
     <div class="assets-stats-grid">
         <div class="assets-stat-card">
