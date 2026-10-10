@@ -201,7 +201,7 @@ $totalItemsCount = count($allocatedItems);
 // Recent Support Requests for this employee
 $recentTickets = [
     [
-        'id'        => 'TKT-1082',
+        'id'        => 'TKT10261082',
         'subject'   => 'External monitor HDMI signal flickering after standby',
         'asset'     => 'Dell UltraSharp 24" (AST2026048)',
         'priority'  => 'Medium',
@@ -212,7 +212,7 @@ $recentTickets = [
         'tech'      => 'Deepak Patel (IT Support Desk)'
     ],
     [
-        'id'        => 'TKT-1045',
+        'id'        => 'TKT09261045',
         'subject'   => 'Request for USB-C Multiport Display Adapter for meeting room',
         'asset'     => 'General Accessory Request',
         'priority'  => 'Low',
@@ -723,7 +723,7 @@ include 'includes/employee_topbar.php';
                         <div class="activity-dot">🎫</div>
                         <div class="activity-body">
                             <div class="activity-text">
-                                Ticket <strong>#TKT-1082</strong> registered with IT Helpdesk.
+                                Ticket <strong>#TKT10261082</strong> registered with IT Helpdesk.
                             </div>
                             <div class="activity-time">08 Oct 2026 • In Progress</div>
                         </div>

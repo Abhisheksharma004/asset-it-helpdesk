@@ -173,179 +173,93 @@ if (isset($conn) && $conn !== false && (!empty($t_emp_id) || !empty($t_emp_email
 ?>
 
 <!-- =========================================================================
-     GLOBAL SIDE-VIEW DRAWER: RAISE IT SUPPORT TICKET (LIKE ASSETS.PHP)
+     GLOBAL MODAL: RAISE IT SUPPORT TICKET (AVAILABLE ON ALL EMPLOYEE PAGES)
      ========================================================================= -->
-<style>
-.ticket-drawer-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 25, 56, 0.45);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 99998;
-    display: none;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
-}
-.ticket-drawer-backdrop.open {
-    opacity: 1;
-    visibility: visible;
-}
-.ticket-side-drawer {
-    position: fixed;
-    top: 0;
-    right: -580px;
-    width: 520px;
-    max-width: 95vw;
-    height: 100vh;
-    background: #ffffff;
-    box-shadow: -10px 0 35px rgba(0, 25, 56, 0.18);
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    border-left: 1px solid var(--border-color);
-}
-.ticket-side-drawer.open {
-    right: 0;
-}
-.ticket-drawer-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color);
-    border-top: 4px solid var(--cyan-primary);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #ffffff;
-    flex-shrink: 0;
-}
-.ticket-drawer-close-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: none;
-    background: #f1f5f9;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 20px;
-    line-height: 1;
-    transition: all 0.2s;
-}
-.ticket-drawer-close-btn:hover {
-    background: #e2e8f0;
-    color: var(--danger);
-}
-.ticket-drawer-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 22px 24px;
-}
-.ticket-drawer-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border-color);
-    background: #f8fafc;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-}
-</style>
-
-<div class="ticket-drawer-backdrop" id="ticketDrawerBackdrop" onclick="closeModal('employeeTicketModal')"></div>
-
-<aside class="ticket-side-drawer" id="employeeTicketModal">
-    <div class="ticket-drawer-header">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(0, 147, 167, 0.12); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+<div class="modal-overlay" id="employeeTicketModal" style="display: none; z-index: 9999;">
+    <div class="modal-box" style="max-width: 540px; border-top: 4px solid var(--navy-primary);">
+        <div class="modal-header" style="padding: 18px 24px 14px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 147, 167, 0.12); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
+                        Raise IT Support Ticket
+                    </h3>
+                    <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
+                        Submit an issue or technical assistance request to the IT Service Desk.
+                    </p>
+                </div>
             </div>
-            <div>
-                <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
-                    Raise IT Support Ticket
-                </h3>
-                <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
-                    Submit an issue or technical assistance request to the IT Service Desk.
-                </p>
-            </div>
+            <button type="button" class="modal-close-btn" onclick="closeModal('employeeTicketModal')">&times;</button>
         </div>
-        <button type="button" class="ticket-drawer-close-btn" onclick="closeModal('employeeTicketModal')" title="Close Drawer">&times;</button>
+        <form id="employeeTicketForm">
+            <div class="modal-body" style="padding: 20px 24px; max-height: 75vh; overflow-y: auto;">
+                <!-- 1. Issue Subject -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Subject *</label>
+                    <input type="text" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                </div>
+
+                <!-- 2. Detailed Description -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Detailed Description *</label>
+                    <textarea class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="4" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
+                </div>
+
+                <!-- 3 & 4. Urgency Level and Affected Asset in a single row -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
+                        <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device</label>
+                        <select class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                            <option value="">Select Assigned Asset or Accessory</option>
+                            <?php if (!empty($topbar_device_options)): ?>
+                                <?php foreach ($topbar_device_options as $opt): ?>
+                                    <option value="<?php echo htmlspecialchars($opt['val']); ?>"><?php echo htmlspecialchars($opt['label']); ?></option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="" disabled>No assets or accessories assigned to your profile</option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 5. Incident Date & Time -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Incident Date & Time *</label>
+                    <input type="datetime-local" class="modal-input" id="ticketDateTimeInput" value="<?php echo date('Y-m-d\TH:i'); ?>" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none; background: #fff; color: var(--text-primary); font-family: inherit;">
+                </div>
+
+            </div>
+            <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
+                <button type="button" class="btn-secondary" onclick="closeModal('employeeTicketModal')">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 9px 22px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Submit Ticket</span>
+                </button>
+            </div>
+        </form>
     </div>
-
-    <form id="employeeTicketForm" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; margin: 0;">
-        <div class="ticket-drawer-body">
-            <!-- 1. Issue Subject -->
-            <div class="form-group" style="margin-bottom: 18px;">
-                <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Subject *</label>
-                <input type="text" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-            </div>
-
-            <!-- 2. Detailed Description -->
-            <div class="form-group" style="margin-bottom: 18px;">
-                <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Detailed Description *</label>
-                <textarea class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="5" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
-            </div>
-
-            <!-- 3 & 4. Urgency Level and Affected Asset in a single row -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
-                <div class="form-group">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
-                    <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="Medium" selected>Medium</option>
-                        <option value="High">High</option>
-                        <option value="Urgent">Urgent</option>
-                        <option value="Low">Low</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device</label>
-                    <select class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="">Select Assigned Asset or Accessory</option>
-                        <?php if (!empty($topbar_device_options)): ?>
-                            <?php foreach ($topbar_device_options as $opt): ?>
-                                <option value="<?php echo htmlspecialchars($opt['val']); ?>"><?php echo htmlspecialchars($opt['label']); ?></option>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <option value="" disabled>No assets or accessories assigned to your profile</option>
-                        <?php endif; ?>
-                    </select>
-                </div>
-            </div>
-
-            <!-- 5. Incident Date & Time -->
-            <div class="form-group" style="margin-bottom: 18px;">
-                <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Incident Date & Time *</label>
-                <input type="datetime-local" class="modal-input" id="ticketDateTimeInput" value="<?php echo date('Y-m-d\TH:i'); ?>" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none; background: #fff; color: var(--text-primary); font-family: inherit;">
-            </div>
-        </div>
-
-        <div class="ticket-drawer-footer">
-            <button type="button" class="btn-secondary" onclick="closeModal('employeeTicketModal')">Cancel</button>
-            <button type="submit" class="btn-primary" style="padding: 10px 24px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Submit Ticket</span>
-            </button>
-        </div>
-    </form>
-</aside>
+</div>
 
 <script>
-// Global Employee Support Ticket Side Drawer Controller
+// Global Employee Support Ticket Modal Controller
 window.openEmployeeTicketModal = function (assetTag = '') {
-    const drawer = document.getElementById('employeeTicketModal');
-    const backdrop = document.getElementById('ticketDrawerBackdrop');
-    if (!drawer) return;
-
+    const modal = document.getElementById('employeeTicketModal');
+    if (!modal) return;
     const assetSelect = document.getElementById('ticketAssetSelect');
     if (assetSelect && assetTag) {
+        // Try exact match or match containing tag
         let matched = false;
         for (let i = 0; i < assetSelect.options.length; i++) {
             if (assetSelect.options[i].value.includes(assetTag) || assetSelect.options[i].text.includes(assetTag)) {
@@ -367,13 +281,7 @@ window.openEmployeeTicketModal = function (assetTag = '') {
         dtInput.value = now.toISOString().slice(0, 16);
     }
 
-    if (backdrop) {
-        backdrop.style.display = 'block';
-        requestAnimationFrame(() => {
-            backdrop.classList.add('open');
-        });
-    }
-    drawer.classList.add('open');
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 };
 
@@ -382,31 +290,30 @@ window.openNewTicketModal = function (assetTag = '') {
     window.openEmployeeTicketModal(assetTag);
 };
 
-window.closeModal = function(modalId) {
-    if (modalId === 'employeeTicketModal') {
-        const drawer = document.getElementById('employeeTicketModal');
-        const backdrop = document.getElementById('ticketDrawerBackdrop');
-        if (drawer) drawer.classList.remove('open');
-        if (backdrop) {
-            backdrop.classList.remove('open');
-            setTimeout(() => { backdrop.style.display = 'none'; }, 320);
+if (typeof window.closeModal !== 'function') {
+    window.closeModal = function(modalId) {
+        const m = document.getElementById(modalId);
+        if (m) {
+            m.style.display = 'none';
+            document.body.style.overflow = '';
         }
-        document.body.style.overflow = '';
-        return;
-    }
-    const m = document.getElementById(modalId);
-    if (m) {
-        m.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-};
+    };
+}
 
-// ESC key listener to close drawer
+// Background click and ESC key listeners
 document.addEventListener('DOMContentLoaded', function () {
+    const tktModal = document.getElementById('employeeTicketModal');
+    if (tktModal) {
+        tktModal.addEventListener('click', function (e) {
+            if (e.target === tktModal) {
+                closeModal('employeeTicketModal');
+            }
+        });
+    }
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            const drawer = document.getElementById('employeeTicketModal');
-            if (drawer && drawer.classList.contains('open')) {
+            const m = document.getElementById('employeeTicketModal');
+            if (m && m.style.display === 'flex') {
                 closeModal('employeeTicketModal');
             }
         }

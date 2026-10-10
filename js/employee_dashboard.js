@@ -182,7 +182,10 @@ document.addEventListener('DOMContentLoaded', function () {
         ticketForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const subject = document.getElementById('ticketSubjectInput')?.value || 'Support Request';
-            const ticketId = 'TKT-' + Math.floor(1000 + Math.random() * 9000);
+            const now = new Date();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yy = String(now.getFullYear()).slice(-2);
+            const ticketId = 'TKT' + mm + yy + Math.floor(1000 + Math.random() * 9000);
 
             closeModal('employeeTicketModal');
             ticketForm.reset();

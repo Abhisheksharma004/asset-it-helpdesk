@@ -107,7 +107,7 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
 // Support Tickets UI Data (Curated IT incident & service requests for this employee)
 $supportTickets = [
     [
-        'id'        => 'TKT-2026-1104',
+        'id'        => 'TKT10261104',
         'subject'   => 'Laptop battery draining rapidly and heating during Teams meetings',
         'category'  => 'Hardware / Thermal & Battery',
         'asset'     => !empty($employeeAssets[0]['name']) ? ($employeeAssets[0]['name'] . ' (' . $employeeAssets[0]['tag'] . ')') : 'Dell Latitude 5420 (AST2026001)',
@@ -116,13 +116,13 @@ $supportTickets = [
         'status'    => 'In Progress',
         's_class'   => 'badge-status-progress',
         's_filter'  => 'in-progress',
-        'date'      => '09 Oct 2026',
+        'date'      => '09 Oct 2026, 02:30 PM',
         'tech'      => 'Rajesh Verma (Hardware Support)',
         'tech_init' => 'RV',
         'description' => 'Battery drops from 100% to 20% in less than 45 minutes of video calls. Fan stays on continuously. Diagnostic requested for thermal paste or battery replacement.'
     ],
     [
-        'id'        => 'TKT-2026-1082',
+        'id'        => 'TKT10261082',
         'subject'   => 'External monitor HDMI signal flickering after workstation standby',
         'category'  => 'Hardware / External Display',
         'asset'     => 'Dell UltraSharp 24" (AST2026048)',
@@ -131,13 +131,13 @@ $supportTickets = [
         'status'    => 'In Progress',
         's_class'   => 'badge-status-progress',
         's_filter'  => 'in-progress',
-        'date'      => '08 Oct 2026',
+        'date'      => '08 Oct 2026, 11:15 AM',
         'tech'      => 'Deepak Patel (IT Helpdesk)',
         'tech_init' => 'DP',
         'description' => 'Whenever laptop wakes from sleep/standby, the secondary HDMI monitor flickers black for 5 seconds before returning to normal. Cable has been reseated once.'
     ],
     [
-        'id'        => 'TKT-2026-1045',
+        'id'        => 'TKT09261045',
         'subject'   => 'Request for USB-C Multiport Display Adapter for meeting room',
         'category'  => 'Peripherals / Cables & Docks',
         'asset'     => 'Workstation Peripheral Accessory',
@@ -146,13 +146,13 @@ $supportTickets = [
         'status'    => 'Resolved & Closed',
         's_class'   => 'badge-status-resolved',
         's_filter'  => 'resolved',
-        'date'      => '12 Sep 2026',
+        'date'      => '12 Sep 2026, 04:45 PM',
         'tech'      => 'IT Procurement Team',
         'tech_init' => 'IP',
         'description' => 'Need USB-C to HDMI/VGA adapter to connect laptop to conference room projector for client presentations.'
     ],
     [
-        'id'        => 'TKT-2026-0988',
+        'id'        => 'TKT08260988',
         'subject'   => 'VPN Client failing with TLS handshake timeout on home broadband',
         'category'  => 'Network & Remote Access',
         'asset'     => 'GlobalProtect Enterprise VPN Gateway',
@@ -161,13 +161,13 @@ $supportTickets = [
         'status'    => 'Resolved & Closed',
         's_class'   => 'badge-status-resolved',
         's_filter'  => 'resolved',
-        'date'      => '04 Aug 2026',
+        'date'      => '04 Aug 2026, 09:20 AM',
         'tech'      => 'Neha Gupta (Network Admin)',
         'tech_init' => 'NG',
         'description' => 'VPN gateway Bangalore-HQ was failing to authenticate on Airtel home fiber. Resolved after MTU adjustment and DNS cache flush.'
     ],
     [
-        'id'        => 'TKT-2026-0912',
+        'id'        => 'TKT06260912',
         'subject'   => 'Dual-Factor Authentication (2FA) reset on corporate phone change',
         'category'  => 'Identity & Access Management',
         'asset'     => 'Microsoft Authenticator SSO',
@@ -176,7 +176,7 @@ $supportTickets = [
         'status'    => 'Resolved & Closed',
         's_class'   => 'badge-status-resolved',
         's_filter'  => 'resolved',
-        'date'      => '18 Jun 2026',
+        'date'      => '18 Jun 2026, 10:05 AM',
         'tech'      => 'Security Operations Team',
         'tech_init' => 'SO',
         'description' => 'Migrated to new corporate mobile device. Need temporary bypass code to register Microsoft Authenticator application.'
@@ -323,36 +323,35 @@ include 'includes/employee_topbar.php';
             <table class="custom-table" id="empTicketsTable">
                 <thead>
                     <tr>
-                        <th style="width: 12%;">Ticket ID</th>
-                        <th style="width: 28%;">Issue Subject & Category</th>
-                        <th style="width: 20%;">Associated Asset</th>
-                        <th style="width: 9%;">Priority</th>
+                        <th style="width: 15%;">Ticket ID & Date</th>
+                        <th style="width: 33%;">Issue Subject & Description</th>
+                        <th style="width: 11%;">Urgency Level</th>
+                        <th style="width: 19%;">Affected Asset / Device</th>
                         <th style="width: 11%;">Status</th>
-                        <th style="width: 10%;">Logged Date</th>
-                        <th style="width: 10%; text-align: right; padding-right: 24px;">Actions</th>
+                        <th style="width: 11%; text-align: right; padding-right: 24px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($supportTickets as $tkt): ?>
                         <tr class="emp-ticket-row" data-status="<?php echo $tkt['s_filter']; ?>">
                             <td>
-                                <span class="ticket-id-pill"><?php echo htmlspecialchars($tkt['id']); ?></span>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <span class="ticket-id-pill" style="align-self: flex-start;"><?php echo htmlspecialchars($tkt['id']); ?></span>
+                                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500; white-space: nowrap;">
+                                        <?php echo htmlspecialchars($tkt['date']); ?>
+                                    </span>
+                                </div>
                             </td>
 
                             <td>
                                 <div class="ticket-subject-title">
                                     <?php echo htmlspecialchars($tkt['subject']); ?>
                                 </div>
-                                <div class="ticket-meta-subtitle">
-                                    <span><?php echo htmlspecialchars($tkt['category']); ?></span>
-                                </div>
-                            </td>
-
-                            <td>
-                                <span class="ticket-asset-pill">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg>
-                                    <?php echo htmlspecialchars($tkt['asset']); ?>
-                                </span>
+                                <?php if (!empty($tkt['description'])): ?>
+                                    <div class="ticket-meta-desc" title="<?php echo htmlspecialchars($tkt['description']); ?>">
+                                        <?php echo htmlspecialchars($tkt['description']); ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
 
                             <td>
@@ -362,23 +361,24 @@ include 'includes/employee_topbar.php';
                             </td>
 
                             <td>
-                                <span class="badge <?php echo $tkt['s_class']; ?>" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">
-                                    <?php echo htmlspecialchars($tkt['status']); ?>
+                                <span class="ticket-asset-pill">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg>
+                                    <?php echo htmlspecialchars($tkt['asset'] ?: 'General Workstation / Laptop'); ?>
                                 </span>
                             </td>
 
                             <td>
-                                <span style="font-size: 12.5px; font-weight: 500; color: var(--text-secondary);">
-                                    <?php echo htmlspecialchars($tkt['date']); ?>
+                                <span class="badge <?php echo $tkt['s_class']; ?>" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">
+                                    <?php echo htmlspecialchars($tkt['status']); ?>
                                 </span>
                             </td>
 
                             <td style="text-align: right; padding-right: 24px;">
                                 <button type="button" class="btn-ticket-view" 
                                     onclick='viewTicketDetails(<?php echo json_encode($tkt, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)'
-                                    title="View Ticket Details and Activity Trail">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                    View Details
+                                    title="View Ticket Details & Chat with IT Support">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                    <span>View & Chat</span>
                                 </button>
                             </td>
                         </tr>
@@ -398,124 +398,127 @@ include 'includes/employee_topbar.php';
 </main>
 
 
-<!-- Ticket Details & Conversation Timeline Modal -->
-<div class="modal-overlay" id="ticketDetailsModal" style="display: none; z-index: 9999;">
-    <div class="modal-box" style="max-width: 650px; border-top: 4px solid var(--cyan-primary);">
-        <div class="modal-header" style="padding: 18px 24px 14px; border-bottom: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="ticket-id-pill" id="detTicketId" style="font-size: 13px; padding: 4px 10px;">TKT-2026-1082</span>
-                <div>
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--navy-primary);" id="detTicketSubject">
-                        Ticket Subject
-                    </h3>
-                </div>
+<!-- =========================================================================
+     SLIDE-OVER DRAWER: TICKET DETAILS & PROGRESS TIMELINE (LIKE ASSETS.PHP)
+     ========================================================================= -->
+<div class="drawer-backdrop" id="ticketDetailsBackdrop" onclick="closeTicketDetailsDrawer()"></div>
+
+<aside class="ticket-details-drawer" id="ticketDetailsModal">
+    <div class="drawer-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); border-top: 4px solid var(--cyan-primary); display: flex; align-items: flex-start; justify-content: space-between; background: #ffffff; flex-shrink: 0;">
+        <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1; padding-right: 12px;">
+            <span class="ticket-id-pill" id="detTicketId" style="font-size: 13px; padding: 4px 10px; font-weight: 700; white-space: nowrap;">TKT10261082</span>
+            <div>
+                <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary); line-height: 1.35;" id="detTicketSubject">
+                    Ticket Subject
+                </h3>
             </div>
-            <button type="button" class="modal-close-btn" onclick="closeModal('ticketDetailsModal')">&times;</button>
+        </div>
+        <button type="button" class="drawer-close-btn" onclick="closeTicketDetailsDrawer()" title="Close Drawer">&times;</button>
+    </div>
+
+    <div class="drawer-body" style="flex: 1; overflow-y: auto; padding: 24px;">
+        
+        <!-- Quick Meta Attributes Bar (Single Unified Compact Section) -->
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 14px; margin-bottom: 16px; font-size: 12px;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Status:</span>
+                <span class="badge badge-status-progress" id="detTicketStatus" style="font-size: 11px; padding: 2px 8px;">In Progress</span>
+            </div>
+            <span style="color: #cbd5e1; font-size: 12px;">•</span>
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Urgency:</span>
+                <span class="badge badge-medium" id="detTicketPriority" style="font-size: 11px; padding: 2px 8px;">Medium</span>
+            </div>
+            <span style="color: #cbd5e1; font-size: 12px;">•</span>
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Incident:</span>
+                <span style="font-size: 12px; font-weight: 700; color: var(--navy-primary);" id="detTicketDate">08 Oct 2026, 11:15 AM</span>
+            </div>
+            <span style="color: #cbd5e1; font-size: 12px;">•</span>
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Device:</span>
+                <span class="ticket-asset-pill" id="detTicketAsset" style="font-weight: 600; font-size: 11.5px; padding: 2px 8px;">Dell UltraSharp 24" (AST2026048)</span>
+            </div>
         </div>
 
-        <div class="modal-body" style="padding: 24px; max-height: 75vh; overflow-y: auto;">
-            
-            <!-- Quick Meta Attributes Bar -->
-            <div style="display: flex; gap: 14px; flex-wrap: wrap; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
-                <div style="flex: 1; min-width: 120px;">
-                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Status</div>
-                    <div style="margin-top: 4px;"><span class="badge badge-status-progress" id="detTicketStatus">In Progress</span></div>
+        <!-- Detailed Description Box (Prominent & Full View) -->
+        <div style="margin-bottom: 22px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                Detailed Description
+            </div>
+            <div style="font-size: 13.5px; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap; word-break: break-word;" id="detTicketDescription">
+                Description details...
+            </div>
+        </div>
+
+        <!-- Support Conversation & Activity Trail (Chat Design with Date & Time) -->
+        <div class="ticket-chat-container">
+            <div class="ticket-chat-header">
+                <div class="ticket-chat-header-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Support Conversation & Updates</span>
                 </div>
-                <div style="flex: 1; min-width: 120px;">
-                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Priority</div>
-                    <div style="margin-top: 4px;"><span class="badge badge-medium" id="detTicketPriority">Medium</span></div>
-                </div>
-                <div style="flex: 1; min-width: 140px;">
-                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Logged Date</div>
-                    <div style="font-size: 13px; font-weight: 700; color: var(--navy-primary); margin-top: 4px;" id="detTicketDate">08 Oct 2026</div>
-                </div>
-                <div style="flex: 1; min-width: 160px;">
-                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Assigned Engineer</div>
-                    <div style="font-size: 12.5px; font-weight: 700; color: var(--navy-primary); margin-top: 4px;" id="detTicketTech">Deepak Patel (IT)</div>
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                    <span style="color: #10b981; font-size: 10px;">●</span> Active Thread
                 </div>
             </div>
 
-            <!-- Affected Device -->
-            <div style="margin-bottom: 18px;">
-                <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Affected Device / Service: </span>
-                <span class="ticket-asset-pill" id="detTicketAsset">Dell UltraSharp 24" (AST2026048)</span>
-            </div>
+            <!-- Scrollable Chat Stream -->
+            <div class="ticket-chat-stream" id="ticketActivityList">
+                <!-- System Registered Event Bubble -->
+                <div class="chat-system-event">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span id="chatSystemAckText">Ticket Logged & Auto-Acknowledged by IT Service Desk Queue</span>
+                </div>
 
-            <!-- Lifecycle Activity Stepper Timeline -->
-            <div style="font-size: 13px; font-weight: 700; color: var(--navy-primary); margin-bottom: 10px;">
-                Service Desk Progress Trail
-            </div>
-
-            <div class="ticket-timeline" id="ticketActivityList">
-                <div class="timeline-item completed">
-                    <div class="timeline-dot">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                    <div class="timeline-content">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="timeline-title">Ticket Registered by Employee</span>
-                            <span class="timeline-time">System Auto-Ack</span>
+                <!-- Incoming Message 1 (IT Helpdesk Auto-Triage) -->
+                <div class="chat-message-row incoming">
+                    <div class="chat-avatar tech">IT</div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="chat-author">Tier-1 IT Service Desk</span>
+                            <span class="chat-timestamp" id="chatTime1">09 Oct 2026, 02:40 PM</span>
                         </div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                            Incident ticket successfully generated and assigned to Tier-1 Service Desk Queue.
+                        <div class="chat-bubble">
+                            Ticket has been logged and assigned to hardware technician for initial diagnostics and device verification.
                         </div>
                     </div>
                 </div>
 
-                <div class="timeline-item completed">
-                    <div class="timeline-dot">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                    <div class="timeline-content">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="timeline-title">Assigned to IT Support Engineer</span>
-                            <span class="timeline-time">within 18 mins</span>
+                <!-- Incoming Message 2 (IT Support Engineer) -->
+                <div class="chat-message-row incoming">
+                    <div class="chat-avatar tech" id="chatTechAvatar">RV</div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="chat-author" id="chatTechName">Rajesh Verma (Hardware Support)</span>
+                            <span class="chat-timestamp" id="chatTime2">09 Oct 2026, 03:15 PM</span>
                         </div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                            Assigned to technician for initial diagnostics and hardware verification.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="timeline-item active">
-                    <div class="timeline-dot">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </div>
-                    <div class="timeline-content">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="timeline-title">Diagnostics In Progress</span>
-                            <span class="timeline-time">Recent</span>
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                            Technician investigating driver conflict and replacement cable testing.
+                        <div class="chat-bubble" id="chatTechMsg">
+                            Diagnostics in progress. Investigating device telemetry, thermal logs, and cable conflicts. Will update shortly.
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Post Reply or Update Note -->
-            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color);">
-                <div style="font-size: 13px; font-weight: 700; color: var(--navy-primary); margin-bottom: 8px;">
-                    Add Note or Respond to Technician
-                </div>
-                <form id="ticketReplyForm">
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="ticketReplyInput" required placeholder="Type additional info or update for the IT technician..." style="flex: 1; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; outline: none;">
-                        <button type="submit" class="btn-primary" style="padding: 10px 18px; font-size: 12.5px; white-space: nowrap;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                            <span>Send Note</span>
-                        </button>
-                    </div>
+            <!-- Chat Bottom Input Bar -->
+            <div class="chat-input-container">
+                <form id="ticketReplyForm" style="display: flex; gap: 10px; align-items: center; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 5px 8px 5px 14px; transition: border-color 0.2s;">
+                    <input type="text" id="ticketReplyInput" required placeholder="Type a message or update for IT technician..." style="flex: 1; border: none; outline: none; font-size: 13px; color: var(--navy-primary); background: transparent;">
+                    <button type="submit" class="btn-primary" style="padding: 8px 18px; border-radius: 6px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        <span>Send</span>
+                    </button>
                 </form>
             </div>
-
         </div>
 
-        <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; background: #f8fafc;">
-            <button type="button" class="btn-secondary" onclick="closeModal('ticketDetailsModal')">Close</button>
-        </div>
     </div>
-</div>
+
+    <div class="drawer-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; background: #f8fafc; flex-shrink: 0;">
+        <button type="button" class="btn-secondary" onclick="closeTicketDetailsDrawer()" style="padding: 9px 22px;">Close</button>
+    </div>
+</aside>
 
 <?php
 // Layout Footer

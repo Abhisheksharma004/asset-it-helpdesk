@@ -111,7 +111,7 @@ function initNewTicketForm() {
         }
 
         const subjectVal  = (document.getElementById('ticketSubjectInput') || document.getElementById('newTktSubject'))?.value.trim() || 'IT Support Ticket';
-        const catVal      = (document.getElementById('ticketCategorySelect') || document.getElementById('newTktCategory'))?.value || 'Hardware / Laptop & PC';
+        const descVal     = (document.getElementById('ticketDescTextarea') || document.getElementById('newTktDescription'))?.value.trim() || '';
         const assetVal    = (document.getElementById('ticketAssetSelect') || document.getElementById('newTktAsset'))?.value || 'General Workstation / Laptop';
         const priorityVal = (document.getElementById('ticketUrgencySelect') || document.getElementById('newTktPriority'))?.value || 'Medium';
 
@@ -127,11 +127,11 @@ function initNewTicketForm() {
             // Insert new row into the table dynamically
             const tbody = document.querySelector('#empTicketsTable tbody');
             const rawDt = document.getElementById('ticketDateTimeInput')?.value;
-            let dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            let dateStr = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
             if (rawDt) {
                 const parsedDate = new Date(rawDt);
                 if (!isNaN(parsedDate.getTime())) {
-                    dateStr = parsedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    dateStr = parsedDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
                 }
             }
 
@@ -140,6 +140,12 @@ function initNewTicketForm() {
             else if (priorityVal === 'High') pBadgeClass = 'badge-high';
             else if (priorityVal === 'Low') pBadgeClass = 'badge-low';
 
+            const tktNow = new Date();
+            const tktMM = String(tktNow.getMonth() + 1).padStart(2, '0');
+            const tktYY = String(tktNow.getFullYear()).slice(-2);
+            const tktSerial = Math.floor(1110 + Math.random() * 800);
+            const newTktId = `TKT${tktMM}${tktYY}${tktSerial}`;
+
             const newRow = document.createElement('tr');
             newRow.className = 'emp-ticket-row';
             newRow.setAttribute('data-status', 'open');
@@ -147,8 +153,8 @@ function initNewTicketForm() {
             const itemPayload = {
                 id: newTktId,
                 subject: subjectVal,
-                category: catVal,
-                asset: assetVal,
+                description: descVal,
+                asset: assetVal || 'General Workstation / Laptop',
                 priority: priorityVal,
                 status: 'Open',
                 p_class: pBadgeClass,
@@ -159,19 +165,14 @@ function initNewTicketForm() {
 
             newRow.innerHTML = `
                 <td>
-                    <span class="ticket-id-pill">${newTktId}</span>
-                </td>
-                <td>
-                    <div class="ticket-subject-title">${escapeHtml(subjectVal)}</div>
-                    <div class="ticket-meta-subtitle">
-                        <span>${escapeHtml(catVal)}</span>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span class="ticket-id-pill" style="align-self: flex-start;">${newTktId}</span>
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: 500; white-space: nowrap;">${dateStr}</span>
                     </div>
                 </td>
                 <td>
-                    <span class="ticket-asset-pill">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg>
-                        ${escapeHtml(assetVal)}
-                    </span>
+                    <div class="ticket-subject-title">${escapeHtml(subjectVal)}</div>
+                    ${descVal ? `<div class="ticket-meta-desc" title="${escapeHtml(descVal)}">${escapeHtml(descVal)}</div>` : ''}
                 </td>
                 <td>
                     <span class="badge ${pBadgeClass}" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">
@@ -179,23 +180,20 @@ function initNewTicketForm() {
                     </span>
                 </td>
                 <td>
+                    <span class="ticket-asset-pill">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg>
+                        ${escapeHtml(assetVal || 'General Workstation / Laptop')}
+                    </span>
+                </td>
+                <td>
                     <span class="badge badge-status-open" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">
                         Open
                     </span>
                 </td>
-                <td>
-                    <span style="font-size: 12.5px; font-weight: 500; color: var(--text-secondary);">${dateStr}</span>
-                </td>
-                <td>
-                    <div class="ticket-tech-box">
-                        <div class="ticket-tech-avatar">IT</div>
-                        <span class="ticket-tech-name">Auto-Triage Queue</span>
-                    </div>
-                </td>
                 <td style="text-align: right; padding-right: 24px;">
-                    <button type="button" class="btn-ticket-view" onclick='viewTicketDetails(${JSON.stringify(itemPayload)})'>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        View Details
+                    <button type="button" class="btn-ticket-view" onclick='viewTicketDetails(${JSON.stringify(itemPayload)})' title="View Ticket Details & Chat with IT Support">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        <span>View & Chat</span>
                     </button>
                 </td>
             `;
@@ -219,30 +217,71 @@ function initNewTicketForm() {
     });
 }
 
-// View Ticket Details Modal
+// View Ticket Details Slide-Over Drawer (matching assets.php)
 function viewTicketDetails(tkt) {
-    const modal = document.getElementById('ticketDetailsModal');
-    if (!modal) return;
+    const drawer = document.getElementById('ticketDetailsModal');
+    const backdrop = document.getElementById('ticketDetailsBackdrop');
+    if (!drawer) return;
 
     document.getElementById('detTicketId').textContent = tkt.id;
     document.getElementById('detTicketSubject').textContent = tkt.subject;
-    document.getElementById('detTicketAsset').textContent = tkt.asset;
+    document.getElementById('detTicketAsset').textContent = tkt.asset || 'General Workstation / Laptop';
     document.getElementById('detTicketDate').textContent = tkt.date;
-    document.getElementById('detTicketTech').textContent = tkt.tech;
+    const techEl = document.getElementById('detTicketTech');
+    if (techEl) techEl.textContent = tkt.tech || '';
+
+    const descEl = document.getElementById('detTicketDescription');
+    if (descEl) {
+        descEl.textContent = tkt.description || 'No additional description provided.';
+    }
 
     const pBadge = document.getElementById('detTicketPriority');
-    pBadge.textContent = tkt.priority;
-    pBadge.className = 'badge ' + (tkt.p_class || 'badge-medium');
+    if (pBadge) {
+        pBadge.textContent = tkt.priority;
+        pBadge.className = 'badge ' + (tkt.p_class || 'badge-medium');
+    }
 
     const sBadge = document.getElementById('detTicketStatus');
-    sBadge.textContent = tkt.status;
-    sBadge.className = 'badge ' + (tkt.s_class || 'badge-status-progress');
+    if (sBadge) {
+        sBadge.textContent = tkt.status;
+        sBadge.className = 'badge ' + (tkt.s_class || 'badge-status-progress');
+    }
 
-    modal.style.display = 'flex';
+    // Dynamically align chat stream data with the ticket
+    const chatAckText = document.getElementById('chatSystemAckText');
+    if (chatAckText) {
+        chatAckText.textContent = `Ticket ${tkt.id} Logged • Incident assigned to IT Service Desk Queue`;
+    }
+
+    const tktDateStr = tkt.date || 'Today';
+    const cTime1 = document.getElementById('chatTime1');
+    const cTime2 = document.getElementById('chatTime2');
+    if (cTime1) cTime1.textContent = tktDateStr;
+    if (cTime2) cTime2.textContent = tktDateStr;
+
+    const techNameEl = document.getElementById('chatTechName');
+    if (techNameEl && tkt.tech) techNameEl.textContent = tkt.tech;
+
+    const techAvatarEl = document.getElementById('chatTechAvatar');
+    if (techAvatarEl) techAvatarEl.textContent = tkt.tech_init || 'IT';
+
+    if (backdrop) {
+        backdrop.style.display = 'block';
+        requestAnimationFrame(() => {
+            backdrop.classList.add('open');
+        });
+    }
+    drawer.classList.add('open');
     document.body.style.overflow = 'hidden';
+
+    // Auto scroll chat to bottom
+    const chatStream = document.getElementById('ticketActivityList');
+    if (chatStream) {
+        setTimeout(() => { chatStream.scrollTop = chatStream.scrollHeight; }, 100);
+    }
 }
 
-// Reply form inside ticket details
+// Reply form inside ticket details (Chat message sender)
 function initTicketReplyForm() {
     const replyForm = document.getElementById('ticketReplyForm');
     if (!replyForm) return;
@@ -253,42 +292,96 @@ function initTicketReplyForm() {
         const text = input.value.trim();
         if (!text) return;
 
-        const timelineList = document.getElementById('ticketActivityList');
-        if (timelineList) {
-            const newItem = document.createElement('div');
-            newItem.className = 'timeline-item active';
-            newItem.innerHTML = `
-                <div class="timeline-dot">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <div class="timeline-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="timeline-title">You (Employee Note)</span>
-                        <span class="timeline-time">Just now</span>
+        const chatStream = document.getElementById('ticketActivityList');
+        if (chatStream) {
+            const now = new Date();
+            const nowFormatted = now.toLocaleString('en-GB', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: true 
+            });
+
+            const newMsgRow = document.createElement('div');
+            newMsgRow.className = 'chat-message-row outgoing';
+            newMsgRow.innerHTML = `
+                <div class="chat-bubble-wrap">
+                    <div class="chat-meta">
+                        <span class="chat-author">You (Employee Note)</span>
+                        <span class="chat-timestamp">${nowFormatted}</span>
                     </div>
-                    <div style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                    <div class="chat-bubble">
                         ${escapeHtml(text)}
                     </div>
                 </div>
+                <div class="chat-avatar user">You</div>
             `;
-            timelineList.appendChild(newItem);
+            chatStream.appendChild(newMsgRow);
             input.value = '';
 
+            // Smooth scroll to bottom of chat
+            chatStream.scrollTop = chatStream.scrollHeight;
+
             if (typeof showPortalToast === 'function') {
-                showPortalToast('Your message has been added to ticket history.', 'success');
+                showPortalToast('Message posted to IT Support conversation.', 'success');
             }
         }
     });
 }
 
-// Generic Close Modal
+// Close Ticket Details Slide-Over Drawer
+function closeTicketDetailsDrawer() {
+    const drawer = document.getElementById('ticketDetailsModal');
+    const backdrop = document.getElementById('ticketDetailsBackdrop');
+    if (drawer) {
+        drawer.classList.remove('open');
+    }
+    if (backdrop) {
+        backdrop.classList.remove('open');
+        backdrop.style.pointerEvents = 'none';
+        backdrop.style.opacity = '0';
+        backdrop.style.backdropFilter = 'none';
+        backdrop.style.webkitBackdropFilter = 'none';
+        setTimeout(() => {
+            if (!drawer || !drawer.classList.contains('open')) {
+                backdrop.style.display = 'none';
+                backdrop.style.visibility = 'hidden';
+                backdrop.style.backdropFilter = '';
+                backdrop.style.webkitBackdropFilter = '';
+                backdrop.style.opacity = '';
+            }
+        }, 300);
+    }
+    document.body.style.overflow = '';
+}
+window.closeTicketDetailsDrawer = closeTicketDetailsDrawer;
+
+// Generic Close Modal & Drawer
 function closeModal(modalId) {
+    if (modalId === 'ticketDetailsModal') {
+        closeTicketDetailsDrawer();
+        return;
+    }
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'none';
+        modal.classList.remove('active');
         document.body.style.overflow = '';
     }
 }
+window.closeModal = closeModal;
+
+// ESC to close drawer
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        const drawer = document.getElementById('ticketDetailsModal');
+        if (drawer && drawer.classList.contains('open')) {
+            closeTicketDetailsDrawer();
+        }
+    }
+});
 
 // Close on backdrop click
 window.addEventListener('click', function (e) {
