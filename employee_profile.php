@@ -140,66 +140,10 @@ include 'includes/employee_topbar.php';
         </div>
     </div>
 
-    <!-- Quick Stats Grid (4 Metric Tiles) -->
-    <div class="profile-stats-grid">
-        <div class="stat-item-card">
-            <div class="stat-icon-wrap cyan">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="2" y1="20" x2="22" y2="20"></line>
-                </svg>
-            </div>
-            <div class="stat-text">
-                <div class="val">2 Devices</div>
-                <div class="lbl">Assigned Computing Units</div>
-            </div>
-        </div>
-
-        <div class="stat-item-card">
-            <div class="stat-icon-wrap amber">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
-                    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
-                </svg>
-            </div>
-            <div class="stat-text">
-                <div class="val">3 Peripherals</div>
-                <div class="lbl">Docks, Keyboards & Audio</div>
-            </div>
-        </div>
-
-        <div class="stat-item-card">
-            <div class="stat-icon-wrap navy">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="7.5" cy="15.5" r="5.5"></circle>
-                    <path d="m21 2-9.6 9.6"></path>
-                    <path d="m15.5 7.5 3 3"></path>
-                </svg>
-            </div>
-            <div class="stat-text">
-                <div class="val">4 Software</div>
-                <div class="lbl">Active Corporate Licenses</div>
-            </div>
-        </div>
-
-        <div class="stat-item-card">
-            <div class="stat-icon-wrap green">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                    <polyline points="9 12 11 14 15 10"></polyline>
-                </svg>
-            </div>
-            <div class="stat-text">
-                <div class="val">Verified</div>
-                <div class="lbl">IT Custody Compliance</div>
-            </div>
-        </div>
-    </div>
-
     <!-- Main Content Layout Grid -->
     <div class="profile-layout-grid">
 
-        <!-- Left Column: Employment & Personal Information -->
+        <!-- Left Column: Official Employment Details -->
         <div>
             <!-- Card 1: Official Employment Details -->
             <div class="profile-card">
@@ -270,7 +214,10 @@ include 'includes/employee_topbar.php';
                     </div>
                 </div>
             </div>
+        </div>
 
+        <!-- Right Column: Portal Security & IT Desk Support -->
+        <div>
             <!-- Card 2: Security & Portal Login Details -->
             <div class="profile-card">
                 <div class="profile-card-header">
@@ -330,122 +277,8 @@ include 'includes/employee_topbar.php';
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Right Column: Allocated Hardware & Custody Summary -->
-        <div>
-            <!-- Card 3: Active IT Custody Items -->
-            <div class="profile-card">
-                <div class="profile-card-header">
-                    <h2>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                            <line x1="8" y1="21" x2="16" y2="21"></line>
-                            <line x1="12" y1="17" x2="12" y2="21"></line>
-                        </svg>
-                        Registered Hardware in Custody
-                    </h2>
-                    <a href="employee_dashboard.php#secMyAssets" style="font-size: 12px; color: var(--cyan-primary); text-decoration: none; font-weight: 600;">
-                        View Full Inventory →
-                    </a>
-                </div>
-
-                <div class="profile-card-body">
-                    <!-- Item 1: Laptop -->
-                    <div class="custody-list-item">
-                        <div class="custody-item-left">
-                            <div class="custody-item-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                    <line x1="2" y1="20" x2="22" y2="20"></line>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="custody-item-title">Dell Latitude 5420 Laptop</div>
-                                <div class="custody-item-subtitle">Tag: AST2026001 • S/N: C02G40PZMD6T</div>
-                            </div>
-                        </div>
-                        <span class="custody-tag active">In Custody</span>
-                    </div>
-
-                    <!-- Item 2: Monitor -->
-                    <div class="custody-list-item">
-                        <div class="custody-item-left">
-                            <div class="custody-item-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="custody-item-title">Dell UltraSharp 24" USB-C Monitor</div>
-                                <div class="custody-item-subtitle">Tag: AST2026002 • S/N: CN-0P9X12</div>
-                            </div>
-                        </div>
-                        <span class="custody-tag active">In Custody</span>
-                    </div>
-
-                    <!-- Item 3: Dock -->
-                    <div class="custody-list-item">
-                        <div class="custody-item-left">
-                            <div class="custody-item-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2v6m4-6v6M8 8h8a2 2 0 0 1 2 2v2a6 6 0 0 1-12 0v-2a2 2 0 0 1 2-2zm4 10v4"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="custody-item-title">Dell Thunderbolt 4 Universal Dock</div>
-                                <div class="custody-item-subtitle">Tag: ACC-3001 • Dual 4K Support</div>
-                            </div>
-                        </div>
-                        <span class="custody-tag">Peripheral</span>
-                    </div>
-
-                    <!-- Item 4: Combo -->
-                    <div class="custody-list-item">
-                        <div class="custody-item-left">
-                            <div class="custody-item-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                                    <line x1="6" y1="8" x2="6.01" y2="8"></line>
-                                    <line x1="10" y1="8" x2="10.01" y2="8"></line>
-                                    <line x1="14" y1="8" x2="14.01" y2="8"></line>
-                                    <line x1="18" y1="8" x2="18.01" y2="8"></line>
-                                    <line x1="6" y1="12" x2="6.01" y2="12"></line>
-                                    <line x1="18" y1="12" x2="18.01" y2="12"></line>
-                                    <line x1="7" y1="16" x2="17" y2="16"></line>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="custody-item-title">Logitech Wireless MX Keys & Mouse</div>
-                                <div class="custody-item-subtitle">Tag: ACC-3002 • Ergonomic Combo</div>
-                            </div>
-                        </div>
-                        <span class="custody-tag">Peripheral</span>
-                    </div>
-
-                    <!-- Item 5: Software -->
-                    <div class="custody-list-item">
-                        <div class="custody-item-left">
-                            <div class="custody-item-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="7.5" cy="15.5" r="5.5"></circle>
-                                    <path d="m21 2-9.6 9.6"></path>
-                                    <path d="m15.5 7.5 3 3"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="custody-item-title">Microsoft 365 Enterprise + JetBrains</div>
-                                <div class="custody-item-subtitle">Linked to corporate email account</div>
-                            </div>
-                        </div>
-                        <span class="custody-tag active">Subscribed</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 4: IT Desk Support & Direct Contact -->
+            <!-- Card 3: IT Desk Support & Direct Contact -->
             <div class="profile-card">
                 <div class="profile-card-header">
                     <h2>
