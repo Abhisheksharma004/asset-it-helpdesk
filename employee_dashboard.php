@@ -224,21 +224,8 @@ $recentTickets = [
     ]
 ];
 
-// Check if this is the employee's first login
-$isFirstLogin = false;
-if (isset($_GET['first_login']) && $_GET['first_login'] == '1') {
-    $isFirstLogin = true;
-} elseif (!empty($_SESSION['is_first_login'])) {
-    $isFirstLogin = true;
-} elseif (isset($conn) && $conn !== false && !empty($_SESSION['user_id'])) {
-    $chkFl = sqlsrv_query($conn, "SELECT is_first_login FROM users WHERE id = ?", [$_SESSION['user_id']]);
-    if ($chkFl && ($flRow = sqlsrv_fetch_array($chkFl, SQLSRV_FETCH_ASSOC))) {
-        if ((int)($flRow['is_first_login'] ?? 0) === 1) {
-            $isFirstLogin = true;
-        }
-    }
-}
-$body_attributes = $isFirstLogin ? 'data-first-login="1"' : '';
+// First login password setup is now handled elegantly on index.php via Smart Login Check
+$body_attributes = '';
 
 // Include Modular Layout Components
 include 'includes/header.php';

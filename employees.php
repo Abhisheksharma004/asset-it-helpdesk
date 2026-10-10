@@ -495,22 +495,6 @@ include 'includes/topbar.php';
                         </select>
                     </div>
                 </div>
-
-                <div class="modal-form-group" style="margin-top: 6px;">
-                    <label for="addPassword" style="display: flex; align-items: center; justify-content: space-between;">
-                        <span>Default Login Password</span>
-                        <span style="font-size: 11px; font-weight: 500; color: var(--cyan-primary);">Formula: [First Name]@[Employee Code]</span>
-                    </label>
-                    <div style="position: relative; display: flex; align-items: center;">
-                        <input type="text" id="addPassword" placeholder="e.g. Abhishek@VE015" style="font-family: monospace; font-weight: 600; padding-right: 42px; background: #f8fafc;">
-                        <button type="button" id="copyAddPasswordBtn" title="Copy Password" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; display: flex; align-items: center;">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        </button>
-                    </div>
-                    <small style="display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted);">
-                        Default format: <strong>First Name@Employee Code</strong> (eg. <code>Abhishek@VE015</code>). Auto-filled as you type.
-                    </small>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelAddModalBtn">Cancel</button>
@@ -602,14 +586,6 @@ include 'includes/topbar.php';
                         </select>
                     </div>
                 </div>
-
-                <div class="modal-form-group" style="margin-top: 6px;">
-                    <label for="editPassword">Reset Login Password (Optional)</label>
-                    <input type="text" id="editPassword" placeholder="Leave blank to keep existing password" style="font-family: monospace; font-weight: 600;">
-                    <small style="display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted);">
-                        Leave blank to retain current password, or enter a new password to reset it.
-                    </small>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelEditModalBtn">Cancel</button>
@@ -670,13 +646,8 @@ include 'includes/topbar.php';
                     <span class="profile-info-val" id="profileJoiningDate">15-04-2023</span>
                 </div>
                 <div class="profile-info-item">
-                    <span class="profile-info-label">Login Password</span>
-                    <span class="profile-info-val" style="display: flex; align-items: center; gap: 6px;">
-                        <span id="profilePassword" style="font-family: monospace; font-weight: 700; color: #0284c7;">—</span>
-                        <button type="button" id="copyProfilePasswordBtn" title="Copy Password" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        </button>
-                    </span>
+                    <span class="profile-info-label">Account Setup</span>
+                    <span class="profile-info-val" id="profileAccountStatus" style="font-weight: 600; color: #059669;">First-Time Login Self Service</span>
                 </div>
                 <div class="profile-info-item">
                     <span class="profile-info-label">System Created</span>

@@ -234,3 +234,63 @@ body {
         font-size: 20px;
     }
 }
+
+/* Dynamic First-Time Setup Banner */
+.first-time-badge {
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    text-align: left;
+    animation: fadeInDown 0.3s ease;
+}
+
+.first-time-badge .badge-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #0d9488;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.first-time-badge .badge-desc {
+    font-size: 13px;
+    color: #1e293b;
+    line-height: 1.4;
+}
+
+.first-time-badge .badge-desc strong {
+    color: #0f172a;
+}
+
+.first-time-helper {
+    font-size: 12px;
+    color: #64748b;
+    margin: 6px 0 14px 2px;
+}
+
+.change-account-link {
+    color: #0093A7;
+    font-size: 12.5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.change-account-link:hover {
+    color: #001938;
+    text-decoration: underline;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -295,13 +295,11 @@ if ($method === 'POST') {
             exit;
         }
 
-        // Compute default password if empty: "First Name@Employee Code" e.g. "Abhishek@VE015"
-        if ($rawPassword === '') {
-            $rawPassword = $first_name . '@' . $emp_code;
-        }
-        $passwordHash = password_hash($rawPassword, PASSWORD_DEFAULT);
+        // Password will be set by the employee themselves on first login
+        $passwordHash = ($rawPassword !== '') ? password_hash($rawPassword, PASSWORD_DEFAULT) : null;
+        $savedPassword = ($rawPassword !== '') ? $rawPassword : null;
 
-        // Insert employee (with is_first_login = 1)
+        // Insert employee (with is_first_login = 1, password = NULL)
         $insertSql = "INSERT INTO employees (emp_code, first_name, last_name, email, phone, department_id, location_id, designation, joining_date, status, password, password_hash, is_first_login, created_at, updated_at) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, GETDATE(), GETDATE())";
         $insertParams = [
@@ -315,7 +313,7 @@ if ($method === 'POST') {
             ($designation !== '' ? $designation : null), 
             $joining_date, 
             $status,
-            $rawPassword,
+            $savedPassword,
             $passwordHash
         ];
 
@@ -337,7 +335,7 @@ if ($method === 'POST') {
             }
         }
 
-        // Sync with users table so employee can log in immediately (with is_first_login = 1)
+        // Sync with users table (password_hash is NULL until employee sets it on first login)
         $uChk = sqlsrv_query($conn, "SELECT id FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)", [$email, $emp_code]);
         if ($uChk && $uRow = sqlsrv_fetch_array($uChk, SQLSRV_FETCH_ASSOC)) {
             sqlsrv_query($conn, "UPDATE users SET username = ?, password_hash = ?, full_name = ?, role = 'Employee', department = ?, is_active = ?, is_first_login = 1, updated_at = GETDATE() WHERE id = ?", [
@@ -360,10 +358,9 @@ if ($method === 'POST') {
         }
 
         echo json_encode([
-            'success'          => true,
-            'message'          => "Employee '{$first_name} " . ($last_name ? $last_name . " " : "") . "({$emp_code})' added successfully. Default Password: {$rawPassword}",
-            'employee_id'      => $newId,
-            'default_password' => $rawPassword
+            'success'     => true,
+            'message'     => "Employee '{$first_name} " . ($last_name ? $last_name . " " : "") . "({$emp_code})' added successfully.",
+            'employee_id' => $newId
         ]);
         exit;
     }
@@ -708,27 +705,23 @@ if ($method === 'POST') {
                 continue;
             }
 
-            // Generate default password: First Name@Employee Code
-            $defaultPass = $first_name . '@' . $emp_code;
-            $passHash = password_hash($defaultPass, PASSWORD_DEFAULT);
-
-            // Insert new employee
-            $iSql = "INSERT INTO employees (emp_code, first_name, last_name, email, phone, department_id, location_id, designation, joining_date, status, password, password_hash, created_at, updated_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
-            $iParams = [$emp_code, $first_name, ($last_name !== '' ? $last_name : null), $email, ($phone !== '' ? $phone : null), $deptId, $locId, ($designation !== '' ? $designation : null), $formattedDate, $status, $defaultPass, $passHash];
+            // Insert new employee (password NULL, will be set on first login)
+            $iSql = "INSERT INTO employees (emp_code, first_name, last_name, email, phone, department_id, location_id, designation, joining_date, status, password, password_hash, is_first_login, created_at, updated_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 1, GETDATE(), GETDATE())";
+            $iParams = [$emp_code, $first_name, ($last_name !== '' ? $last_name : null), $email, ($phone !== '' ? $phone : null), $deptId, $locId, ($designation !== '' ? $designation : null), $formattedDate, $status];
             $iStmt = sqlsrv_query($conn, $iSql, $iParams);
             if ($iStmt !== false) {
                 $inserted++;
 
-                // Sync with users table
+                // Sync with users table (password_hash NULL)
                 $uChk = sqlsrv_query($conn, "SELECT id FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)", [$email, $emp_code]);
                 if ($uChk && $uRow = sqlsrv_fetch_array($uChk, SQLSRV_FETCH_ASSOC)) {
-                    sqlsrv_query($conn, "UPDATE users SET username = ?, password_hash = ?, full_name = ?, role = 'Employee', is_active = ?, updated_at = GETDATE() WHERE id = ?", [
-                        $emp_code, $passHash, trim($first_name . ' ' . $last_name), ($status === 'Active' ? 1 : 0), $uRow['id']
+                    sqlsrv_query($conn, "UPDATE users SET username = ?, full_name = ?, role = 'Employee', is_active = ?, is_first_login = 1, updated_at = GETDATE() WHERE id = ?", [
+                        $emp_code, trim($first_name . ' ' . $last_name), ($status === 'Active' ? 1 : 0), $uRow['id']
                     ]);
                 } else {
-                    sqlsrv_query($conn, "INSERT INTO users (username, email, password_hash, full_name, role, department, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 'Employee', ?, ?, GETDATE(), GETDATE())", [
-                        $emp_code, $email, $passHash, trim($first_name . ' ' . $last_name), ($deptInput ?: 'General'), ($status === 'Active' ? 1 : 0)
+                    sqlsrv_query($conn, "INSERT INTO users (username, email, password_hash, full_name, role, department, is_active, is_first_login, created_at, updated_at) VALUES (?, ?, NULL, ?, 'Employee', ?, ?, 1, GETDATE(), GETDATE())", [
+                        $emp_code, $email, trim($first_name . ' ' . $last_name), ($deptInput ?: 'General'), ($status === 'Active' ? 1 : 0)
                     ]);
                 }
             } else {

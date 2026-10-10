@@ -87,13 +87,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', function (e) {
             if (e.target === this) {
-                // If first login, prevent closing changePasswordModal on outside click
-                if (this.id === 'changePasswordModal' && (document.body.getAttribute('data-first-login') === '1' || new URLSearchParams(window.location.search).get('first_login') === '1')) {
-                    if (typeof showToast === 'function') {
-                        showToast('Please set your new password before continuing.', 'warning');
-                    }
-                    return;
-                }
                 this.style.display = 'none';
                 this.classList.remove('active');
             }
@@ -104,9 +97,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal-overlay').forEach(m => {
-                if (m.id === 'changePasswordModal' && (document.body.getAttribute('data-first-login') === '1' || new URLSearchParams(window.location.search).get('first_login') === '1')) {
-                    return;
-                }
                 m.style.display = 'none';
                 m.classList.remove('active');
             });
@@ -323,19 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 6. Check for First-Time Login auto-trigger
-    const urlParams = new URLSearchParams(window.location.search);
-    const isFirstLoginParam = urlParams.get('first_login') === '1';
-    const isFirstLoginBody = document.body.getAttribute('data-first-login') === '1';
-
-    if (isFirstLoginParam || isFirstLoginBody) {
-        setTimeout(() => {
-            openChangePasswordModal();
-            if (typeof showToast === 'function') {
-                showToast('Welcome to VIROS Portal! Please set your new password for your first login.', 'info');
-            }
-        }, 350);
-    }
+    // 6. First time login password setting is handled on index.php (Smart Login Check)
 
     // 7. Employee Profile Switcher (For rapid testing / demo)
     const empSelector = document.getElementById('employeeProfileSelector');
