@@ -83,34 +83,44 @@ function initTicketSearch() {
 }
 
 // Open Raise New Ticket Modal
-function openNewTicketModal() {
-    const modal = document.getElementById('newTicketModal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+function openNewTicketModal(assetTag = '') {
+    if (typeof window.openEmployeeTicketModal === 'function') {
+        window.openEmployeeTicketModal(assetTag);
+    } else {
+        const modal = document.getElementById('employeeTicketModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
 }
 
 // Submit New Ticket Form Handler
 function initNewTicketForm() {
-    const form = document.getElementById('newTicketForm');
+    const form = document.getElementById('employeeTicketForm') || document.getElementById('newTicketForm');
     if (!form) return;
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
         const btn = form.querySelector('button[type="submit"]');
-        const origContent = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
+        const origContent = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
+        }
 
-        const subjectVal  = document.getElementById('newTktSubject').value.trim();
-        const catVal      = document.getElementById('newTktCategory').value;
-        const assetVal    = document.getElementById('newTktAsset').value;
-        const priorityVal = document.getElementById('newTktPriority').value;
+        const subjectVal  = (document.getElementById('ticketSubjectInput') || document.getElementById('newTktSubject'))?.value.trim() || 'IT Support Ticket';
+        const catVal      = (document.getElementById('ticketCategorySelect') || document.getElementById('newTktCategory'))?.value || 'Hardware / Laptop & PC';
+        const assetVal    = (document.getElementById('ticketAssetSelect') || document.getElementById('newTktAsset'))?.value || 'General Workstation / Laptop';
+        const priorityVal = (document.getElementById('ticketUrgencySelect') || document.getElementById('newTktPriority'))?.value || 'Medium';
 
         setTimeout(() => {
-            btn.disabled = false;
-            btn.innerHTML = origContent;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origContent;
+            }
+            closeModal('employeeTicketModal');
             closeModal('newTicketModal');
             form.reset();
 

@@ -221,7 +221,7 @@ include 'includes/employee_topbar.php';
             </p>
         </div>
 
-        <button type="button" class="btn-new-ticket" onclick="openNewTicketModal()">
+        <button type="button" class="btn-new-ticket" onclick="openEmployeeTicketModal()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -397,104 +397,6 @@ include 'includes/employee_topbar.php';
 
 </main>
 
-<!-- Raise New Support Ticket Modal -->
-<div class="modal-overlay" id="newTicketModal" style="display: none; z-index: 9999;">
-    <div class="modal-box" style="max-width: 580px; border-top: 4px solid var(--navy-primary);">
-        <div class="modal-header" style="padding: 18px 24px 14px; border-bottom: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 147, 167, 0.12); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                </div>
-                <div>
-                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
-                        Raise IT Support Ticket
-                    </h3>
-                    <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
-                        Submit an issue or technical assistance request to the IT Service Desk.
-                    </p>
-                </div>
-            </div>
-            <button type="button" class="modal-close-btn" onclick="closeModal('newTicketModal')">&times;</button>
-        </div>
-
-        <form id="newTicketForm">
-            <div class="modal-body" style="padding: 24px; max-height: 75vh; overflow-y: auto;">
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Issue Category *
-                    </label>
-                    <select id="newTktCategory" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="">Select Category</option>
-                        <option value="Hardware / Laptop & PC">Hardware Issue (Laptop / Display / Battery)</option>
-                        <option value="Peripherals / Cables & Docks">Peripherals (Dock / Monitor / Keyboard / Mouse)</option>
-                        <option value="Operating System / Software">Operating System & Application Crash</option>
-                        <option value="Network & VPN Access">Network, WiFi & Remote VPN Gateway</option>
-                        <option value="Account & SSO Authentication">Account Access, 2FA & Password Reset</option>
-                        <option value="General IT Assistance">General Technical Query / Other</option>
-                    </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Affected Device / Asset *
-                    </label>
-                    <select id="newTktAsset" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="General Workstation / Laptop">General Workstation / Laptop</option>
-                        <?php foreach ($employeeAssets as $ea): ?>
-                            <option value="<?php echo htmlspecialchars($ea['name'] . ' (' . $ea['tag'] . ')'); ?>">
-                                <?php echo htmlspecialchars($ea['name'] . ' [' . $ea['tag'] . ']'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                        <option value="Workstation Peripheral Accessory">Workstation Peripheral Accessory</option>
-                        <option value="Network / VPN Service">Network / VPN Service</option>
-                        <option value="Other / Not Listed">Other / Not Listed</option>
-                    </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Urgency / Priority *
-                    </label>
-                    <select id="newTktPriority" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="Medium" selected>Medium - Normal workflow impact (within 24 hours)</option>
-                        <option value="High">High - Impeding daily work deliverables (4 - 8 hours)</option>
-                        <option value="Urgent">Urgent - Complete machine failure / critical block (Immediate)</option>
-                        <option value="Low">Low - Minor cosmetic / non-urgent question</option>
-                    </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Subject / Brief Summary *
-                    </label>
-                    <input type="text" id="newTktSubject" required placeholder="e.g. Blue Screen of Death (BSOD) when connecting external monitor" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Detailed Description & Error Details *
-                    </label>
-                    <textarea id="newTktDescription" required rows="4" placeholder="Describe what happened, any error messages, and steps already tried..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                        Attach Screenshot or Error Log (Optional)
-                    </label>
-                    <input type="file" style="font-size: 12px; color: var(--text-secondary); width: 100%;">
-                </div>
-            </div>
-
-            <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
-                <button type="button" class="btn-secondary" onclick="closeModal('newTicketModal')">Cancel</button>
-                <button type="submit" class="btn-primary" style="padding: 9px 22px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Submit Ticket</span>
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <!-- Ticket Details & Conversation Timeline Modal -->
 <div class="modal-overlay" id="ticketDetailsModal" style="display: none; z-index: 9999;">

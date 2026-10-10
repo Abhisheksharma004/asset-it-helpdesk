@@ -83,3 +83,175 @@ if (empty($emp_initials)) $emp_initials = 'EM';
         </div>
 
     </header>
+
+<?php
+// Resolve devices list for ticket modal if available
+$topbar_device_options = [];
+if (!empty($allocatedItems)) {
+    foreach ($allocatedItems as $it) {
+        $topbar_device_options[] = [
+            'val' => $it['tag'] . ' - ' . $it['name'],
+            'label' => $it['tag'] . ' — ' . $it['name']
+        ];
+    }
+} elseif (!empty($employeeAssets)) {
+    foreach ($employeeAssets as $it) {
+        $topbar_device_options[] = [
+            'val' => $it['tag'] . ' - ' . $it['name'],
+            'label' => $it['tag'] . ' — ' . $it['name']
+        ];
+    }
+}
+?>
+
+<!-- =========================================================================
+     GLOBAL MODAL: RAISE IT SUPPORT TICKET (AVAILABLE ON ALL EMPLOYEE PAGES)
+     ========================================================================= -->
+<div class="modal-overlay" id="employeeTicketModal" style="display: none; z-index: 9999;">
+    <div class="modal-box" style="max-width: 540px; border-top: 4px solid var(--navy-primary);">
+        <div class="modal-header" style="padding: 18px 24px 14px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 147, 167, 0.12); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
+                        Raise IT Support Ticket
+                    </h3>
+                    <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
+                        Submit an issue or technical assistance request to the IT Service Desk.
+                    </p>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeModal('employeeTicketModal')">&times;</button>
+        </div>
+        <form id="employeeTicketForm">
+            <div class="modal-body" style="padding: 20px 24px; max-height: 75vh; overflow-y: auto;">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device *</label>
+                    <select class="modal-select" id="ticketAssetSelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                        <option value="">-- Select Allocated Device or General --</option>
+                        <?php if (!empty($topbar_device_options)): ?>
+                            <?php foreach ($topbar_device_options as $opt): ?>
+                                <option value="<?php echo htmlspecialchars($opt['val']); ?>"><?php echo htmlspecialchars($opt['label']); ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        <option value="General Workstation / Laptop">General Workstation / Laptop</option>
+                        <option value="Workstation Peripheral / Dock">Workstation Peripheral / Dock</option>
+                        <option value="Network / VPN / Internet">Network / VPN / Internet</option>
+                        <option value="Software License / Cloud Tool">Software License / Cloud Tool</option>
+                        <option value="Other / General Query">Other / General Query</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Subject *</label>
+                    <input type="text" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Category *</label>
+                        <select class="modal-select" id="ticketCategorySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                            <option value="Hardware / Laptop & PC">Hardware / Laptop & PC</option>
+                            <option value="Screen / Display Failure">Screen / Display Failure</option>
+                            <option value="Battery & Power Issue">Battery & Power Issue</option>
+                            <option value="Operating System / Blue Screen">Operating System / Crash</option>
+                            <option value="Network & VPN Gateway">Network & VPN Gateway</option>
+                            <option value="Identity & SSO Access">Identity & SSO Access</option>
+                            <option value="Peripherals / Cables & Docks">Peripherals & Docks</option>
+                            <option value="General Technical Assistance">General IT Query</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
+                        <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                            <option value="Medium" selected>Medium (Standard 24h SLA)</option>
+                            <option value="High">High (Impacting Daily Work)</option>
+                            <option value="Urgent">Urgent (System Down / Critical)</option>
+                            <option value="Low">Low (General Query)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Detailed Description *</label>
+                    <textarea class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="4" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px; text-align: center; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    <span>Attach screenshot or error log here (optional)</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
+                <button type="button" class="btn-secondary" onclick="closeModal('employeeTicketModal')">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 9px 22px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Submit Ticket</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Global Employee Support Ticket Modal Controller
+window.openEmployeeTicketModal = function (assetTag = '') {
+    const modal = document.getElementById('employeeTicketModal');
+    if (!modal) return;
+    const assetSelect = document.getElementById('ticketAssetSelect');
+    if (assetSelect && assetTag) {
+        // Try exact match or match containing tag
+        let matched = false;
+        for (let i = 0; i < assetSelect.options.length; i++) {
+            if (assetSelect.options[i].value.includes(assetTag) || assetSelect.options[i].text.includes(assetTag)) {
+                assetSelect.selectedIndex = i;
+                matched = true;
+                break;
+            }
+        }
+        if (!matched && assetTag) {
+            assetSelect.value = assetTag;
+        }
+    }
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+};
+
+// Global Alias for consistency
+window.openNewTicketModal = function (assetTag = '') {
+    window.openEmployeeTicketModal(assetTag);
+};
+
+if (typeof window.closeModal !== 'function') {
+    window.closeModal = function(modalId) {
+        const m = document.getElementById(modalId);
+        if (m) {
+            m.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    };
+}
+
+// Background click and ESC key listeners
+document.addEventListener('DOMContentLoaded', function () {
+    const tktModal = document.getElementById('employeeTicketModal');
+    if (tktModal) {
+        tktModal.addEventListener('click', function (e) {
+            if (e.target === tktModal) {
+                closeModal('employeeTicketModal');
+            }
+        });
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            const m = document.getElementById('employeeTicketModal');
+            if (m && m.style.display === 'flex') {
+                closeModal('employeeTicketModal');
+            }
+        }
+    });
+});
+</script>
