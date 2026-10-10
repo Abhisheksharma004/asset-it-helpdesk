@@ -86,290 +86,135 @@ if (empty($vendorsList)) {
     $vendorsList = ['Microsoft Direct', 'Adobe Systems India', 'JetBrains s.r.o.', 'Atlassian Pty', 'Redington India Ltd', 'Ingram Micro', 'Tech Data Corporation'];
 }
 
-// Comprehensive Enterprise Software & Licenses Dataset (UI Driven)
-$initialLicenses = [
-    [
-        'id'            => 1,
-        'name'          => 'Microsoft 365 E5',
-        'publisher'     => 'Microsoft Corporation',
-        'brand_code'    => 'msft',
-        'category'      => 'Office & Productivity',
-        'version'       => 'Cloud Enterprise',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'MS365-E5-9924-XXXX-7140',
-        'total_seats'   => 120,
-        'assigned_seats'=> 108,
-        'vendor'        => 'Microsoft Direct',
-        'po_number'     => 'PO-2026-MSFT-081',
-        'purchase_date' => '2025-04-01',
-        'expiry_date'   => '2027-03-31',
-        'cost_per_seat' => 38,
-        'total_cost'    => 54720,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Includes Teams, Exchange Online, Defender for Endpoint, and advanced compliance eDiscovery.',
-        'allocations'   => [
-            ['emp_id' => 1, 'name' => 'Rahul Verma', 'emp_code' => 'EMP-1041', 'dept' => 'IT & Infrastructure', 'device' => 'LAP-001 (ThinkPad T14)', 'assigned_date' => '2025-04-05'],
-            ['emp_id' => 2, 'name' => 'Sneha Patel', 'emp_code' => 'EMP-1052', 'dept' => 'Finance & Accounts', 'device' => 'LAP-004 (Dell Latitude)', 'assigned_date' => '2025-04-10'],
-            ['emp_id' => 3, 'name' => 'Amit Sharma', 'emp_code' => 'EMP-1011', 'dept' => 'Software Engineering', 'device' => 'LAP-009 (MacBook Pro)', 'assigned_date' => '2025-04-12']
-        ]
-    ],
-    [
-        'id'            => 2,
-        'name'          => 'Adobe Creative Cloud All Apps',
-        'publisher'     => 'Adobe Systems',
-        'brand_code'    => 'adobe',
-        'category'      => 'Design & Media',
-        'version'       => 'CC 2026 Pro',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'ADBE-CCPRO-2026-XXXX-9142',
-        'total_seats'   => 25,
-        'assigned_seats'=> 23,
-        'vendor'        => 'Adobe Systems India',
-        'po_number'     => 'PO-2025-ADBE-114',
-        'purchase_date' => '2025-10-28',
-        'expiry_date'   => '2026-10-28', // 19 days from now!
-        'cost_per_seat' => 84,
-        'total_cost'    => 25200,
-        'currency'      => '₹',
-        'status'        => 'Expiring Soon',
-        'notes'         => 'Includes Photoshop, Illustrator, Premiere Pro, After Effects, and Figma plugin integration.',
-        'allocations'   => [
-            ['emp_id' => 4, 'name' => 'Pooja Hegde', 'emp_code' => 'EMP-1088', 'dept' => 'Marketing & Design', 'device' => 'LAP-018 (MacBook Pro 16)', 'assigned_date' => '2025-11-01'],
-            ['emp_id' => 5, 'name' => 'Kunal Joshi', 'emp_code' => 'EMP-1092', 'dept' => 'Marketing & Design', 'device' => 'DSK-003 (iMac 24)', 'assigned_date' => '2025-11-05']
-        ]
-    ],
-    [
-        'id'            => 3,
-        'name'          => 'Windows 11 Pro Enterprise',
-        'publisher'     => 'Microsoft Corporation',
-        'brand_code'    => 'msft',
-        'category'      => 'Operating Systems',
-        'version'       => '23H2 / 24H2 OEM',
-        'license_type'  => 'OEM / Perpetual',
-        'license_key'   => 'W11ENT-VK7JG-XXXX-T83GX',
-        'total_seats'   => 150,
-        'assigned_seats'=> 142,
-        'vendor'        => 'Redington India Ltd',
-        'po_number'     => 'PO-2024-OEM-042',
-        'purchase_date' => '2024-06-15',
-        'expiry_date'   => 'Perpetual',
-        'cost_per_seat' => 185,
-        'total_cost'    => 27750,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Corporate volume license pack with BitLocker drive encryption and Windows Autopilot enrollment.',
-        'allocations'   => [
-            ['emp_id' => 1, 'name' => 'Rahul Verma', 'emp_code' => 'EMP-1041', 'dept' => 'IT & Infrastructure', 'device' => 'LAP-001 (ThinkPad T14)', 'assigned_date' => '2024-06-20'],
-            ['emp_id' => 6, 'name' => 'Vikram Seth', 'emp_code' => 'EMP-1033', 'dept' => 'Operations & Logistics', 'device' => 'LAP-007 (HP EliteBook)', 'assigned_date' => '2024-07-02']
-        ]
-    ],
-    [
-        'id'            => 4,
-        'name'          => 'JetBrains All Products Pack',
-        'publisher'     => 'JetBrains s.r.o.',
-        'brand_code'    => 'jb',
-        'category'      => 'Developer Tools',
-        'version'       => '2026 Ultimate',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'JB-ALL-2026-XXXX-5519',
-        'total_seats'   => 15,
-        'assigned_seats'=> 14,
-        'vendor'        => 'JetBrains s.r.o.',
-        'po_number'     => 'PO-2025-JB-090',
-        'purchase_date' => '2025-12-15',
-        'expiry_date'   => '2026-12-15',
-        'cost_per_seat' => 499,
-        'total_cost'    => 7485,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Full IDE suite: IntelliJ IDEA, PyCharm, WebStorm, DataGrip, and CLion for senior engineering team.',
-        'allocations'   => [
-            ['emp_id' => 3, 'name' => 'Amit Sharma', 'emp_code' => 'EMP-1011', 'dept' => 'Software Engineering', 'device' => 'LAP-009 (MacBook Pro)', 'assigned_date' => '2025-12-18']
-        ]
-    ],
-    [
-        'id'            => 5,
-        'name'          => 'Slack Enterprise Grid',
-        'publisher'     => 'Slack / Salesforce',
-        'brand_code'    => 'slack',
-        'category'      => 'Cloud & SaaS',
-        'version'       => 'Enterprise 2026',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'SLACK-ENT-GRID-XXXX-4418',
-        'total_seats'   => 200,
-        'assigned_seats'=> 178,
-        'vendor'        => 'Salesforce Direct',
-        'po_number'     => 'PO-2026-SLACK-002',
-        'purchase_date' => '2026-01-30',
-        'expiry_date'   => '2027-01-30',
-        'cost_per_seat' => 15,
-        'total_cost'    => 36000,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Corporate communication grid with HIPAA compliance, data loss prevention, and custom automated bots.',
-        'allocations'   => []
-    ],
-    [
-        'id'            => 6,
-        'name'          => 'GitHub Enterprise Cloud',
-        'publisher'     => 'GitHub Inc.',
-        'brand_code'    => 'github',
-        'category'      => 'Developer Tools',
-        'version'       => 'Enterprise Cloud',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'GH-ENT-ORG-XXXX-1984',
-        'total_seats'   => 40,
-        'assigned_seats'=> 38,
-        'vendor'        => 'GitHub Direct',
-        'po_number'     => 'PO-2025-GH-077',
-        'purchase_date' => '2025-11-20',
-        'expiry_date'   => '2026-11-20',
-        'cost_per_seat' => 230,
-        'total_cost'    => 9200,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Source code repository with GitHub Actions minutes, Advanced Security (code scanning), and Copilot seats.',
-        'allocations'   => []
-    ],
-    [
-        'id'            => 7,
-        'name'          => 'CrowdStrike Falcon Complete',
-        'publisher'     => 'CrowdStrike Inc.',
-        'brand_code'    => 'crowdstrike',
-        'category'      => 'Security & Antivirus',
-        'version'       => 'Falcon EDR Pro',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'CS-FALCON-EDR-XXXX-8821',
-        'total_seats'   => 180,
-        'assigned_seats'=> 168,
-        'vendor'        => 'Ingram Micro',
-        'po_number'     => 'PO-2025-CS-062',
-        'purchase_date' => '2025-10-31',
-        'expiry_date'   => '2026-10-31', // 22 days from now!
-        'cost_per_seat' => 95,
-        'total_cost'    => 17100,
-        'currency'      => '₹',
-        'status'        => 'Expiring Soon',
-        'notes'         => 'Next-gen Endpoint Detection and Response (EDR) with 24/7 Managed Threat Hunting for all laptops.',
-        'allocations'   => []
-    ],
-    [
-        'id'            => 8,
-        'name'          => 'Autodesk AutoCAD 2026',
-        'publisher'     => 'Autodesk Inc.',
-        'brand_code'    => 'adobe',
-        'category'      => 'Design & Media',
-        'version'       => 'Commercial 2026',
-        'license_type'  => 'Per-Seat / Volume',
-        'license_key'   => 'ACAD-2026-XXXX-6610',
-        'total_seats'   => 10,
-        'assigned_seats'=> 10,
-        'vendor'        => 'Tech Data Corporation',
-        'po_number'     => 'PO-2026-ACAD-011',
-        'purchase_date' => '2026-02-14',
-        'expiry_date'   => '2027-02-14',
-        'cost_per_seat' => 1950,
-        'total_cost'    => 19500,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => '100% seat utilization. Dedicated 2D/3D design workstations in engineering department.',
-        'allocations'   => []
-    ],
-    [
-        'id'            => 9,
-        'name'          => 'Jira Software Data Center',
-        'publisher'     => 'Atlassian Pty Ltd',
-        'brand_code'    => 'atlassian',
-        'category'      => 'Cloud & SaaS',
-        'version'       => 'Data Center 9.x',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'ATLS-JIRA-DC-XXXX-3381',
-        'total_seats'   => 60,
-        'assigned_seats'=> 56,
-        'vendor'        => 'Atlassian Pty',
-        'po_number'     => 'PO-2025-ATLS-088',
-        'purchase_date' => '2025-11-05',
-        'expiry_date'   => '2026-11-05', // 27 days from now!
-        'cost_per_seat' => 110,
-        'total_cost'    => 6600,
-        'currency'      => '₹',
-        'status'        => 'Expiring Soon',
-        'notes'         => 'Agile project tracking, scrum boards, release management, and sprint planning for developer team.',
-        'allocations'   => []
-    ],
-    [
-        'id'            => 10,
-        'name'          => 'VMware vSphere 8 Standard',
-        'publisher'     => 'VMware / Broadcom',
-        'brand_code'    => 'default',
-        'category'      => 'Operating Systems',
-        'version'       => 'vSphere 8.0',
-        'license_type'  => 'Perpetual',
-        'license_key'   => 'VMW-VSPHERE-XXXX-1120',
-        'total_seats'   => 8,
-        'assigned_seats'=> 6,
-        'vendor'        => 'Redington India Ltd',
-        'po_number'     => 'PO-2024-VMW-015',
-        'purchase_date' => '2024-08-10',
-        'expiry_date'   => 'Perpetual',
-        'cost_per_seat' => 1395,
-        'total_cost'    => 11160,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Server virtualization hypervisor cluster license for on-premise datacenter infrastructure.',
-        'allocations'   => []
-    ],
-    [
-        'id'            => 11,
-        'name'          => 'Zoom Workplace Enterprise',
-        'publisher'     => 'Zoom Video Comms',
-        'brand_code'    => 'msft',
-        'category'      => 'Cloud & SaaS',
-        'version'       => 'Enterprise Cloud',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'ZM-ENT-WP-XXXX-9952',
-        'total_seats'   => 50,
-        'assigned_seats'=> 44,
-        'vendor'        => 'Zoom Direct',
-        'po_number'     => 'PO-2026-ZOOM-020',
-        'purchase_date' => '2026-04-10',
-        'expiry_date'   => '2027-04-10',
-        'cost_per_seat' => 240,
-        'total_cost'    => 12000,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Large meeting capacity up to 500 attendees, cloud recording, webinar capabilities, and AI Companion.',
-        'allocations'   => []
-    ],
-    [
-        'id'            => 12,
-        'name'          => 'Figma Organization',
-        'publisher'     => 'Figma Inc.',
-        'brand_code'    => 'adobe',
-        'category'      => 'Design & Media',
-        'version'       => 'Org Cloud 2026',
-        'license_type'  => 'SaaS Subscription',
-        'license_key'   => 'FIG-ORG-2026-XXXX-7741',
-        'total_seats'   => 20,
-        'assigned_seats'=> 18,
-        'vendor'        => 'Figma Direct',
-        'po_number'     => 'PO-2026-FIG-005',
-        'purchase_date' => '2026-05-15',
-        'expiry_date'   => '2027-05-15',
-        'cost_per_seat' => 540,
-        'total_cost'    => 10800,
-        'currency'      => '₹',
-        'status'        => 'Active',
-        'notes'         => 'Design systems, shared component libraries, dev mode inspection, and FigJam collaborative whiteboards.',
-        'allocations'   => []
-    ]
-];
+// Fetch Software & Licenses Dataset directly from Database
+$initialLicenses = [];
 
-// Calculate Live KPI Metrics
+if (isset($conn) && $conn !== false) {
+    // Ensure table exists strictly with the fields present in the Add Software License form
+    $licTableSql = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='software_licenses' AND xtype='U')
+    BEGIN
+        CREATE TABLE software_licenses (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            software_name NVARCHAR(200) NOT NULL,
+            publisher NVARCHAR(150) NOT NULL,
+            category NVARCHAR(100) NOT NULL,
+            version NVARCHAR(100) NULL,
+            license_type NVARCHAR(100) NOT NULL,
+            license_key NVARCHAR(250) NULL,
+            vendor NVARCHAR(150) NULL,
+            status NVARCHAR(50) NOT NULL DEFAULT 'Active',
+            purchase_date NVARCHAR(50) NULL,
+            expiry_date NVARCHAR(50) NULL,
+            total_cost DECIMAL(18,2) NOT NULL DEFAULT 0,
+            notes NVARCHAR(MAX) NULL,
+            created_at DATETIME NOT NULL DEFAULT GETDATE(),
+            updated_at DATETIME NOT NULL DEFAULT GETDATE()
+        );
+    END";
+    sqlsrv_query($conn, $licTableSql);
+
+    $licStmt = sqlsrv_query($conn, "SELECT * FROM software_licenses ORDER BY id DESC");
+    if ($licStmt !== false) {
+        while ($row = sqlsrv_fetch_array($licStmt, SQLSRV_FETCH_ASSOC)) {
+            $swName = $row['software_name'] ?? ($row['name'] ?? '');
+            $pub = $row['publisher'] ?? '';
+            $pLower = strtolower($pub);
+            $brand = 'default';
+            if (strpos($pLower, 'micro') !== false) $brand = 'msft';
+            elseif (strpos($pLower, 'adobe') !== false) $brand = 'adobe';
+            elseif (strpos($pLower, 'jet') !== false) $brand = 'jb';
+            elseif (strpos($pLower, 'slack') !== false) $brand = 'slack';
+            elseif (strpos($pLower, 'git') !== false) $brand = 'github';
+            elseif (strpos($pLower, 'atlass') !== false) $brand = 'atlassian';
+            elseif (strpos($pLower, 'crowd') !== false) $brand = 'crowdstrike';
+
+            $expDateStr = $row['expiry_date'] ?? '';
+            $rawStatus = $row['status'] ?? 'Active';
+            $calc = computeLicenseExpiryStatus($expDateStr, $rawStatus);
+
+            $initialLicenses[] = [
+                'id'             => intval($row['id']),
+                'name'           => $swName,
+                'software_name'  => $swName,
+                'publisher'      => $pub,
+                'brand_code'     => $brand,
+                'category'       => $row['category'] ?? '',
+                'version'        => $row['version'] ?? '',
+                'license_type'   => $row['license_type'] ?? '',
+                'license_key'    => $row['license_key'] ?? '',
+                'vendor'         => $row['vendor'] ?? '',
+                'purchase_date'  => $row['purchase_date'] ?? '',
+                'expiry_date'    => $expDateStr,
+                'total_cost'     => floatval($row['total_cost'] ?? 0),
+                'currency'       => '₹',
+                'status'         => $calc['status'],
+                'raw_status'     => $rawStatus,
+                'days_remaining' => $calc['days'],
+                'expiry_label'   => $calc['label'],
+                'badge_class'    => $calc['badge_class'],
+                'notes'          => $row['notes'] ?? '',
+                'allocations'    => []
+            ];
+        }
+        sqlsrv_free_stmt($licStmt);
+    }
+}
+
+// Helper function: Dynamic Expiry Status Calculation from Today's Date
+function computeLicenseExpiryStatus($expiryDateStr, $defaultStatus = 'Active') {
+    $expStr = trim($expiryDateStr ?? '');
+    if ($expStr === '' || strcasecmp($expStr, 'Perpetual') === 0 || strcasecmp($expStr, 'Lifetime') === 0) {
+        return [
+            'status' => 'Active',
+            'days' => null,
+            'label' => 'Lifetime Perpetual',
+            'badge_class' => 'safe'
+        ];
+    }
+
+    $expTs = strtotime($expStr);
+    if ($expTs === false) {
+        return [
+            'status' => $defaultStatus ?: 'Active',
+            'days' => null,
+            'label' => $expStr,
+            'badge_class' => 'safe'
+        ];
+    }
+
+    $todayTs = strtotime(date('Y-m-d'));
+    $diffDays = (int) floor(($expTs - $todayTs) / 86400);
+
+    if ($diffDays < 0) {
+        $absDays = abs($diffDays);
+        return [
+            'status' => 'Expired',
+            'days' => $diffDays,
+            'label' => 'Expired ' . ($absDays === 1 ? '1 day' : "{$absDays} days") . ' ago',
+            'badge_class' => 'expired'
+        ];
+    } elseif ($diffDays <= 30) {
+        return [
+            'status' => 'Expiring Soon',
+            'days' => $diffDays,
+            'label' => ($diffDays === 0) ? 'Expires Today!' : "Expires in {$diffDays} day" . ($diffDays === 1 ? '' : 's'),
+            'badge_class' => 'warn'
+        ];
+    } else {
+        return [
+            'status' => 'Active',
+            'days' => $diffDays,
+            'label' => "Active ({$diffDays} days left)",
+            'badge_class' => 'safe'
+        ];
+    }
+}
+
+// Calculate Live KPI Metrics dynamically based on computed statuses
 $totalLicenses = count($initialLicenses);
 $activeLicensesCount = 0;
 $expiringCount = 0;
+$expiredCount = 0;
 $totalSpendUSD = 0;
 
 foreach ($initialLicenses as $lic) {
@@ -378,6 +223,8 @@ foreach ($initialLicenses as $lic) {
         $activeLicensesCount++;
     } elseif ($lic['status'] === 'Expiring Soon') {
         $expiringCount++;
+    } elseif ($lic['status'] === 'Expired') {
+        $expiredCount++;
     }
 }
 
@@ -423,6 +270,22 @@ include 'includes/topbar.php';
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
                 Export CSV
+            </button>
+            <button type="button" class="btn-secondary" id="openRenewalLogsBtn" title="View all software license renewal history and audit logs">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Renewal Logs
+            </button>
+            <button type="button" class="btn-secondary" id="openRenewLicenseBtn" style="color: #0369a1; border-color: #bae6fd; background: #f0f9ff; font-weight: 600;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+                Renew License
             </button>
             <button type="button" class="btn-primary" id="openAddLicenseBtn">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -575,7 +438,7 @@ include 'includes/topbar.php';
                         <th style="min-width: 140px;">Renewal / Expiry</th>
                         <th style="min-width: 140px;">Vendor &amp; Spend</th>
                         <th style="min-width: 120px;">Status</th>
-                        <th style="width: 110px; text-align: right; padding-right: 14px;">Actions</th>
+                        <th style="width: 140px; text-align: right; padding-right: 14px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="licensesTbody">
@@ -665,6 +528,9 @@ include 'includes/topbar.php';
                                     <button type="button" class="action-icon-btn btn-view" title="View License Details" onclick="openLicenseDrawer(<?php echo $lic['id']; ?>)">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                     </button>
+                                    <button type="button" class="action-icon-btn btn-renew <?php echo ($lic['status'] === 'Expiring Soon') ? 'due-pulse' : ''; ?>" title="Renew License" onclick="openRenewModal(<?php echo $lic['id']; ?>)">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                                    </button>
                                     <button type="button" class="action-icon-btn btn-view" title="Edit License" onclick="editLicense(<?php echo $lic['id']; ?>)">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                     </button>
@@ -699,12 +565,12 @@ include 'includes/topbar.php';
         <!-- Drawer Header -->
         <div class="lic-drawer-header">
             <div class="lic-drawer-title-wrap">
-                <div class="software-logo-badge brand-msft" id="drawerLogoBadge" style="width: 44px; height: 44px; font-size: 16px;">
-                    MS
+                <div class="software-logo-badge brand-default" id="drawerLogoBadge" style="width: 44px; height: 44px; font-size: 16px;">
+                    SW
                 </div>
                 <div>
-                    <h2 style="font-size: 17px; font-weight: 800; color: #001938; margin: 0;" id="drawerSoftwareTitle">Microsoft 365 E5</h2>
-                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;" id="drawerSoftwarePublisher">Microsoft Corporation &bull; Cloud Enterprise</div>
+                    <h2 style="font-size: 17px; font-weight: 800; color: #001938; margin: 0;" id="drawerSoftwareTitle">—</h2>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;" id="drawerSoftwarePublisher">—</div>
                 </div>
             </div>
             <button type="button" class="lic-drawer-close-btn" onclick="closeLicenseDrawer()" title="Close Drawer">&times;</button>
@@ -716,15 +582,15 @@ include 'includes/topbar.php';
             <div class="drawer-stats-cards">
                 <div class="drawer-stat-box">
                     <div class="box-lbl">License Model</div>
-                    <div class="box-val" id="drawerStatModel" style="font-size: 13.5px;">SaaS Subscription</div>
+                    <div class="box-val" id="drawerStatModel" style="font-size: 13.5px;">—</div>
                 </div>
                 <div class="drawer-stat-box">
                     <div class="box-lbl">License Status</div>
-                    <div class="box-val" id="drawerStatStatus" style="font-size: 13.5px; color: #059669;">Active</div>
+                    <div class="box-val" id="drawerStatStatus" style="font-size: 13.5px;">—</div>
                 </div>
                 <div class="drawer-stat-box">
                     <div class="box-lbl">Total Spend</div>
-                    <div class="box-val" id="drawerStatCost" style="font-size: 14px; color: #001938; font-weight: 800;">₹54,720</div>
+                    <div class="box-val" id="drawerStatCost" style="font-size: 14px; color: #001938; font-weight: 800;">—</div>
                 </div>
             </div>
 
@@ -736,16 +602,16 @@ include 'includes/topbar.php';
             <div class="drawer-info-grid">
                 <div class="drawer-info-item">
                     <div class="info-lbl">License Model</div>
-                    <div class="info-val" id="drawerLicType">SaaS Subscription</div>
+                    <div class="info-val" id="drawerLicType">—</div>
                 </div>
                 <div class="drawer-info-item">
                     <div class="info-lbl">Category</div>
-                    <div class="info-val" id="drawerLicCategory">Office &amp; Productivity</div>
+                    <div class="info-val" id="drawerLicCategory">—</div>
                 </div>
                 <div class="drawer-info-item" style="grid-column: span 2;">
                     <div class="info-lbl">Product License Key</div>
                     <div class="info-val" style="font-family: monospace; background: #f8fafc; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 8px;">
-                        <span id="drawerLicenseKey">MS365-E5-9924-XXXX-7140</span>
+                        <span id="drawerLicenseKey">—</span>
                         <button type="button" class="btn-copy-inline" onclick="copyDrawerKey()" title="Copy key">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </button>
@@ -753,43 +619,58 @@ include 'includes/topbar.php';
                 </div>
                 <div class="drawer-info-item">
                     <div class="info-lbl">Purchase Order / Invoice</div>
-                    <div class="info-val" id="drawerPoNumber">PO-2026-MSFT-081</div>
+                    <div class="info-val" id="drawerPoNumber">—</div>
                 </div>
                 <div class="drawer-info-item">
                     <div class="info-lbl">Supplier / Vendor</div>
-                    <div class="info-val" id="drawerVendor">Microsoft Direct</div>
+                    <div class="info-val" id="drawerVendor">—</div>
                 </div>
                 <div class="drawer-info-item">
                     <div class="info-lbl">Purchase Date</div>
-                    <div class="info-val" id="drawerPurchaseDate">2025-04-01</div>
+                    <div class="info-val" id="drawerPurchaseDate">—</div>
                 </div>
                 <div class="drawer-info-item">
                     <div class="info-lbl">Expiry / Renewal Date</div>
-                    <div class="info-val" id="drawerExpiryDate">2027-03-31</div>
+                    <div class="info-val" id="drawerExpiryDate">—</div>
                 </div>
                 <div class="drawer-info-item">
                     <div class="info-lbl">Unit Cost</div>
-                    <div class="info-val" id="drawerCostPerSeat">₹3,200 / seat</div>
+                    <div class="info-val" id="drawerCostPerSeat">—</div>
                 </div>
                 <div class="drawer-info-item">
                     <div class="info-lbl">Total Annual Spend</div>
-                    <div class="info-val" id="drawerTotalCost" style="color: #001938; font-weight: 800;">₹54,720.00</div>
+                    <div class="info-val" id="drawerTotalCost" style="color: #001938; font-weight: 800;">—</div>
                 </div>
             </div>
 
             <!-- Notes & Compliance -->
             <div class="drawer-sec-title">
-                <span>Notes &amp; Compliance Verification</span>
+                <span>Notes &amp; Remarks</span>
             </div>
-            <p style="font-size: 12.5px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 0;" id="drawerNotes">
-                License audited under corporate IT security guidelines. Compliant with single-tenant data isolation.
-            </p>
+            <p style="font-size: 12.5px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 0 0 20px 0;" id="drawerNotes">—</p>
+
+            <!-- Renewal History & Audit Logs -->
+            <div class="drawer-sec-title" style="margin-top: 15px;">
+                <span>Renewal History &amp; Audit Trail</span>
+                <span id="drawerRenewalLogCount" style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: 700;">0 Logs</span>
+            </div>
+            <div id="drawerRenewalLogsContainer" class="drawer-renewal-logs-wrap">
+                <div class="renewal-empty-state">
+                    No renewal audit records recorded yet.
+                </div>
+            </div>
         </div>
 
         <!-- Drawer Footer -->
         <div class="lic-drawer-footer">
             <button type="button" class="btn-secondary" onclick="closeLicenseDrawer()">Close</button>
-            <button type="button" class="btn-primary" id="drawerEditLicBtn" onclick="editCurrentDrawerLicense()">
+            <button type="button" class="btn-primary" id="drawerRenewLicBtn" onclick="renewCurrentDrawerLicense()" style="background: linear-gradient(135deg, #0284c7, #0369a1); border-color: #0284c7;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right: 4px;">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+                Renew License
+            </button>
+            <button type="button" class="btn-secondary" id="drawerEditLicBtn" onclick="editCurrentDrawerLicense()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 Edit License
             </button>
@@ -928,6 +809,203 @@ include 'includes/topbar.php';
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- =========================================================================
+     MODAL 2: RENEW SOFTWARE LICENSE (ENTERPRISE SUBSCRIPTION RENEWAL)
+     ========================================================================= -->
+<div class="modal-overlay" id="renewLicenseModalOverlay" style="display: none;">
+    <div class="modal-box" style="max-width: 680px;">
+        <div class="modal-header">
+            <h3 id="modalRenewTitle" style="color: #0369a1;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0284c7;">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+                <span>Renew Software License</span>
+            </h3>
+            <button type="button" class="modal-close-btn" onclick="closeRenewLicenseModal()" title="Close">&times;</button>
+        </div>
+
+        <form id="renewLicenseForm" onsubmit="saveRenewLicenseForm(event)">
+            <input type="hidden" id="renewLicenseId" value="">
+            <div class="modal-body" style="padding: 20px 24px;">
+
+                <!-- Software Selection Dropdown (if opening from header or changing) -->
+                <div class="modal-form-group" id="renewSelectGroup">
+                    <label for="renewSelectLicense">Select Software License to Renew <span class="req">*</span></label>
+                    <select id="renewSelectLicense" onchange="onRenewLicenseSelectChange(this.value)">
+                        <?php foreach ($initialLicenses as $licOpt): ?>
+                            <option value="<?php echo $licOpt['id']; ?>">
+                                <?php echo htmlspecialchars($licOpt['name']); ?> (<?php echo htmlspecialchars($licOpt['publisher']); ?>) — Exp: <?php echo htmlspecialchars($licOpt['expiry_date']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Selected Software License Summary Card -->
+                <div class="renew-summary-card">
+                    <div class="renew-summary-left">
+                        <div class="software-logo-badge brand-default" id="renewLogoBadge" style="width: 44px; height: 44px; font-size: 15px;">
+                            SW
+                        </div>
+                        <div>
+                            <div class="renew-summary-title" id="renewSummaryName">—</div>
+                            <div class="renew-summary-sub" id="renewSummaryPublisher">—</div>
+                        </div>
+                    </div>
+                    <div class="renew-summary-stats">
+                        <div class="renew-stat-badge">
+                            <span class="stat-label">Current Expiry</span>
+                            <span class="stat-value" id="renewSummaryCurrentExpiry" style="color: #ea580c;">—</span>
+                        </div>
+                        <div class="renew-stat-badge">
+                            <span class="stat-label">Annual Spend</span>
+                            <span class="stat-value" id="renewSummaryCurrentCost">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 1: New Expiry Date & Renewal Cost -->
+                <div class="form-grid-2">
+                    <div class="modal-form-group">
+                        <label for="renewNewExpiryDate">New Expiry / Renewal Date <span class="req">*</span></label>
+                        <input type="date" id="renewNewExpiryDate" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="renewCost">Renewal Cost / Spend (₹ / INR) <span class="req">*</span></label>
+                        <input type="number" step="0.01" id="renewCost" placeholder="0" required>
+                    </div>
+                </div>
+
+                <!-- Row 2: Renewal PO / Invoice & Vendor -->
+                <div class="form-grid-2">
+                    <div class="modal-form-group">
+                        <label for="renewPoNumber">
+                            <span>Renewal PO / Invoice No.</span>
+                            <a href="javascript:void(0)" onclick="generateRenewPo()" style="font-size: 11px; color: #0284c7; text-decoration: none; font-weight: 600;">+ Auto-Generate</a>
+                        </label>
+                        <input type="text" id="renewPoNumber" placeholder="PO Number">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="renewVendor">Vendor / Reseller</label>
+                        <select id="renewVendor">
+                            <option value="">-- Select Vendor --</option>
+                            <?php foreach ($vendorsList as $vnd): ?>
+                                <option value="<?php echo htmlspecialchars($vnd); ?>"><?php echo htmlspecialchars($vnd); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Row 3: Product Key Update & Status -->
+                <div class="form-grid-2">
+                    <div class="modal-form-group">
+                        <label for="renewLicenseKey">
+                            <span>Updated Product Key (Optional)</span>
+                            <a href="javascript:void(0)" onclick="generateSampleRenewKey()" style="font-size: 11px; color: #0284c7; text-decoration: none; font-weight: 600;">+ New Key</a>
+                        </label>
+                        <input type="text" id="renewLicenseKey" placeholder="Leave empty to retain existing key" style="font-family: monospace;">
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 5px;">
+                            <span>Current (Old) Key: </span>
+                            <code id="renewCurrentKeyDisplay" style="font-family: monospace; font-weight: 700; color: #0f172a; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">—</code>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="renewStatus">Post-Renewal Status</label>
+                        <select id="renewStatus">
+                            <option value="Active" selected>Active</option>
+                            <option value="Expiring Soon">Expiring Soon</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Row 4: Renewal Remarks -->
+                <div class="modal-form-group" style="margin-bottom: 0;">
+                    <label for="renewNotes">Renewal Notes &amp; Approvals</label>
+                    <textarea id="renewNotes" rows="2" placeholder="Renewal notes or justification"></textarea>
+                </div>
+
+                <!-- Impact Notice -->
+                <div class="renew-notice-box">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: #16a34a; flex-shrink: 0;">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <span><strong>Compliance Notice:</strong> Confirming renewal will extend license validity, archive the previous key into audit logs, and reset status to <strong>Active</strong>.</span>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer" style="padding: 14px 24px;">
+                <button type="button" class="btn-secondary" onclick="closeRenewLicenseModal()">Cancel</button>
+                <button type="submit" class="btn-primary" id="saveRenewBtn" style="background: linear-gradient(135deg, #0284c7, #0369a1); border-color: #0284c7;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    Confirm &amp; Renew License
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- =========================================================================
+     MODAL 3: ALL SOFTWARE LICENSE RENEWAL AUDIT LOGS
+     ========================================================================= -->
+<div class="modal-overlay" id="allRenewalLogsModalOverlay" style="display: none;">
+    <div class="modal-box" style="max-width: 980px; width: 96%;">
+        <div class="modal-header">
+            <h3 style="color: #0369a1;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0284c7;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Software License Renewal Audit Logs (Key History &amp; Extensions)</span>
+            </h3>
+            <button type="button" class="modal-close-btn" onclick="closeAllRenewalLogsModal()" title="Close">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 18px 22px; max-height: 72vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; flex-wrap: wrap;">
+                <input type="text" id="renewalLogSearchInput" placeholder="Filter logs by software, product key, renewed by, or notes..." 
+                       style="flex: 1; min-width: 250px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;"
+                       oninput="filterRenewalLogsTable()">
+                <button type="button" class="btn-secondary" onclick="loadAllRenewalLogs(true)" style="font-size: 12px; padding: 7px 12px; display: inline-flex; align-items: center; gap: 5px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    Refresh Logs
+                </button>
+            </div>
+            <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <table class="lic-table" id="allRenewalLogsTable" style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 700; text-align: left;">
+                            <th style="padding: 10px 10px;">ID</th>
+                            <th style="padding: 10px 10px;">Software</th>
+                            <th style="padding: 10px 10px;">Renewal Date</th>
+                            <th style="padding: 10px 10px;">Expiry Timeline</th>
+                            <th style="padding: 10px 10px;">Old Key (Previous)</th>
+                            <th style="padding: 10px 10px;">Active Key (New)</th>
+                            <th style="padding: 10px 10px; text-align: right;">Cost (₹)</th>
+                            <th style="padding: 10px 10px;">Renewed By</th>
+                            <th style="padding: 10px 10px;">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allRenewalLogsTableBody">
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 24px; color: #64748b;">Loading renewal audit trail...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 12px 22px;">
+            <button type="button" class="btn-secondary" onclick="closeAllRenewalLogsModal()">Close</button>
+        </div>
     </div>
 </div>
 

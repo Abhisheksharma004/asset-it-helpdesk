@@ -41,11 +41,114 @@
     const drawerTotalCost = document.getElementById('drawerTotalCost');
     const drawerStatusBadge = document.getElementById('drawerStatusBadge');
     const drawerNotes = document.getElementById('drawerNotes');
+    const drawerRenewalLogsContainer = document.getElementById('drawerRenewalLogsContainer');
+    const drawerRenewalLogCount = document.getElementById('drawerRenewalLogCount');
 
-    // Modal Elements
+    // Modal Elements (Add/Edit)
     const addModalOverlay = document.getElementById('addLicenseModalOverlay');
     const licenseForm = document.getElementById('licenseForm');
     const openAddBtn = document.getElementById('openAddLicenseBtn');
+
+    // Renewal Modal Elements
+    const renewModalOverlay = document.getElementById('renewLicenseModalOverlay');
+    const renewForm = document.getElementById('renewLicenseForm');
+    const openRenewBtn = document.getElementById('openRenewLicenseBtn');
+    const renewSelectLicense = document.getElementById('renewSelectLicense');
+    const renewSummaryName = document.getElementById('renewSummaryName');
+    const renewSummaryPublisher = document.getElementById('renewSummaryPublisher');
+    const renewSummaryCurrentExpiry = document.getElementById('renewSummaryCurrentExpiry');
+    const renewSummaryCurrentCost = document.getElementById('renewSummaryCurrentCost');
+    const renewLogoBadge = document.getElementById('renewLogoBadge');
+    const renewNewExpiryDate = document.getElementById('renewNewExpiryDate');
+    const renewCost = document.getElementById('renewCost');
+    const renewPoNumber = document.getElementById('renewPoNumber');
+    const renewVendor = document.getElementById('renewVendor');
+    const renewLicenseKey = document.getElementById('renewLicenseKey');
+    const renewStatus = document.getElementById('renewStatus');
+    const renewNotes = document.getElementById('renewNotes');
+    const renewLicenseId = document.getElementById('renewLicenseId');
+
+    // Renewal Logs Modal Elements
+    const openRenewalLogsBtn = document.getElementById('openRenewalLogsBtn');
+    const allRenewalLogsModalOverlay = document.getElementById('allRenewalLogsModalOverlay');
+    const allRenewalLogsTableBody = document.getElementById('allRenewalLogsTableBody');
+    const renewalLogSearchInput = document.getElementById('renewalLogSearchInput');
+    let cachedAllRenewalLogs = [];
+
+    // =========================================================================
+    // DYNAMIC EXPIRY & STATUS CALCULATION (TODAY'S DATE COMPARISON)
+    // =========================================================================
+    function computeLicenseExpiry(dateStr, fallbackStatus = 'Active') {
+        if (!dateStr || dateStr.toLowerCase() === 'perpetual' || dateStr.toLowerCase() === 'lifetime') {
+            return {
+                status: 'Active',
+                days: null,
+                label: 'Lifetime Perpetual',
+                badgeClass: 'safe',
+                statusBadgeClass: 'lic-badge-active'
+            };
+        }
+
+        const parts = String(dateStr).trim().split('-');
+        let expDate;
+        if (parts.length === 3) {
+            expDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        } else {
+            expDate = new Date(dateStr);
+        }
+
+        if (isNaN(expDate.getTime())) {
+            return {
+                status: fallbackStatus || 'Active',
+                days: null,
+                label: dateStr,
+                badgeClass: 'safe',
+                statusBadgeClass: 'lic-badge-active'
+            };
+        }
+
+        const today = new Date();
+        const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const expMidnight = new Date(expDate.getFullYear(), expDate.getMonth(), expDate.getDate());
+
+        const diffTime = expMidnight.getTime() - todayMidnight.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) {
+            const absDays = Math.abs(diffDays);
+            return {
+                status: 'Expired',
+                days: diffDays,
+                label: `Expired ${absDays === 1 ? '1 day' : absDays + ' days'} ago`,
+                badgeClass: 'expired',
+                statusBadgeClass: 'lic-badge-expired'
+            };
+        } else if (diffDays === 0) {
+            return {
+                status: 'Expiring Soon',
+                days: 0,
+                label: 'Expires Today!',
+                badgeClass: 'warn',
+                statusBadgeClass: 'lic-badge-expiring'
+            };
+        } else if (diffDays <= 30) {
+            return {
+                status: 'Expiring Soon',
+                days: diffDays,
+                label: `Expires in ${diffDays} day${diffDays === 1 ? '' : 's'}`,
+                badgeClass: 'warn',
+                statusBadgeClass: 'lic-badge-expiring'
+            };
+        } else {
+            return {
+                status: 'Active',
+                days: diffDays,
+                label: `Active (${diffDays} days left)`,
+                badgeClass: 'safe',
+                statusBadgeClass: 'lic-badge-active'
+            };
+        }
+    }
 
     // =========================================================================
     // INITIALIZATION
@@ -66,15 +169,18 @@
         const status = statusFilter ? statusFilter.value : 'all';
 
         return licenses.filter(lic => {
+            const expInfo = computeLicenseExpiry(lic.expiry_date, lic.status);
+
             // Tab filter
             if (currentTab === 'saas' && !lic.license_type.toLowerCase().includes('saas')) return false;
             if (currentTab === 'perpetual' && !lic.license_type.toLowerCase().includes('perpetual') && !lic.license_type.toLowerCase().includes('oem')) return false;
-            if (currentTab === 'expiring' && lic.status !== 'Expiring Soon') return false;
+            if (currentTab === 'expiring' && expInfo.status !== 'Expiring Soon') return false;
+            if (currentTab === 'expired' && expInfo.status !== 'Expired') return false;
 
             // Dropdown filters
             if (cat !== 'all' && lic.category !== cat) return false;
             if (type !== 'all' && lic.license_type !== type) return false;
-            if (status !== 'all' && lic.status !== status) return false;
+            if (status !== 'all' && expInfo.status !== status) return false;
 
             // Search query
             if (query) {
@@ -86,7 +192,9 @@
                     lic.license_key,
                     lic.version,
                     lic.vendor,
-                    lic.po_number
+                    lic.po_number,
+                    expInfo.status,
+                    expInfo.label
                 ].join(' ').toLowerCase();
 
                 if (!searchCorpus.includes(query)) return false;
@@ -109,7 +217,7 @@
         if (list.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+                    <td colspan="8" style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.5;">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -123,6 +231,9 @@
         }
 
         list.forEach(lic => {
+            const expInfo = computeLicenseExpiry(lic.expiry_date, lic.status);
+            lic.status = expInfo.status; // keep dynamic status synced
+
             let brandClass = 'brand-default';
             if (lic.brand_code === 'msft') brandClass = 'brand-msft';
             else if (lic.brand_code === 'adobe') brandClass = 'brand-adobe';
@@ -134,9 +245,7 @@
 
             const logoLetters = escapeHtml((lic.name || 'SW').substring(0, 2).toUpperCase());
 
-            let statusBadgeClass = 'lic-badge-active';
-            if (lic.status === 'Expiring Soon') statusBadgeClass = 'lic-badge-expiring';
-            else if (lic.status === 'Expired') statusBadgeClass = 'lic-badge-expired';
+            const isDueAction = (expInfo.status === 'Expiring Soon' || expInfo.status === 'Expired');
 
             const tr = document.createElement('tr');
             tr.setAttribute('data-lic-id', lic.id);
@@ -182,13 +291,9 @@
                 <td>
                     <div class="expiry-cell">
                         <div class="date-str">${escapeHtml(lic.expiry_date || '—')}</div>
-                        ${lic.status === 'Expiring Soon'
-                            ? `<span class="days-pill warn">&#9888; Renewal Due Soon</span>`
-                            : (lic.expiry_date === 'Perpetual'
-                                ? `<span class="days-pill safe">Lifetime Perpetual</span>`
-                                : `<span class="days-pill safe">Active License</span>`
-                            )
-                        }
+                        <span class="days-pill ${expInfo.badgeClass}">
+                            ${isDueAction ? '&#9888; ' : ''}${escapeHtml(expInfo.label)}
+                        </span>
                     </div>
                 </td>
                 <td>
@@ -200,15 +305,18 @@
                     </div>
                 </td>
                 <td>
-                    <span class="lic-badge ${statusBadgeClass}">
+                    <span class="lic-badge ${expInfo.statusBadgeClass}">
                         <span class="dot"></span>
-                        ${escapeHtml(lic.status)}
+                        ${escapeHtml(expInfo.status)}
                     </span>
                 </td>
                 <td>
                     <div class="action-buttons-wrap" style="justify-content: flex-end; padding-right: 6px;">
                         <button type="button" class="action-icon-btn btn-view" title="View License Details" onclick="openLicenseDrawer(${lic.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                        <button type="button" class="action-icon-btn btn-renew ${isDueAction ? 'due-pulse' : ''}" title="Renew License" onclick="openRenewModal(${lic.id})">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
                         </button>
                         <button type="button" class="action-icon-btn btn-view" title="Edit License" onclick="editLicense(${lic.id})">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -226,17 +334,17 @@
     function updateKPIs() {
         let activeCount = 0;
         let expiringCount = 0;
+        let expiredCount = 0;
         let totalCost = 0;
-        let saasCount = 0;
-        let perpCount = 0;
 
         licenses.forEach(lic => {
             totalCost += parseFloat(lic.total_cost || 0);
+            const expInfo = computeLicenseExpiry(lic.expiry_date, lic.status);
+            lic.status = expInfo.status;
 
-            if (lic.status === 'Active') activeCount++;
-            if (lic.status === 'Expiring Soon') expiringCount++;
-            if ((lic.license_type || '').toLowerCase().includes('saas')) saasCount++;
-            if ((lic.license_type || '').toLowerCase().includes('perpetual') || (lic.license_type || '').toLowerCase().includes('oem')) perpCount++;
+            if (expInfo.status === 'Active') activeCount++;
+            else if (expInfo.status === 'Expiring Soon') expiringCount++;
+            else if (expInfo.status === 'Expired') expiredCount++;
         });
 
         const elTot = document.getElementById('kpiTotalLicenses');
@@ -269,11 +377,14 @@
             drawerLogoBadge.className = `software-logo-badge brand-${item.brand_code || 'default'}`;
         }
 
+        const expInfo = computeLicenseExpiry(item.expiry_date, item.status);
+        item.status = expInfo.status;
+
         // Stats
         if (drawerStatModel) drawerStatModel.textContent = item.license_type || 'Commercial';
         if (drawerStatStatus) {
-            drawerStatStatus.textContent = item.status || 'Active';
-            drawerStatStatus.style.color = (item.status === 'Expiring Soon') ? '#d97706' : (item.status === 'Expired' ? '#dc2626' : '#059669');
+            drawerStatStatus.textContent = expInfo.status;
+            drawerStatStatus.style.color = (expInfo.status === 'Expiring Soon') ? '#d97706' : (expInfo.status === 'Expired' ? '#dc2626' : '#059669');
         }
         if (drawerStatCost) drawerStatCost.textContent = `₹${formatNumber(item.total_cost || 0)}`;
 
@@ -284,21 +395,81 @@
         if (drawerPoNumber) drawerPoNumber.textContent = item.po_number || '—';
         if (drawerVendor) drawerVendor.textContent = item.vendor || '—';
         if (drawerPurchaseDate) drawerPurchaseDate.textContent = item.purchase_date || '—';
-        if (drawerExpiryDate) drawerExpiryDate.textContent = item.expiry_date || '—';
+        if (drawerExpiryDate) {
+            drawerExpiryDate.innerHTML = `${escapeHtml(item.expiry_date || '—')} <span class="days-pill ${expInfo.badgeClass}" style="margin-left: 6px; font-size: 11px;">${escapeHtml(expInfo.label)}</span>`;
+        }
         if (drawerCostPerSeat) drawerCostPerSeat.textContent = `₹${formatNumber(item.cost_per_seat || 0)}`;
         if (drawerTotalCost) drawerTotalCost.textContent = `₹${formatNumber(item.total_cost || 0)}`;
 
         if (drawerStatusBadge) {
-            const isExp = item.status === 'Expiring Soon';
-            drawerStatusBadge.className = `lic-badge ${isExp ? 'lic-badge-expiring' : 'lic-badge-active'}`;
-            drawerStatusBadge.innerHTML = `<span class="dot"></span> ${escapeHtml(item.status)}`;
+            drawerStatusBadge.className = `lic-badge ${expInfo.statusBadgeClass}`;
+            drawerStatusBadge.innerHTML = `<span class="dot"></span> ${escapeHtml(expInfo.status)}`;
         }
 
         if (drawerNotes) drawerNotes.textContent = item.notes || 'No specific usage constraints recorded.';
 
+        // Load Renewal History & Audit Records for this specific license
+        loadDrawerRenewalLogs(item.id);
+
         // Open Overlay
         if (drawerOverlay) drawerOverlay.classList.add('open');
     };
+
+    function loadDrawerRenewalLogs(licId) {
+        if (!drawerRenewalLogsContainer) return;
+        drawerRenewalLogsContainer.innerHTML = '<div class="renewal-empty-state"><span style="color:#0284c7;">⌛</span> Loading renewal history...</div>';
+        if (drawerRenewalLogCount) drawerRenewalLogCount.textContent = '...';
+
+        fetch(`api/software_licenses.php?fetch_renewals=1&license_id=${encodeURIComponent(licId)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success || !Array.isArray(data.renewals) || data.renewals.length === 0) {
+                    drawerRenewalLogsContainer.innerHTML = '<div class="renewal-empty-state">No renewal audit records recorded yet.</div>';
+                    if (drawerRenewalLogCount) drawerRenewalLogCount.textContent = '0 Logs';
+                    return;
+                }
+
+                if (drawerRenewalLogCount) drawerRenewalLogCount.textContent = `${data.renewals.length} Logs`;
+                const html = data.renewals.map(r => `
+                    <div class="renewal-log-card">
+                        <div class="renewal-log-header">
+                            <span class="renewal-log-date">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                ${escapeHtml(r.renewal_date)}
+                            </span>
+                            <span class="renewal-log-cost">₹${formatNumber(r.renewal_cost || 0)}</span>
+                        </div>
+                        <div class="renewal-log-dates-row">
+                            <span>${escapeHtml(r.previous_expiry || 'Initial')}</span>
+                            <span class="renewal-log-arrow">&rarr;</span>
+                            <strong style="color: #0369a1;">${escapeHtml(r.new_expiry)}</strong>
+                        </div>
+                        ${(r.previous_license_key || r.new_license_key) ? `
+                        <div style="font-size: 11px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; margin: 6px 0;">
+                            <div style="color: #64748b; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                                <span style="font-weight: 600;">Old Key:</span>
+                                <code style="font-family: monospace; color: #b91c1c; background: #fee2e2; padding: 1px 5px; border-radius: 3px;">${escapeHtml(r.previous_license_key || '—')}</code>
+                            </div>
+                            ${(r.new_license_key && r.new_license_key !== r.previous_license_key) ? `
+                            <div style="color: #15803d; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                                <span style="font-weight: 600;">New Key:</span>
+                                <code style="font-family: monospace; color: #15803d; background: #dcfce7; padding: 1px 5px; border-radius: 3px;">${escapeHtml(r.new_license_key)}</code>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+                        <div class="renewal-log-user">Renewed by: <strong>${escapeHtml(r.renewed_by || 'IT Administrator')}</strong></div>
+                        ${r.notes ? `<div class="renewal-log-notes">${escapeHtml(r.notes)}</div>` : ''}
+                    </div>
+                `).join('');
+                drawerRenewalLogsContainer.innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Error fetching drawer renewal logs:', err);
+                drawerRenewalLogsContainer.innerHTML = '<div class="renewal-empty-state" style="color: #ef4444;">Failed to load renewal history.</div>';
+                if (drawerRenewalLogCount) drawerRenewalLogCount.textContent = '0 Logs';
+            });
+    }
 
     window.closeLicenseDrawer = function (e) {
         if (e && e.target !== drawerOverlay) return;
@@ -492,6 +663,29 @@
                 target.status = status;
                 target.notes = notes;
                 target.brand_code = brand;
+
+                // Sync update with DB API
+                fetch('api/software_licenses.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'edit',
+                        id: target.id,
+                        name: target.name,
+                        publisher: target.publisher,
+                        category: target.category,
+                        version: target.version,
+                        license_type: target.license_type,
+                        license_key: target.license_key,
+                        vendor: target.vendor,
+                        purchase_date: target.purchase_date,
+                        expiry_date: target.expiry_date,
+                        total_cost: target.total_cost,
+                        status: target.status,
+                        notes: target.notes
+                    })
+                }).catch(err => console.warn('API sync warning:', err));
+
                 showNotification(`Software license "${name}" updated successfully.`, 'success');
             }
         } else {
@@ -520,6 +714,30 @@
                 allocations: []
             };
             licenses.unshift(newLicense);
+
+            // Sync create with DB API
+            fetch('api/software_licenses.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create',
+                    name,
+                    publisher,
+                    category,
+                    version,
+                    license_type: licType,
+                    license_key: newLicense.license_key,
+                    vendor,
+                    purchase_date: pDate,
+                    expiry_date: expDate,
+                    total_cost: cost,
+                    status,
+                    notes
+                })
+            }).then(r => r.json()).then(res => {
+                if (res && res.id) newLicense.id = res.id;
+            }).catch(err => console.warn('API sync warning:', err));
+
             showNotification(`New software license "${name}" registered successfully.`, 'success');
         }
 
@@ -527,6 +745,349 @@
         renderTable();
         updateKPIs();
     };
+
+    // =========================================================================
+    // MODAL 2: RENEW SOFTWARE LICENSE (ACTIONS & FORM HANDLING)
+    // =========================================================================
+    window.openRenewModal = function (targetId) {
+        if (!renewModalOverlay) return;
+
+        // Populate dropdown options dynamically from active array
+        if (renewSelectLicense) {
+            renewSelectLicense.innerHTML = '';
+            licenses.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.id;
+                opt.textContent = `${l.name} (${l.publisher}) — Exp: ${l.expiry_date || 'Perpetual'}`;
+                renewSelectLicense.appendChild(opt);
+            });
+        }
+
+        // If targetId is not specified, prefer an Expiring Soon license, or the first license
+        let selectedId = targetId;
+        if (!selectedId && licenses.length > 0) {
+            const expiringOne = licenses.find(l => l.status === 'Expiring Soon');
+            selectedId = expiringOne ? expiringOne.id : licenses[0].id;
+        }
+
+        if (renewSelectLicense && selectedId) {
+            renewSelectLicense.value = selectedId;
+        }
+
+        populateRenewModalData(selectedId);
+
+        renewModalOverlay.style.display = 'flex';
+        renewModalOverlay.classList.add('active', 'open');
+    };
+
+    window.closeRenewLicenseModal = function () {
+        if (renewModalOverlay) {
+            renewModalOverlay.style.display = 'none';
+            renewModalOverlay.classList.remove('active', 'open');
+        }
+    };
+
+    window.onRenewLicenseSelectChange = function (id) {
+        populateRenewModalData(parseInt(id, 10));
+    };
+
+    function populateRenewModalData(licId) {
+        const item = licenses.find(l => l.id == licId);
+        if (!item) return;
+
+        if (renewLicenseId) renewLicenseId.value = item.id;
+        if (renewSummaryName) renewSummaryName.textContent = item.name;
+        if (renewSummaryPublisher) renewSummaryPublisher.textContent = `${item.publisher} • ${item.license_type || 'SaaS'}`;
+        const expInfo = computeLicenseExpiry(item.expiry_date, item.status);
+        if (renewSummaryCurrentExpiry) {
+            renewSummaryCurrentExpiry.textContent = `${item.expiry_date || 'Perpetual'} (${expInfo.label})`;
+            renewSummaryCurrentExpiry.style.color = (expInfo.status === 'Expired') ? '#dc2626' : ((expInfo.status === 'Expiring Soon') ? '#ea580c' : '#059669');
+        }
+        if (renewSummaryCurrentCost) renewSummaryCurrentCost.textContent = `₹${formatNumber(item.total_cost || 0)}`;
+
+        if (renewLogoBadge) {
+            renewLogoBadge.textContent = (item.name || 'SW').substring(0, 2).toUpperCase();
+            renewLogoBadge.className = `software-logo-badge brand-${item.brand_code || 'default'}`;
+        }
+
+        // Calculate Default +1 Year expiry date
+        const baseDate = parseExpiryDate(item.expiry_date);
+        const newDate = new Date(baseDate);
+        newDate.setFullYear(newDate.getFullYear() + 1);
+        const formattedDate = newDate.toISOString().split('T')[0];
+
+        if (renewNewExpiryDate) renewNewExpiryDate.value = formattedDate;
+        if (renewCost) renewCost.value = item.total_cost || 0;
+        if (renewPoNumber) {
+            const year = new Date().getFullYear();
+            const rndCode = Math.floor(100 + Math.random() * 900);
+            renewPoNumber.value = `PO-${year}-RNW-${rndCode}`;
+        }
+        if (renewVendor) renewVendor.value = item.vendor || '';
+        if (renewLicenseKey) renewLicenseKey.value = '';
+        const curKeyEl = document.getElementById('renewCurrentKeyDisplay');
+        if (curKeyEl) curKeyEl.textContent = item.license_key || '—';
+        if (renewStatus) renewStatus.value = 'Active';
+        if (renewNotes) renewNotes.value = `Annual renewal processed for ${item.name}. Software maintenance and subscription extended by 1 year.`;
+
+        // Reset duration buttons state to 12 months
+        document.querySelectorAll('.duration-pill-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-months') === '12');
+        });
+    }
+
+    function parseExpiryDate(dateStr) {
+        if (!dateStr || dateStr === 'Perpetual' || isNaN(Date.parse(dateStr))) {
+            return new Date();
+        }
+        const parsed = new Date(dateStr);
+        // If expiry is already in the past, renew from today
+        return (parsed < new Date()) ? new Date() : parsed;
+    }
+
+    window.setRenewalDuration = function (months, btn) {
+        document.querySelectorAll('.duration-pill-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+
+        if (months === 'custom') {
+            if (renewNewExpiryDate) renewNewExpiryDate.focus();
+            return;
+        }
+
+        const id = renewLicenseId ? renewLicenseId.value : null;
+        const item = licenses.find(l => l.id == id);
+        const baseDate = parseExpiryDate(item ? item.expiry_date : null);
+
+        const newDate = new Date(baseDate);
+        newDate.setMonth(newDate.getMonth() + parseInt(months, 10));
+        const formatted = newDate.toISOString().split('T')[0];
+
+        if (renewNewExpiryDate) renewNewExpiryDate.value = formatted;
+    };
+
+    window.generateRenewPo = function () {
+        const year = new Date().getFullYear();
+        const randNum = Math.floor(100 + Math.random() * 900);
+        if (renewPoNumber) {
+            renewPoNumber.value = `PO-${year}-RNW-${randNum}`;
+            showNotification(`Generated Renewal PO: ${renewPoNumber.value}`, 'info');
+        }
+    };
+
+    window.generateSampleRenewKey = function () {
+        const seg1 = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const seg2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const seg3 = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const sample = `RNW-2026-${seg1}-${seg2}-${seg3}`;
+        if (renewLicenseKey) {
+            renewLicenseKey.value = sample;
+            showNotification(`Generated new key: ${sample}`, 'info');
+        }
+    };
+
+    window.saveRenewLicenseForm = function (e) {
+        e.preventDefault();
+        const id = renewLicenseId ? renewLicenseId.value : null;
+        const target = licenses.find(l => String(l.id) === String(id));
+        if (!target) {
+            showNotification('Error: Target software license not found.', 'error');
+            return;
+        }
+
+        const newExpiry = renewNewExpiryDate ? renewNewExpiryDate.value : '';
+        const newCost = parseFloat(renewCost ? renewCost.value : 0) || 0;
+        const newPo = renewPoNumber ? renewPoNumber.value.trim() : '';
+        const newVendor = renewVendor ? renewVendor.value : target.vendor;
+        const newKey = renewLicenseKey ? renewLicenseKey.value.trim() : '';
+        const newStatus = renewStatus ? renewStatus.value : 'Active';
+        const renewalNotes = renewNotes ? renewNotes.value.trim() : '';
+
+        const submitBtn = document.getElementById('saveRenewBtn');
+        const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Renewing License...';
+        }
+
+        // Sync renew with DB API
+        fetch('api/software_licenses.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'renew',
+                id: target.id,
+                expiry_date: newExpiry,
+                total_cost: newCost,
+                po_number: newPo,
+                vendor: newVendor,
+                license_key: newKey,
+                status: newStatus,
+                notes: renewalNotes
+            })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnHtml;
+            }
+
+            if (!res.success) {
+                showNotification(res.error || 'Failed to renew software license.', 'error');
+                return;
+            }
+
+            // Apply updates to license state
+            target.expiry_date = newExpiry || target.expiry_date;
+            target.total_cost = newCost || target.total_cost;
+            target.status = newStatus;
+            if (newPo) target.po_number = newPo;
+            if (newVendor) target.vendor = newVendor;
+            if (newKey) target.license_key = newKey;
+
+            const timestamp = new Date().toISOString().split('T')[0];
+            const noteStamp = `[Renewed on ${timestamp} until ${target.expiry_date}] ${renewalNotes}`;
+            target.notes = target.notes ? `${target.notes} | ${noteStamp}` : noteStamp;
+
+            closeRenewLicenseModal();
+            renderTable();
+            updateKPIs();
+
+            // Refresh Drawer if open for this license
+            if (activeDrawerLicId && String(activeDrawerLicId) === String(target.id)) {
+                openLicenseDrawer(target.id);
+            }
+
+            showNotification(`🎉 Software license "${target.name}" renewed successfully until ${target.expiry_date}! Audit log saved.`, 'success');
+        })
+        .catch(err => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnHtml;
+            }
+            console.error('API sync error:', err);
+            showNotification('Network error while processing renewal.', 'error');
+        });
+    };
+
+    window.renewCurrentDrawerLicense = function () {
+        if (activeDrawerLicId) {
+            closeLicenseDrawer();
+            openRenewModal(activeDrawerLicId);
+        }
+    };
+
+    // =========================================================================
+    // MODAL 3: ALL SOFTWARE LICENSE RENEWAL AUDIT LOGS
+    // =========================================================================
+    window.openAllRenewalLogsModal = function () {
+        if (!allRenewalLogsModalOverlay) return;
+        if (renewalLogSearchInput) renewalLogSearchInput.value = '';
+        allRenewalLogsModalOverlay.style.display = 'flex';
+        allRenewalLogsModalOverlay.classList.add('active', 'open');
+        loadAllRenewalLogs(true);
+    };
+
+    window.closeAllRenewalLogsModal = function () {
+        if (allRenewalLogsModalOverlay) {
+            allRenewalLogsModalOverlay.style.display = 'none';
+            allRenewalLogsModalOverlay.classList.remove('active', 'open');
+        }
+    };
+
+    window.loadAllRenewalLogs = function (force = false) {
+        if (!allRenewalLogsTableBody) return;
+        allRenewalLogsTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
+                    <div style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="color: #0284c7;">⌛</span> Loading renewal audit records from database...
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        fetch('api/software_licenses.php?fetch_renewals=1')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success || !Array.isArray(data.renewals)) {
+                    allRenewalLogsTableBody.innerHTML = `
+                        <tr><td colspan="8" style="text-align: center; padding: 24px; color: #dc2626;">Error loading renewal audit trail.</td></tr>
+                    `;
+                    return;
+                }
+                cachedAllRenewalLogs = data.renewals;
+                filterRenewalLogsTable();
+            })
+            .catch(err => {
+                console.error('Error fetching renewal logs:', err);
+                allRenewalLogsTableBody.innerHTML = `
+                    <tr><td colspan="8" style="text-align: center; padding: 24px; color: #dc2626;">Failed to connect to renewal log service.</td></tr>
+                `;
+            });
+    };
+
+    window.filterRenewalLogsTable = function () {
+        const query = (renewalLogSearchInput ? renewalLogSearchInput.value : '').trim().toLowerCase();
+        let list = cachedAllRenewalLogs;
+        if (query) {
+            list = list.filter(r => 
+                (r.software_name && r.software_name.toLowerCase().includes(query)) ||
+                (r.previous_license_key && r.previous_license_key.toLowerCase().includes(query)) ||
+                (r.new_license_key && r.new_license_key.toLowerCase().includes(query)) ||
+                (r.renewed_by && r.renewed_by.toLowerCase().includes(query)) ||
+                (r.notes && r.notes.toLowerCase().includes(query)) ||
+                (r.new_expiry && r.new_expiry.toLowerCase().includes(query)) ||
+                (r.renewal_date && r.renewal_date.toLowerCase().includes(query))
+            );
+        }
+        renderRenewalLogsTable(list);
+    };
+
+    function renderRenewalLogsTable(list) {
+        if (!allRenewalLogsTableBody) return;
+        if (!list || list.length === 0) {
+            allRenewalLogsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 32px; color: #64748b;">
+                        <div style="font-weight: 600; font-size: 13.5px; margin-bottom: 4px;">No Renewal Logs Found</div>
+                        <div style="font-size: 12px; color: #94a3b8;">No license renewals matching your search criteria have been recorded yet.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const rows = list.map(r => `
+            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 10px 10px; font-weight: 700; color: #64748b;">#${r.id}</td>
+                <td style="padding: 10px 10px; font-weight: 700; color: #0f172a;">${escapeHtml(r.software_name)}</td>
+                <td style="padding: 10px 10px; color: #334155;">${escapeHtml(r.renewal_date)}</td>
+                <td style="padding: 10px 10px; font-size: 11.5px; white-space: nowrap;">
+                    <span style="color: #64748b;">${escapeHtml(r.previous_expiry || '—')}</span>
+                    <span style="color: #0284c7; font-weight: bold; margin: 0 4px;">&rarr;</span>
+                    <strong style="color: #0369a1;">${escapeHtml(r.new_expiry)}</strong>
+                </td>
+                <td style="padding: 10px 10px;">
+                    <code style="font-family: monospace; color: #b91c1c; background: #fee2e2; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${escapeHtml(r.previous_license_key || '—')}</code>
+                </td>
+                <td style="padding: 10px 10px;">
+                    <code style="font-family: monospace; color: #15803d; background: #dcfce7; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${escapeHtml(r.new_license_key || r.previous_license_key || '—')}</code>
+                </td>
+                <td style="padding: 10px 10px; text-align: right; font-weight: 800; color: #0f172a;">₹${formatNumber(r.renewal_cost || 0)}</td>
+                <td style="padding: 10px 10px; font-size: 11.5px; color: #475569;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; font-weight: 600;">
+                        👤 ${escapeHtml(r.renewed_by || 'IT Admin')}
+                    </span>
+                </td>
+                <td style="padding: 10px 10px; font-size: 11.5px; color: #475569; max-width: 180px;">
+                    <span title="${escapeHtml(r.notes || '')}">${escapeHtml(r.notes || '—')}</span>
+                </td>
+            </tr>
+        `).join('');
+
+        allRenewalLogsTableBody.innerHTML = rows;
+    }
 
 
     // =========================================================================
@@ -617,6 +1178,8 @@
 
         // Modals Buttons
         if (openAddBtn) openAddBtn.addEventListener('click', openAddLicenseModal);
+        if (openRenewBtn) openRenewBtn.addEventListener('click', function () { window.openRenewModal(); });
+        if (openRenewalLogsBtn) openRenewalLogsBtn.addEventListener('click', openAllRenewalLogsModal);
         if (exportBtn) exportBtn.addEventListener('click', exportCSV);
 
         // Select All Checkbox

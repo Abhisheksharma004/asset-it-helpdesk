@@ -87,11 +87,25 @@
     background: #f8fafc;
 }
 
-.lic-stat-card.card-total::after { background: #6366f1; }
-.lic-stat-card.card-in-use::after { background: #10b981; }
-.lic-stat-card.card-available::after { background: #0093a7; }
-.lic-stat-card.card-expiring::after { background: #f59e0b; }
-.lic-stat-card.card-cost::after { background: #001938; }
+.lic-stat-card.card-total::after {
+    background: #6366f1;
+}
+
+.lic-stat-card.card-in-use::after {
+    background: #10b981;
+}
+
+.lic-stat-card.card-available::after {
+    background: #0093a7;
+}
+
+.lic-stat-card.card-expiring::after {
+    background: #f59e0b;
+}
+
+.lic-stat-card.card-cost::after {
+    background: #001938;
+}
 
 .lic-stat-info .stat-lbl {
     font-size: 11.5px;
@@ -128,11 +142,30 @@
     flex-shrink: 0;
 }
 
-.lic-stat-icon.indigo { background: #e0e7ff; color: #4338ca; }
-.lic-stat-icon.emerald { background: #dcfce7; color: #059669; }
-.lic-stat-icon.cyan { background: var(--cyan-light, #e0f2fe); color: var(--cyan-primary, #0093a7); }
-.lic-stat-icon.amber { background: #fef3c7; color: #d97706; }
-.lic-stat-icon.navy { background: #e2e8f0; color: #001938; }
+.lic-stat-icon.indigo {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.lic-stat-icon.emerald {
+    background: #dcfce7;
+    color: #059669;
+}
+
+.lic-stat-icon.cyan {
+    background: var(--cyan-light, #e0f2fe);
+    color: var(--cyan-primary, #0093a7);
+}
+
+.lic-stat-icon.amber {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.lic-stat-icon.navy {
+    background: #e2e8f0;
+    color: #001938;
+}
 
 /* ==========================================================================
    NAVIGATION TABS
@@ -211,14 +244,45 @@
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.software-logo-badge.brand-msft { background: #e0f2fe; color: #0284c7; }
-.software-logo-badge.brand-adobe { background: #fee2e2; color: #dc2626; }
-.software-logo-badge.brand-jb { background: #fef3c7; color: #d97706; }
-.software-logo-badge.brand-slack { background: #f3e8ff; color: #7e22ce; }
-.software-logo-badge.brand-github { background: #1e293b; color: #ffffff; }
-.software-logo-badge.brand-atlassian { background: #dbeafe; color: #1d4ed8; }
-.software-logo-badge.brand-crowdstrike { background: #ffe4e6; color: #e11d48; }
-.software-logo-badge.brand-default { background: #f1f5f9; color: #334155; }
+.software-logo-badge.brand-msft {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.software-logo-badge.brand-adobe {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.software-logo-badge.brand-jb {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.software-logo-badge.brand-slack {
+    background: #f3e8ff;
+    color: #7e22ce;
+}
+
+.software-logo-badge.brand-github {
+    background: #1e293b;
+    color: #ffffff;
+}
+
+.software-logo-badge.brand-atlassian {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.software-logo-badge.brand-crowdstrike {
+    background: #ffe4e6;
+    color: #e11d48;
+}
+
+.software-logo-badge.brand-default {
+    background: #f1f5f9;
+    color: #334155;
+}
 
 .software-info-title {
     font-size: 13.5px;
@@ -313,9 +377,17 @@
     transition: width 0.3s ease;
 }
 
-.seat-progress-fill.fill-safe { background: #10b981; }
-.seat-progress-fill.fill-warn { background: #f59e0b; }
-.seat-progress-fill.fill-danger { background: #ef4444; }
+.seat-progress-fill.fill-safe {
+    background: #10b981;
+}
+
+.seat-progress-fill.fill-warn {
+    background: #f59e0b;
+}
+
+.seat-progress-fill.fill-danger {
+    background: #ef4444;
+}
 
 /* Status Badges */
 .lic-badge {
@@ -335,17 +407,41 @@
     border-radius: 50%;
 }
 
-.lic-badge-active { background: #dcfce7; color: #15803d; }
-.lic-badge-active .dot { background: #16a34a; }
+.lic-badge-active {
+    background: #dcfce7;
+    color: #15803d;
+}
 
-.lic-badge-expiring { background: #fef3c7; color: #b45309; }
-.lic-badge-expiring .dot { background: #d97706; }
+.lic-badge-active .dot {
+    background: #16a34a;
+}
 
-.lic-badge-expired { background: #fee2e2; color: #b91c1c; }
-.lic-badge-expired .dot { background: #dc2626; }
+.lic-badge-expiring {
+    background: #fef3c7;
+    color: #b45309;
+}
 
-.lic-badge-overallocated { background: #fce7f3; color: #be185d; }
-.lic-badge-overallocated .dot { background: #db2777; }
+.lic-badge-expiring .dot {
+    background: #d97706;
+}
+
+.lic-badge-expired {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.lic-badge-expired .dot {
+    background: #dc2626;
+}
+
+.lic-badge-overallocated {
+    background: #fce7f3;
+    color: #be185d;
+}
+
+.lic-badge-overallocated .dot {
+    background: #db2777;
+}
 
 /* License Type Tags */
 .type-pill {
@@ -358,11 +454,30 @@
     letter-spacing: 0.3px;
 }
 
-.type-pill-saas { background: #ede9fe; color: #6d28d9; }
-.type-pill-per-seat { background: #e0f2fe; color: #0369a1; }
-.type-pill-perpetual { background: #ecfdf5; color: #047857; }
-.type-pill-oem { background: #f1f5f9; color: #334155; }
-.type-pill-enterprise { background: #ffedd5; color: #c2410c; }
+.type-pill-saas {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.type-pill-per-seat {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.type-pill-perpetual {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.type-pill-oem {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.type-pill-enterprise {
+    background: #ffedd5;
+    color: #c2410c;
+}
 
 /* Expiry indicator */
 .expiry-cell {
@@ -381,9 +496,19 @@
     margin-top: 2px;
 }
 
-.expiry-cell .days-pill.safe { color: #059669; }
-.expiry-cell .days-pill.warn { color: #d97706; font-weight: 700; }
-.expiry-cell .days-pill.expired { color: #dc2626; font-weight: 700; }
+.expiry-cell .days-pill.safe {
+    color: #059669;
+}
+
+.expiry-cell .days-pill.warn {
+    color: #d97706;
+    font-weight: 700;
+}
+
+.expiry-cell .days-pill.expired {
+    color: #dc2626;
+    font-weight: 700;
+}
 
 /* ==========================================================================
    SLIDE-OVER DRAWER (DETAILS & SEAT DIRECTORY)
@@ -604,8 +729,13 @@
 }
 
 @keyframes fadeInModal {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .modal-box-large {
@@ -643,6 +773,7 @@
         opacity: 0;
         transform: translateY(14px) scale(0.97);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -861,16 +992,262 @@
     color: #001938;
 }
 
+/* Renewal Action Button & Modal Styling */
+.action-icon-btn.btn-renew {
+    color: #0284c7;
+    position: relative;
+}
+
+.action-icon-btn.btn-renew:hover {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+.action-icon-btn.btn-renew.due-pulse::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 6px;
+    height: 6px;
+    background: #f59e0b;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #ffffff;
+}
+
+/* Renewal Modal Summary Box */
+.renew-summary-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.renew-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.renew-summary-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0369a1;
+    margin-bottom: 2px;
+}
+
+.renew-summary-sub {
+    font-size: 12px;
+    color: #0284c7;
+}
+
+.renew-summary-stats {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.renew-stat-badge {
+    background: #ffffff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.renew-stat-badge .stat-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.renew-stat-badge .stat-value {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+/* Quick Term / Duration Selector Pills */
+.renew-duration-container {
+    margin-bottom: 16px;
+}
+
+.renew-duration-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.renew-duration-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.duration-pill-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.duration-pill-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.duration-pill-btn.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+}
+
+.duration-pill-btn.active svg {
+    color: #ffffff;
+}
+
+/* Renewal Impact Notice Banner */
+.renew-notice-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #166534;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    line-height: 1.45;
+}
+
+/* Drawer & Modal Renewal Audit Logs */
+.drawer-renewal-logs-wrap {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.renewal-log-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    position: relative;
+    border-left: 3.5px solid #0284c7;
+    transition: box-shadow 0.15s;
+}
+
+.renewal-log-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 25, 56, 0.06);
+}
+
+.renewal-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.renewal-log-date {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #0369a1;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.renewal-log-cost {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.renewal-log-dates-row {
+    font-size: 12px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.renewal-log-arrow {
+    color: #0284c7;
+    font-weight: bold;
+}
+
+.renewal-log-user {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.renewal-log-notes {
+    font-size: 11.5px;
+    color: #334155;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-top: 6px;
+}
+
+.renewal-empty-state {
+    text-align: center;
+    padding: 24px 12px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 12px;
+}
+
 @media (max-width: 768px) {
+
     .form-grid-2,
     .form-grid-3 {
         grid-template-columns: 1fr;
     }
+
     .modal-box-large,
     .modal-box-medium {
         max-width: 100%;
     }
+
     .lic-drawer {
         max-width: 100%;
+    }
+
+    .renew-summary-card {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
