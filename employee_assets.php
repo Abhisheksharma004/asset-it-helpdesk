@@ -374,26 +374,6 @@ include 'includes/employee_topbar.php';
             </h2>
         </div>
 
-        <!-- Filter & Search Toolbar -->
-        <div class="assets-toolbar">
-            <div class="assets-filter-pills">
-                <button type="button" class="assets-pill-btn active" data-filter="all">
-                    All Allocated Assets <span class="assets-pill-count"><?php echo $totalAssetCount; ?></span>
-                </button>
-                <button type="button" class="assets-pill-btn" data-filter="hardware">
-                    Hardware Units <span class="assets-pill-count"><?php echo $hardwareCount; ?></span>
-                </button>
-                <button type="button" class="assets-pill-btn" data-filter="accessory">
-                    Workstation Peripherals <span class="assets-pill-count"><?php echo $accessoryCount; ?></span>
-                </button>
-            </div>
-
-            <div class="assets-search-wrap">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" class="assets-search-input" id="assetSearchInput" placeholder="Search by Tag, Name, Serial or Model...">
-            </div>
-        </div>
-
         <!-- Responsive Table -->
         <div class="table-responsive">
             <table class="custom-table" id="empAssetsTable">
