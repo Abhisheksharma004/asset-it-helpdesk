@@ -85,21 +85,89 @@ if (empty($emp_initials)) $emp_initials = 'EM';
     </header>
 
 <?php
-// Resolve devices list for ticket modal if available
+// Resolve live assigned assets & accessories strictly for the logged-in employee
 $topbar_device_options = [];
-if (!empty($allocatedItems)) {
-    foreach ($allocatedItems as $it) {
-        $topbar_device_options[] = [
-            'val' => $it['tag'] . ' - ' . $it['name'],
-            'label' => $it['tag'] . ' — ' . $it['name']
-        ];
+$topbar_seen_tags = [];
+
+$t_emp_id    = $activeEmployee['id'] ?? ($_SESSION['user_id'] ?? null);
+$t_emp_email = $activeEmployee['email'] ?? ($_SESSION['user_email'] ?? '');
+$t_emp_code  = $activeEmployee['code'] ?? ($_SESSION['user_username'] ?? '');
+$t_emp_name  = $activeEmployee['name'] ?? ($_SESSION['user_name'] ?? '');
+
+if (!isset($conn) || $conn === false) {
+    @require_once __DIR__ . '/../config/db.php';
+}
+
+if (isset($conn) && $conn !== false && (!empty($t_emp_id) || !empty($t_emp_email) || !empty($t_emp_code))) {
+    // 1. Fetch from asset_assignments (Primary asset, bundled assets_json, accessories_json)
+    $t_sql = "SELECT a.asset_tag, a.asset_name, a.category, a.assets_json, a.accessories_json 
+              FROM asset_assignments a 
+              WHERE (a.employee_id = ? OR LOWER(a.employee_email) = LOWER(?) OR LOWER(a.emp_code) = LOWER(?))
+                AND a.custody_status = 'Active'
+              ORDER BY a.id DESC";
+    $t_stmt = sqlsrv_query($conn, $t_sql, [$t_emp_id, $t_emp_email, $t_emp_code]);
+    if ($t_stmt) {
+        while ($r = sqlsrv_fetch_array($t_stmt, SQLSRV_FETCH_ASSOC)) {
+            // Primary Hardware Asset
+            if (!empty($r['asset_tag']) && !in_array($r['asset_tag'], $topbar_seen_tags)) {
+                $topbar_seen_tags[] = $r['asset_tag'];
+                $topbar_device_options[] = [
+                    'val'   => $r['asset_tag'] . ' - ' . ($r['asset_name'] ?: 'Corporate Device'),
+                    'label' => $r['asset_tag'] . ' — ' . ($r['asset_name'] ?: 'Corporate Device') . ' (Asset)'
+                ];
+            }
+            // Bundled Assets from assets_json
+            if (!empty($r['assets_json'])) {
+                $baList = json_decode($r['assets_json'], true);
+                if (is_array($baList)) {
+                    foreach ($baList as $ba) {
+                        $bTag = $ba['tag'] ?? '';
+                        if (!empty($bTag) && !in_array($bTag, $topbar_seen_tags)) {
+                            $topbar_seen_tags[] = $bTag;
+                            $bName = $ba['name'] ?? 'Corporate Hardware';
+                            $topbar_device_options[] = [
+                                'val'   => $bTag . ' - ' . $bName,
+                                'label' => $bTag . ' — ' . $bName . ' (Asset)'
+                            ];
+                        }
+                    }
+                }
+            }
+            // Bundled Accessories from accessories_json
+            if (!empty($r['accessories_json'])) {
+                $accList = json_decode($r['accessories_json'], true);
+                if (is_array($accList)) {
+                    foreach ($accList as $acc) {
+                        $accTag = !empty($acc['sku']) ? $acc['sku'] : ('ACC-' . ($acc['id'] ?? uniqid()));
+                        if (!in_array($accTag, $topbar_seen_tags)) {
+                            $topbar_seen_tags[] = $accTag;
+                            $accName = $acc['name'] ?? 'Workstation Accessory';
+                            $topbar_device_options[] = [
+                                'val'   => $accTag . ' - ' . $accName,
+                                'label' => $accTag . ' — ' . $accName . ' (Accessory)'
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+        sqlsrv_free_stmt($t_stmt);
     }
-} elseif (!empty($employeeAssets)) {
-    foreach ($employeeAssets as $it) {
-        $topbar_device_options[] = [
-            'val' => $it['tag'] . ' - ' . $it['name'],
-            'label' => $it['tag'] . ' — ' . $it['name']
-        ];
+
+    // 2. Direct assignments from assets table where assigned_to matches employee
+    $t_astSql = "SELECT ast.tag, ast.name FROM assets ast WHERE (LOWER(ast.assigned_to) = LOWER(?) OR LOWER(ast.assigned_to) = LOWER(?)) AND ast.status = 'In Use'";
+    $t_astStmt = sqlsrv_query($conn, $t_astSql, [$t_emp_name, $t_emp_code]);
+    if ($t_astStmt) {
+        while ($ast = sqlsrv_fetch_array($t_astStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($ast['tag']) && !in_array($ast['tag'], $topbar_seen_tags)) {
+                $topbar_seen_tags[] = $ast['tag'];
+                $topbar_device_options[] = [
+                    'val'   => $ast['tag'] . ' - ' . ($ast['name'] ?: 'Corporate Device'),
+                    'label' => $ast['tag'] . ' — ' . ($ast['name'] ?: 'Corporate Device') . ' (Asset)'
+                ];
+            }
+        }
+        sqlsrv_free_stmt($t_astStmt);
     }
 }
 ?>
@@ -144,27 +212,24 @@ if (!empty($allocatedItems)) {
                     <div class="form-group">
                         <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
                         <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                            <option value="Medium" selected>Medium (Standard 24h SLA)</option>
-                            <option value="High">High (Impacting Daily Work)</option>
-                            <option value="Urgent">Urgent (System Down / Critical)</option>
-                            <option value="Low">Low (General Query)</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="Low">Low</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device</label>
                         <select class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                            <option value="">-- Select Allocated Device or General --</option>
+                            <option value="">Select Assigned Asset or Accessory</option>
                             <?php if (!empty($topbar_device_options)): ?>
                                 <?php foreach ($topbar_device_options as $opt): ?>
                                     <option value="<?php echo htmlspecialchars($opt['val']); ?>"><?php echo htmlspecialchars($opt['label']); ?></option>
                                 <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="" disabled>No assets or accessories assigned to your profile</option>
                             <?php endif; ?>
-                            <option value="General Workstation / Laptop">General Workstation / Laptop</option>
-                            <option value="Workstation Peripheral / Dock">Workstation Peripheral / Dock</option>
-                            <option value="Network / VPN / Internet">Network / VPN / Internet</option>
-                            <option value="Software License / Cloud Tool">Software License / Cloud Tool</option>
-                            <option value="Other / General Query">Other / General Query</option>
                         </select>
                     </div>
                 </div>
