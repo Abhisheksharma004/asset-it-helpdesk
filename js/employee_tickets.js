@@ -98,28 +98,69 @@ function openNewTicketModal(assetTag = '') {
     }
 }
 
+// Helper to format current local time for datetime-local input
+function getNowLocalDatetimeString() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 // Submit New Ticket Form Handler (Integrated with backend api/tickets.php)
 function initNewTicketForm() {
     const form = document.getElementById('employeeTicketForm') || document.getElementById('newTicketForm');
     if (!form) return;
+
+    // Ensure datetime input starts with live local now
+    const dtEl = form.querySelector('#ticketDateTimeInput') || document.getElementById('ticketDateTimeInput');
+    if (dtEl && !dtEl.value) {
+        dtEl.value = getNowLocalDatetimeString();
+    }
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
         const btn = form.querySelector('button[type="submit"]');
         const origContent = btn ? btn.innerHTML : '';
+
+        const subjectEl  = form.querySelector('#ticketSubjectInput') || document.getElementById('ticketSubjectInput');
+        const descEl     = form.querySelector('#ticketDescTextarea') || document.getElementById('ticketDescTextarea');
+        const assetEl    = form.querySelector('#ticketAssetSelect') || document.getElementById('ticketAssetSelect');
+        const priorityEl = form.querySelector('#ticketUrgencySelect') || document.getElementById('ticketUrgencySelect');
+        const dtInput    = form.querySelector('#ticketDateTimeInput') || document.getElementById('ticketDateTimeInput');
+
+        const subjectVal  = subjectEl ? subjectEl.value.trim() : '';
+        const descVal     = descEl ? descEl.value.trim() : '';
+        const assetVal    = (assetEl && assetEl.value) ? assetEl.value.trim() : 'General Workstation / Laptop';
+        const priorityVal = (priorityEl && priorityEl.value) ? priorityEl.value.trim() : 'Medium';
+        let rawDt         = dtInput ? dtInput.value.trim() : '';
+
+        if (!subjectVal) {
+            alert('Please enter an Issue Subject.');
+            if (subjectEl) subjectEl.focus();
+            return;
+        }
+
+        if (!descVal) {
+            alert('Please enter a Detailed Description.');
+            if (descEl) descEl.focus();
+            return;
+        }
+
+        if (!rawDt) {
+            rawDt = getNowLocalDatetimeString();
+            if (dtInput) dtInput.value = rawDt;
+        }
+
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
         }
 
-        const subjectVal  = (document.getElementById('ticketSubjectInput') || document.getElementById('newTktSubject'))?.value.trim() || 'IT Support Ticket';
-        const descVal     = (document.getElementById('ticketDescTextarea') || document.getElementById('newTktDescription'))?.value.trim() || '';
-        const assetVal    = (document.getElementById('ticketAssetSelect') || document.getElementById('newTktAsset'))?.value || 'General Workstation / Laptop';
-        const priorityVal = (document.getElementById('ticketUrgencySelect') || document.getElementById('newTktPriority'))?.value || 'Medium';
-        const rawDt       = document.getElementById('ticketDateTimeInput')?.value || '';
-
         const emp = window.currentActiveEmployee || {};
+        const empId   = form.querySelector('input[name="employee_id"]')?.value || emp.id || 0;
+        const empName = form.querySelector('input[name="employee_name"]')?.value || emp.name || 'Employee Member';
+        const empCode = form.querySelector('input[name="emp_code"]')?.value || emp.code || 'EMP-001';
+        const empDept = form.querySelector('input[name="department"]')?.value || emp.department || 'General Staff';
 
         const payload = {
             subject: subjectVal,
@@ -127,10 +168,10 @@ function initNewTicketForm() {
             asset_name: assetVal,
             priority: priorityVal,
             incident_date: rawDt,
-            employee_id: emp.id || 0,
-            employee_name: emp.name || 'Employee Member',
-            emp_code: emp.code || 'EMP-001',
-            department: emp.department || 'General Staff'
+            employee_id: empId,
+            employee_name: empName,
+            emp_code: empCode,
+            department: empDept
         };
 
         fetch('api/tickets.php?action=create', {
@@ -146,11 +187,17 @@ function initNewTicketForm() {
                 btn.disabled = false;
                 btn.innerHTML = origContent;
             }
-            closeModal('employeeTicketModal');
-            closeModal('newTicketModal');
-            form.reset();
 
             if (data.success && data.ticket) {
+                closeModal('employeeTicketModal');
+                closeModal('newTicketModal');
+                form.reset();
+
+                // Re-sync date time to live now after reset
+                if (dtInput) {
+                    dtInput.value = getNowLocalDatetimeString();
+                }
+
                 const tkt = data.ticket;
                 insertTicketTableRow(tkt);
 
@@ -170,49 +217,16 @@ function initNewTicketForm() {
             }
         })
         .catch(err => {
-            console.warn('API submission failed, using client fallback:', err);
+            console.error('API submission failed:', err);
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = origContent;
             }
-            closeModal('employeeTicketModal');
-            closeModal('newTicketModal');
-            form.reset();
-
-            // Client fallback
-            let dateStr = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
-            if (rawDt) {
-                const parsedDate = new Date(rawDt);
-                if (!isNaN(parsedDate.getTime())) {
-                    dateStr = parsedDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
-                }
-            }
-
-            const now = new Date();
-            const mmyy = String(now.getMonth() + 1).padStart(2, '0') + String(now.getFullYear()).slice(-2);
-            const serial = Math.floor(1110 + Math.random() * 800);
-            const fallbackTkt = {
-                id: `TKT${mmyy}${serial}`,
-                subject: subjectVal,
-                description: descVal,
-                asset: assetVal,
-                priority: priorityVal,
-                status: 'Open',
-                date: dateStr,
-                chat_thread: [
-                    {
-                        author: emp.name || 'You',
-                        avatar: 'EM',
-                        type: 'employee',
-                        time: dateStr,
-                        text: descVal || subjectVal
-                    }
-                ]
-            };
-            insertTicketTableRow(fallbackTkt);
-
+            const errMsg = err.message || 'Network error occurred while submitting ticket.';
             if (typeof showPortalToast === 'function') {
-                showPortalToast(`Ticket ${fallbackTkt.id} logged.`, 'success');
+                showPortalToast(`Ticket registration failed: ${errMsg}`, 'error');
+            } else {
+                alert(`Error: ${errMsg}`);
             }
         });
     });
@@ -317,6 +331,19 @@ function viewTicketDetails(tkt) {
 
     // Render Chat Stream Dynamically with real timestamps
     renderDrawerChatMessages(tkt);
+
+    // Refresh messages asynchronously from dedicated ticket_messages table
+    fetch(`api/tickets.php?action=get_messages&ticket_no=${encodeURIComponent(tkt.id)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && Array.isArray(data.messages)) {
+                tkt.chat_thread = data.messages;
+                if (currentOpenTicket && currentOpenTicket.id === tkt.id) {
+                    renderDrawerChatMessages(tkt);
+                }
+            }
+        })
+        .catch(e => console.warn('Could not refresh messages:', e));
 
     // Show Drawer
     if (backdrop) {

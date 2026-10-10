@@ -270,6 +270,19 @@ function openAdminTicketDrawer(ticketData) {
     // Render Conversation Stream
     renderDrawerChatStream(ticketData);
 
+    // Fetch fresh live messages asynchronously from dedicated ticket_messages table
+    fetch(`api/tickets.php?action=get_messages&ticket_no=${encodeURIComponent(ticketData.id)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && Array.isArray(data.messages)) {
+                ticketData.chat_thread = data.messages;
+                if (currentOpenTicket && currentOpenTicket.id === ticketData.id) {
+                    renderDrawerChatStream(ticketData);
+                }
+            }
+        })
+        .catch(e => console.warn('Could not refresh messages:', e));
+
     // Default to Overview tab
     switchDrawerTab('overview');
 
@@ -299,28 +312,10 @@ function renderDrawerChatStream(ticketData) {
     `;
     chatStream.appendChild(sysEvent);
 
-    // 2. Initial Employee Note (Issue Description)
-    const empBubble = document.createElement('div');
-    empBubble.className = 'chat-message-row incoming';
     const reqInitials = (ticketData.requester && ticketData.requester.initials) ? ticketData.requester.initials : 'EM';
     const reqName = (ticketData.requester && ticketData.requester.name) ? ticketData.requester.name : 'Requester';
 
-    empBubble.innerHTML = `
-        <div class="chat-avatar user">${reqInitials}</div>
-        <div class="chat-bubble-wrap">
-            <div class="chat-meta">
-                <span class="chat-author">${escapeHtml(reqName)}</span>
-                <span class="chat-timestamp">${escapeHtml(ticketData.date)}</span>
-            </div>
-            <div class="chat-bubble">
-                ${escapeHtml(ticketData.description || ticketData.subject)}
-            </div>
-        </div>
-    `;
-    chatStream.appendChild(empBubble);
-    messageCount++;
-
-    // 3. Any additional conversation history
+    // 2. Chat messages from separate ticket_messages table
     if (Array.isArray(ticketData.chat_thread) && ticketData.chat_thread.length > 0) {
         ticketData.chat_thread.forEach(msg => {
             const msgRow = document.createElement('div');
@@ -342,6 +337,24 @@ function renderDrawerChatStream(ticketData) {
             chatStream.appendChild(msgRow);
             messageCount++;
         });
+    } else {
+        // Fallback: Initial Employee Note (Issue Description)
+        const empBubble = document.createElement('div');
+        empBubble.className = 'chat-message-row incoming';
+        empBubble.innerHTML = `
+            <div class="chat-avatar user">${reqInitials}</div>
+            <div class="chat-bubble-wrap">
+                <div class="chat-meta">
+                    <span class="chat-author">${escapeHtml(reqName)}</span>
+                    <span class="chat-timestamp">${escapeHtml(ticketData.date)}</span>
+                </div>
+                <div class="chat-bubble">
+                    ${escapeHtml(ticketData.description || ticketData.subject)}
+                </div>
+            </div>
+        `;
+        chatStream.appendChild(empBubble);
+        messageCount++;
     }
 
     // Update Chat count badge in drawer tab
@@ -353,7 +366,7 @@ function renderDrawerChatStream(ticketData) {
     // Scroll to bottom
     setTimeout(() => {
         chatStream.scrollTop = chatStream.scrollHeight;
-    }, 100);
+    }, 60);
 }
 
 // Close Drawer

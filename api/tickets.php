@@ -6,6 +6,7 @@
  */
 
 header('Content-Type: application/json; charset=UTF-8');
+date_default_timezone_set('Asia/Kolkata');
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -18,7 +19,7 @@ if (!isset($conn) || $conn === false) {
 }
 
 // -----------------------------------------------------------------------------
-// 1. Ensure Table Schema Exists (support_tickets Table)
+// 1. Ensure Table Schema Exists (support_tickets & ticket_messages Tables)
 // -----------------------------------------------------------------------------
 $tableSetupSql = "
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='support_tickets' AND xtype='U')
@@ -41,164 +42,63 @@ BEGIN
         created_at DATETIME NOT NULL DEFAULT GETDATE(),
         updated_at DATETIME NOT NULL DEFAULT GETDATE()
     );
+END
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ticket_messages' AND xtype='U')
+BEGIN
+    CREATE TABLE ticket_messages (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        ticket_no NVARCHAR(50) NOT NULL,
+        ticket_id INT NULL,
+        sender_type NVARCHAR(50) NOT NULL DEFAULT 'employee',
+        sender_name NVARCHAR(150) NOT NULL,
+        sender_avatar NVARCHAR(20) NULL,
+        message NVARCHAR(MAX) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT GETDATE()
+    );
+    CREATE INDEX idx_ticket_messages_ticket_no ON ticket_messages(ticket_no);
 END";
 sqlsrv_query($conn, $tableSetupSql);
 
-// -----------------------------------------------------------------------------
-// 2. Auto-seed with dynamic initial records if table is completely empty
-// -----------------------------------------------------------------------------
-$countStmt = sqlsrv_query($conn, "SELECT COUNT(*) AS total FROM support_tickets");
-$curCount = 0;
-if ($countStmt && ($cntRow = sqlsrv_fetch_array($countStmt, SQLSRV_FETCH_ASSOC))) {
-    $curCount = intval($cntRow['total']);
-}
+// Helper function to fetch messages from dedicated ticket_messages table
+if (!function_exists('fetchTicketMessagesMap')) {
+    function fetchTicketMessagesMap($conn, array $ticketNos) {
+        $map = [];
+        if (empty($ticketNos) || !$conn) return $map;
+        $uniqueNos = array_values(array_unique(array_filter($ticketNos)));
+        if (empty($uniqueNos)) return $map;
 
-if ($curCount === 0) {
-    $now = new DateTime();
-    $mmyy = $now->format('my'); // e.g. 1026 for Oct 2026
-
-    // Sample dynamic seeded incidents
-    $seedData = [
-        [
-            'ticket_no'     => 'TKT' . $mmyy . '1104',
-            'subject'       => 'Laptop battery draining rapidly and heating during Teams meetings',
-            'category'      => 'Hardware / Thermal & Battery',
-            'priority'      => 'High',
-            'status'        => 'In Progress',
-            'asset_name'    => 'Dell Latitude 5420 (AST2026001)',
-            'employee_name' => 'Rajesh Sharma',
-            'emp_code'      => 'EMP-104',
-            'department'    => 'Operations',
-            'incident_date' => (clone $now)->modify('-4 hours')->format('Y-m-d H:i:s'),
-            'description'   => 'Battery drops from 100% to 20% in less than 45 minutes of video calls. Fan stays on continuously. Diagnostic requested for thermal paste or battery replacement.',
-            'chat_history'  => json_encode([
-                [
-                    'author' => 'Rajesh Sharma',
-                    'avatar' => 'RS',
-                    'type'   => 'employee',
-                    'time'   => (clone $now)->modify('-4 hours')->format('d M Y, h:i A'),
-                    'text'   => 'Fan noise gets extremely loud whenever video camera is active.'
-                ],
-                [
-                    'author' => 'IT Support Service Desk',
-                    'avatar' => 'IT',
-                    'type'   => 'tech',
-                    'time'   => (clone $now)->modify('-2 hours')->format('d M Y, h:i A'),
-                    'text'   => 'Hardware diagnostics ran. Replacement battery pack dispatched from OEM stock. Scheduled swap tomorrow morning.'
-                ]
-            ])
-        ],
-        [
-            'ticket_no'     => 'TKT' . $mmyy . '1098',
-            'subject'       => 'Multiple ERP login auth timeouts and SSL certificate handshake error',
-            'category'      => 'Software / Enterprise ERP',
-            'priority'      => 'Urgent',
-            'status'        => 'Open',
-            'asset_name'    => 'HP EliteBook 840 (AST2026019)',
-            'employee_name' => 'Priya Patel',
-            'emp_code'      => 'EMP-108',
-            'department'    => 'Finance & Accounts',
-            'incident_date' => (clone $now)->modify('-1 day -2 hours')->format('Y-m-d H:i:s'),
-            'description'   => 'User cannot process month-end accounts closure. Browser throws SEC_ERROR_UNKNOWN_ISSUER on ERP portal root gateway. Need immediate SSL trust store check.',
-            'chat_history'  => json_encode([
-                [
-                    'author' => 'Priya Patel',
-                    'avatar' => 'PP',
-                    'type'   => 'employee',
-                    'time'   => (clone $now)->modify('-1 day -2 hours')->format('d M Y, h:i A'),
-                    'text'   => 'Critical blocker for today\'s vendor payout approvals. Please assist urgently.'
-                ]
-            ])
-        ],
-        [
-            'ticket_no'     => 'TKT' . $mmyy . '1082',
-            'subject'       => 'External monitor HDMI signal flickering after workstation standby',
-            'category'      => 'Hardware / External Display',
-            'priority'      => 'Medium',
-            'status'        => 'In Progress',
-            'asset_name'    => 'Dell UltraSharp 27" (AST2026048)',
-            'employee_name' => 'Vikram Malhotra',
-            'emp_code'      => 'EMP-115',
-            'department'    => 'Engineering & R&D',
-            'incident_date' => (clone $now)->modify('-2 days -3 hours')->format('Y-m-d H:i:s'),
-            'description'   => 'Whenever laptop wakes from sleep/standby, the secondary HDMI monitor flickers black for 5 seconds before returning to normal. Cable has been reseated once.',
-            'chat_history'  => json_encode([
-                [
-                    'author' => 'IT Support Engineer',
-                    'avatar' => 'IT',
-                    'type'   => 'tech',
-                    'time'   => (clone $now)->modify('-2 days -1 hour')->format('d M Y, h:i A'),
-                    'text'   => 'Driver update rolled out via Intune. Testing with high-speed 4K HDMI 2.1 cable today.'
-                ]
-            ])
-        ],
-        [
-            'ticket_no'     => 'TKT' . $mmyy . '1075',
-            'subject'       => 'Cisco AnyConnect VPN gateway disconnects repeatedly during remote access',
-            'category'      => 'Network / Remote VPN',
-            'priority'      => 'High',
-            'status'        => 'In Progress',
-            'asset_name'    => 'Lenovo ThinkPad T14 (AST2026032)',
-            'employee_name' => 'Ananya Sen',
-            'emp_code'      => 'EMP-122',
-            'department'    => 'Human Resources',
-            'incident_date' => (clone $now)->modify('-3 days')->format('Y-m-d H:i:s'),
-            'description'   => 'VPN tunnel drops precisely every 15 minutes with "Tunnel connection reset by peer" alert. HR recruitment database records fail to save during candidate onboarding.',
-            'chat_history'  => json_encode([
-                [
-                    'author' => 'IT Network Desk',
-                    'avatar' => 'IT',
-                    'type'   => 'tech',
-                    'time'   => (clone $now)->modify('-3 days +2 hours')->format('d M Y, h:i A'),
-                    'text'   => 'Firewall keepalive timeout extended to 120 minutes on VPN profile #4. Verified session stability.'
-                ]
-            ])
-        ],
-        [
-            'ticket_no'     => 'TKT' . $mmyy . '1045',
-            'subject'       => 'Replacement 65W Type-C adapter for travel docking station',
-            'category'      => 'Peripherals / Cables & Power',
-            'priority'      => 'Low',
-            'status'        => 'Resolved & Closed',
-            'asset_name'    => 'Lenovo 65W AC Adapter (ACC2026009)',
-            'employee_name' => 'Sneha Kulkarni',
-            'emp_code'      => 'EMP-102',
-            'department'    => 'Executive Office',
-            'incident_date' => (clone $now)->modify('-7 days')->format('Y-m-d H:i:s'),
-            'description'   => 'Original adapter wire frayed near USB-C connector tip. Issued new Lenovo genuine 65W Type-C adapter from accessory storeroom.',
-            'chat_history'  => json_encode([
-                [
-                    'author' => 'IT Support',
-                    'avatar' => 'IT',
-                    'type'   => 'tech',
-                    'time'   => (clone $now)->modify('-6 days')->format('d M Y, h:i A'),
-                    'text'   => 'New adapter handed over and sign-off custody receipt updated.'
-                ]
-            ])
-        ]
-    ];
-
-    $seedSql = "INSERT INTO support_tickets 
-                (ticket_no, subject, description, category, priority, status, asset_name, employee_name, emp_code, department, incident_date, chat_history, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
-
-    foreach ($seedData as $sd) {
-        sqlsrv_query($conn, $seedSql, [
-            $sd['ticket_no'],
-            $sd['subject'],
-            $sd['description'],
-            $sd['category'],
-            $sd['priority'],
-            $sd['status'],
-            $sd['asset_name'],
-            $sd['employee_name'],
-            $sd['emp_code'],
-            $sd['department'],
-            $sd['incident_date'],
-            $sd['chat_history']
-        ]);
+        $placeholders = implode(',', array_fill(0, count($uniqueNos), '?'));
+        $sql = "SELECT id, ticket_no, ticket_id, sender_type, sender_name, sender_avatar, message, created_at 
+                FROM ticket_messages 
+                WHERE ticket_no IN ($placeholders) 
+                ORDER BY created_at ASC, id ASC";
+        $stmt = sqlsrv_query($conn, $sql, $uniqueNos);
+        if ($stmt) {
+            while ($r = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $tNo = $r['ticket_no'];
+                if (!isset($map[$tNo])) {
+                    $map[$tNo] = [];
+                }
+                $dt = $r['created_at'];
+                $timeStr = ($dt instanceof DateTime) ? $dt->format('d M Y, h:i A') : (empty($dt) ? '' : date('d M Y, h:i A', strtotime($dt)));
+                $map[$tNo][] = [
+                    'id'     => $r['id'],
+                    'author' => $r['sender_name'],
+                    'avatar' => $r['sender_avatar'] ?: strtoupper(substr($r['sender_name'] ?? 'US', 0, 2)),
+                    'type'   => $r['sender_type'],
+                    'time'   => $timeStr,
+                    'text'   => $r['message']
+                ];
+            }
+            sqlsrv_free_stmt($stmt);
+        }
+        return $map;
     }
 }
+
+// -----------------------------------------------------------------------------
+// 2. Request Handler Routing (Real Data Only - No Mock Seeding)
+// -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
 // 3. Request Handler Routing
@@ -259,7 +159,7 @@ if ($method === 'POST' && $action === 'create') {
     }
     $newTicketNo = 'TKT' . $mmyy . str_pad($nextSerialNum, 4, '0', STR_PAD_LEFT);
 
-    // Initial chat history with system ACK and employee note
+    // Initial chat history array
     $initialChat = [
         [
             'author' => $empName,
@@ -295,12 +195,28 @@ if ($method === 'POST' && $action === 'create') {
         exit;
     }
 
+    // Retrieve inserted ticket ID
+    $newTktId = null;
+    $idStmt = sqlsrv_query($conn, "SELECT id FROM support_tickets WHERE ticket_no = ?", [$newTicketNo]);
+    if ($idStmt && ($idRow = sqlsrv_fetch_array($idStmt, SQLSRV_FETCH_ASSOC))) {
+        $newTktId = intval($idRow['id']);
+    }
+
+    // Insert initial employee issue message into dedicated ticket_messages table
+    $initMsgText = $description ?: $subject;
+    $initAvatar  = strtoupper(substr($empName, 0, 2));
+    sqlsrv_query($conn, 
+        "INSERT INTO ticket_messages (ticket_no, ticket_id, sender_type, sender_name, sender_avatar, message, created_at) VALUES (?, ?, 'employee', ?, ?, ?, ?)",
+        [$newTicketNo, $newTktId, $empName, $initAvatar, $initMsgText, $incidentSqlDate]
+    );
+
     echo json_encode([
         'success'   => true,
         'message'   => "Ticket {$newTicketNo} raised successfully!",
         'ticket_no' => $newTicketNo,
         'ticket'    => [
             'id'          => $newTicketNo,
+            'ticket_no'   => $newTicketNo,
             'subject'     => $subject,
             'description' => $description,
             'category'    => $category,
@@ -314,12 +230,31 @@ if ($method === 'POST' && $action === 'create') {
     exit;
 }
 
-// ACTION: Post reply to ticket conversation
+// ACTION: Fetch ticket conversation thread directly from ticket_messages table
+if ($action === 'get_messages') {
+    $ticketNo = trim($_GET['ticket_no'] ?? ($_GET['id'] ?? ''));
+    if (empty($ticketNo)) {
+        echo json_encode(['success' => false, 'message' => 'Ticket number is required.']);
+        exit;
+    }
+    $map = fetchTicketMessagesMap($conn, [$ticketNo]);
+    $messages = $map[$ticketNo] ?? [];
+
+    echo json_encode([
+        'success'   => true,
+        'ticket_no' => $ticketNo,
+        'total'     => count($messages),
+        'messages'  => $messages
+    ]);
+    exit;
+}
+
+// ACTION: Post reply to ticket conversation (stored in dedicated ticket_messages table)
 if ($method === 'POST' && $action === 'reply') {
     $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
     $ticketNo = trim($input['ticket_no'] ?? ($input['id'] ?? ''));
     $messageText = trim($input['message'] ?? ($input['text'] ?? ''));
-    $senderType = trim($input['type'] ?? 'employee'); // 'employee' or 'admin' / 'tech'
+    $senderType = trim($input['type'] ?? 'employee'); // 'employee', 'admin', or 'tech'
     $authorName = trim($input['author'] ?? ($_SESSION['user_name'] ?? 'User'));
 
     if (empty($ticketNo) || empty($messageText)) {
@@ -327,18 +262,32 @@ if ($method === 'POST' && $action === 'reply') {
         exit;
     }
 
-    // Fetch existing chat history
-    $getStmt = sqlsrv_query($conn, "SELECT chat_history FROM support_tickets WHERE ticket_no = ?", [$ticketNo]);
+    // Verify ticket exists
+    $getStmt = sqlsrv_query($conn, "SELECT id, chat_history FROM support_tickets WHERE ticket_no = ?", [$ticketNo]);
     if (!$getStmt || !($tRow = sqlsrv_fetch_array($getStmt, SQLSRV_FETCH_ASSOC))) {
         echo json_encode(['success' => false, 'message' => 'Ticket not found.']);
         exit;
     }
+    $ticketId = intval($tRow['id']);
 
-    $chatHistory = json_decode($tRow['chat_history'] ?? '[]', true) ?: [];
-    $nowStr = (new DateTime())->format('d M Y, h:i A');
-
+    $nowObj = new DateTime();
+    $nowStr = $nowObj->format('d M Y, h:i A');
+    $sqlDate = $nowObj->format('Y-m-d H:i:s');
     $avatar = ($senderType === 'admin' || $senderType === 'tech') ? 'IT' : strtoupper(substr($authorName, 0, 2));
 
+    // 1. Insert new message directly into ticket_messages table
+    $insertMsgSql = "INSERT INTO ticket_messages (ticket_no, ticket_id, sender_type, sender_name, sender_avatar, message, created_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $msgStmt = sqlsrv_query($conn, $insertMsgSql, [$ticketNo, $ticketId, $senderType, $authorName, $avatar, $messageText, $sqlDate]);
+
+    if ($msgStmt === false) {
+        $errors = sqlsrv_errors();
+        echo json_encode(['success' => false, 'message' => 'Failed to save reply: ' . ($errors[0]['message'] ?? 'SQL Error')]);
+        exit;
+    }
+
+    // 2. Also keep support_tickets updated_at and chat_history snapshot updated
+    $chatHistory = json_decode($tRow['chat_history'] ?? '[]', true) ?: [];
     $newMsg = [
         'author' => $authorName,
         'avatar' => $avatar,
@@ -348,16 +297,11 @@ if ($method === 'POST' && $action === 'reply') {
     ];
     $chatHistory[] = $newMsg;
 
-    $updateStmt = sqlsrv_query(
+    sqlsrv_query(
         $conn, 
-        "UPDATE support_tickets SET chat_history = ?, updated_at = GETDATE() WHERE ticket_no = ?", 
-        [json_encode($chatHistory), $ticketNo]
+        "UPDATE support_tickets SET chat_history = ?, updated_at = GETDATE() WHERE id = ?", 
+        [json_encode($chatHistory), $ticketId]
     );
-
-    if ($updateStmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Failed to save reply.']);
-        exit;
-    }
 
     echo json_encode([
         'success' => true,
@@ -481,10 +425,24 @@ if ($stmt) {
                 'department' => $row['department'],
                 'initials'   => strtoupper(substr($row['employee_name'] ?? 'EM', 0, 2))
             ],
-            'chat_thread' => json_decode($row['chat_history'] ?? '[]', true) ?: []
+            'chat_thread' => []
         ];
     }
     sqlsrv_free_stmt($stmt);
+}
+
+// Populate conversation thread from separate ticket_messages table
+if (!empty($results)) {
+    $ticketNos = array_column($results, 'ticket_no');
+    $messagesMap = fetchTicketMessagesMap($conn, $ticketNos);
+
+    foreach ($results as &$tktItem) {
+        $tNo = $tktItem['ticket_no'];
+        if (isset($messagesMap[$tNo]) && !empty($messagesMap[$tNo])) {
+            $tktItem['chat_thread'] = $messagesMap[$tNo];
+        }
+    }
+    unset($tktItem);
 }
 
 echo json_encode([

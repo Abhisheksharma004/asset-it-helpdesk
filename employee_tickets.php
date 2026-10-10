@@ -3,6 +3,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+date_default_timezone_set('Asia/Kolkata');
 
 $page_title  = "My IT Support Tickets - VIROS IT Portal";
 $active_page = "employee_tickets";
@@ -179,6 +180,45 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
                 ];
             }
             sqlsrv_free_stmt($tStmt);
+        }
+
+        // Populate conversation threads from dedicated ticket_messages table
+        if (!empty($supportTickets)) {
+            $ticketNos = array_column($supportTickets, 'ticket_no');
+            if (!empty($ticketNos)) {
+                $uniqueNos = array_values(array_unique(array_filter($ticketNos)));
+                $placeholders = implode(',', array_fill(0, count($uniqueNos), '?'));
+                $msgSql = "SELECT id, ticket_no, sender_type, sender_name, sender_avatar, message, created_at 
+                           FROM ticket_messages 
+                           WHERE ticket_no IN ($placeholders) 
+                           ORDER BY created_at ASC, id ASC";
+                $msgStmt = sqlsrv_query($conn, $msgSql, $uniqueNos);
+                $msgMap = [];
+                if ($msgStmt) {
+                    while ($mr = sqlsrv_fetch_array($msgStmt, SQLSRV_FETCH_ASSOC)) {
+                        $tNo = $mr['ticket_no'];
+                        if (!isset($msgMap[$tNo])) $msgMap[$tNo] = [];
+                        $dt = $mr['created_at'];
+                        $timeStr = ($dt instanceof DateTime) ? $dt->format('d M Y, h:i A') : (empty($dt) ? '' : date('d M Y, h:i A', strtotime($dt)));
+                        $msgMap[$tNo][] = [
+                            'id'     => $mr['id'],
+                            'author' => $mr['sender_name'],
+                            'avatar' => $mr['sender_avatar'] ?: strtoupper(substr($mr['sender_name'] ?? 'US', 0, 2)),
+                            'type'   => $mr['sender_type'],
+                            'time'   => $timeStr,
+                            'text'   => $mr['message']
+                        ];
+                    }
+                    sqlsrv_free_stmt($msgStmt);
+                }
+                foreach ($supportTickets as &$st) {
+                    $tNo = $st['ticket_no'];
+                    if (isset($msgMap[$tNo]) && !empty($msgMap[$tNo])) {
+                        $st['chat_thread'] = $msgMap[$tNo];
+                    }
+                }
+                unset($st);
+            }
         }
     }
 }

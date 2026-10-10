@@ -55,10 +55,22 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput.addEventListener('input', filterItems);
     }
 
+    function syncTicketDateTimeNow() {
+        const dtInput = document.getElementById('ticketDateTimeInput');
+        if (dtInput) {
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            dtInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        }
+    }
+
     // 2. Modals Helper
     window.openModal = function (modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
+            if (modalId === 'employeeTicketModal') {
+                syncTicketDateTimeNow();
+            }
             modal.style.display = 'flex';
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -111,8 +123,19 @@ document.addEventListener('DOMContentLoaded', function () {
     window.openEmployeeTicketModal = function (assetTag = '') {
         const assetSelect = document.getElementById('ticketAssetSelect');
         if (assetSelect && assetTag) {
-            assetSelect.value = assetTag;
+            let matched = false;
+            for (let i = 0; i < assetSelect.options.length; i++) {
+                if (assetSelect.options[i].value.includes(assetTag) || assetSelect.options[i].text.includes(assetTag)) {
+                    assetSelect.selectedIndex = i;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                assetSelect.value = assetTag;
+            }
         }
+        syncTicketDateTimeNow();
         openModal('employeeTicketModal');
     };
 
@@ -177,26 +200,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // 4. Form Submissions (Demo Toast & Interactivity)
-    const ticketForm = document.getElementById('employeeTicketForm');
-    if (ticketForm) {
-        ticketForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const subject = document.getElementById('ticketSubjectInput')?.value || 'Support Request';
-            const now = new Date();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const yy = String(now.getFullYear()).slice(-2);
-            const ticketId = 'TKT' + mm + yy + Math.floor(1000 + Math.random() * 9000);
-
-            closeModal('employeeTicketModal');
-            ticketForm.reset();
-
-            if (typeof showToast === 'function') {
-                showToast(`Ticket #${ticketId} created successfully! IT Desk will respond within 2 hours.`, 'success');
-            } else {
-                alert(`Ticket #${ticketId} created successfully!`);
-            }
-        });
-    }
 
     const requestForm = document.getElementById('employeeRequestForm');
     if (requestForm) {

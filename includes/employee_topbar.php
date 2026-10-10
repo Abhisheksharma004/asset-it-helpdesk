@@ -198,20 +198,20 @@ if (isset($conn) && $conn !== false && (!empty($t_emp_id) || !empty($t_emp_email
                 <!-- 1. Issue Subject -->
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Subject *</label>
-                    <input type="text" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                    <input type="text" name="subject" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
                 </div>
 
                 <!-- 2. Detailed Description -->
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Detailed Description *</label>
-                    <textarea class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="4" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
+                    <textarea name="description" class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="4" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
                 </div>
 
                 <!-- 3 & 4. Urgency Level and Affected Asset in a single row -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
                     <div class="form-group">
                         <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
-                        <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                        <select name="priority" class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
                             <option value="Medium" selected>Medium</option>
                             <option value="High">High</option>
                             <option value="Urgent">Urgent</option>
@@ -221,7 +221,7 @@ if (isset($conn) && $conn !== false && (!empty($t_emp_id) || !empty($t_emp_email
 
                     <div class="form-group">
                         <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device</label>
-                        <select class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                        <select name="asset_name" class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
                             <option value="">Select Assigned Asset or Accessory</option>
                             <?php if (!empty($topbar_device_options)): ?>
                                 <?php foreach ($topbar_device_options as $opt): ?>
@@ -237,8 +237,14 @@ if (isset($conn) && $conn !== false && (!empty($t_emp_id) || !empty($t_emp_email
                 <!-- 5. Incident Date & Time -->
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Incident Date & Time *</label>
-                    <input type="datetime-local" class="modal-input" id="ticketDateTimeInput" value="<?php echo date('Y-m-d\TH:i'); ?>" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none; background: #fff; color: var(--text-primary); font-family: inherit;">
+                    <input type="datetime-local" name="incident_date" class="modal-input" id="ticketDateTimeInput" value="<?php date_default_timezone_set('Asia/Kolkata'); echo date('Y-m-d\TH:i'); ?>" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none; background: #fff; color: var(--text-primary); font-family: inherit;">
                 </div>
+
+                <!-- Hidden Employee Identification Fields -->
+                <input type="hidden" name="employee_id" value="<?php echo htmlspecialchars($activeEmployee['id'] ?? ($t_emp_id ?? '')); ?>">
+                <input type="hidden" name="employee_name" value="<?php echo htmlspecialchars($activeEmployee['name'] ?? ($t_emp_name ?? '')); ?>">
+                <input type="hidden" name="emp_code" value="<?php echo htmlspecialchars($activeEmployee['code'] ?? ($t_emp_code ?? '')); ?>">
+                <input type="hidden" name="department" value="<?php echo htmlspecialchars($activeEmployee['department'] ?? ''); ?>">
 
             </div>
             <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
@@ -253,13 +259,29 @@ if (isset($conn) && $conn !== false && (!empty($t_emp_id) || !empty($t_emp_email
 </div>
 
 <script>
+// Helper to set datetime input to live now in local user timezone
+window.syncTicketDateTimeNow = function() {
+    const dtInput = document.getElementById('ticketDateTimeInput');
+    if (dtInput) {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        dtInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+};
+
+window.currentActiveEmployee = window.currentActiveEmployee || {
+    id: <?php echo json_encode($activeEmployee['id'] ?? ($t_emp_id ?? 0)); ?>,
+    name: <?php echo json_encode($activeEmployee['name'] ?? ($t_emp_name ?? 'Employee Member')); ?>,
+    code: <?php echo json_encode($activeEmployee['code'] ?? ($t_emp_code ?? 'EMP-001')); ?>,
+    department: <?php echo json_encode($activeEmployee['department'] ?? 'General Staff'); ?>
+};
+
 // Global Employee Support Ticket Modal Controller
 window.openEmployeeTicketModal = function (assetTag = '') {
     const modal = document.getElementById('employeeTicketModal');
     if (!modal) return;
     const assetSelect = document.getElementById('ticketAssetSelect');
     if (assetSelect && assetTag) {
-        // Try exact match or match containing tag
         let matched = false;
         for (let i = 0; i < assetSelect.options.length; i++) {
             if (assetSelect.options[i].value.includes(assetTag) || assetSelect.options[i].text.includes(assetTag)) {
@@ -273,13 +295,8 @@ window.openEmployeeTicketModal = function (assetTag = '') {
         }
     }
 
-    // Ensure datetime input has default current timestamp if blank
-    const dtInput = document.getElementById('ticketDateTimeInput');
-    if (dtInput && !dtInput.value) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        dtInput.value = now.toISOString().slice(0, 16);
-    }
+    // Always set datetime input to current real-time NOW in local time whenever modal opens
+    window.syncTicketDateTimeNow();
 
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -300,8 +317,10 @@ if (typeof window.closeModal !== 'function') {
     };
 }
 
-// Background click and ESC key listeners
+// Background click and ESC key listeners & init
 document.addEventListener('DOMContentLoaded', function () {
+    window.syncTicketDateTimeNow();
+
     const tktModal = document.getElementById('employeeTicketModal');
     if (tktModal) {
         tktModal.addEventListener('click', function (e) {
@@ -318,5 +337,89 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
+
+    // Fallback form submission for pages where employee_tickets.js is not loaded
+    const form = document.getElementById('employeeTicketForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            // If already handled by employee_tickets.js, do not re-run
+            if (e.defaultPrevented) return;
+            e.preventDefault();
+
+            const btn = form.querySelector('button[type="submit"]');
+            const origContent = btn ? btn.innerHTML : '';
+
+            const subjectVal  = form.querySelector('#ticketSubjectInput')?.value.trim() || '';
+            const descVal     = form.querySelector('#ticketDescTextarea')?.value.trim() || '';
+            const assetVal    = form.querySelector('#ticketAssetSelect')?.value.trim() || 'General Workstation / Laptop';
+            const priorityVal = form.querySelector('#ticketUrgencySelect')?.value.trim() || 'Medium';
+            let rawDt         = form.querySelector('#ticketDateTimeInput')?.value.trim() || '';
+
+            if (!subjectVal) {
+                alert('Please enter an Issue Subject.');
+                form.querySelector('#ticketSubjectInput')?.focus();
+                return;
+            }
+            if (!descVal) {
+                alert('Please enter a Detailed Description.');
+                form.querySelector('#ticketDescTextarea')?.focus();
+                return;
+            }
+            if (!rawDt) {
+                window.syncTicketDateTimeNow();
+                rawDt = form.querySelector('#ticketDateTimeInput')?.value.trim() || '';
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
+            }
+
+            const emp = window.currentActiveEmployee || {};
+            const payload = {
+                subject: subjectVal,
+                description: descVal,
+                asset_name: assetVal,
+                priority: priorityVal,
+                incident_date: rawDt,
+                employee_id: emp.id || 0,
+                employee_name: emp.name || 'Employee Member',
+                emp_code: emp.code || 'EMP-001',
+                department: emp.department || 'General Staff'
+            };
+
+            fetch('api/tickets.php?action=create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origContent;
+                }
+                if (data.success) {
+                    closeModal('employeeTicketModal');
+                    form.reset();
+                    window.syncTicketDateTimeNow();
+                    if (typeof showToast === 'function') {
+                        showToast(`Ticket ${data.ticket_no} raised successfully!`, 'success');
+                    } else {
+                        alert(`Ticket ${data.ticket_no} raised successfully!`);
+                    }
+                } else {
+                    throw new Error(data.message || 'Submission failed');
+                }
+            })
+            .catch(err => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origContent;
+                }
+                alert('Error submitting ticket: ' + (err.message || 'Network error'));
+            });
+        });
+    }
 });
 </script>

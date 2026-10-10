@@ -4,6 +4,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+date_default_timezone_set('Asia/Kolkata');
 
 $page_title  = "IT Support Tickets - VIROS Portal";
 $active_page = "tickets";
@@ -28,10 +29,20 @@ if (empty($dbDepartments)) {
     $dbDepartments = ['Operations', 'Finance & Accounts', 'Engineering & R&D', 'Human Resources', 'Marketing & Sales', 'IT Infrastructure'];
 }
 
-// Enterprise IT Support Tickets Dataset (Format: prefix + MMYY + serial, e.g. TKT10261104)
+// Enterprise IT Support Tickets Dataset from MS SQL Server Database (Real Data Only)
 $allTickets = [];
 if (isset($conn) && $conn !== false) {
-    $tSql = "SELECT * FROM support_tickets ORDER BY incident_date DESC, id DESC";
+    $tSql = "SELECT t.*, 
+                    e.email AS emp_real_email, 
+                    e.phone AS emp_real_phone, 
+                    e.designation AS emp_real_designation,
+                    l.location_name AS emp_real_location,
+                    COALESCE(d.department_name, t.department) AS emp_real_dept
+             FROM support_tickets t
+             LEFT JOIN employees e ON (t.employee_id = e.id OR (t.emp_code IS NOT NULL AND t.emp_code != '' AND LOWER(t.emp_code) = LOWER(e.emp_code)))
+             LEFT JOIN departments d ON e.department_id = d.id
+             LEFT JOIN locations l ON e.location_id = l.id
+             ORDER BY t.incident_date DESC, t.id DESC";
     $tStmt = sqlsrv_query($conn, $tSql);
     if ($tStmt !== false) {
         while ($row = sqlsrv_fetch_array($tStmt, SQLSRV_FETCH_ASSOC)) {
@@ -80,247 +91,59 @@ if (isset($conn) && $conn !== false) {
                 'requester'   => [
                     'name'       => $empName,
                     'code'       => $row['emp_code'] ?: 'EMP-001',
-                    'department' => $row['department'] ?: 'General Staff',
-                    'email'      => strtolower(str_replace(' ', '.', $empName)) . '@viros.in',
-                    'phone'      => '+91 98765 00000',
-                    'location'   => 'Corporate Office',
+                    'department' => !empty($row['emp_real_dept']) ? $row['emp_real_dept'] : ($row['department'] ?: 'General Staff'),
+                    'email'      => !empty($row['emp_real_email']) ? $row['emp_real_email'] : (strtolower(str_replace(' ', '.', $empName)) . '@viros.in'),
+                    'phone'      => !empty($row['emp_real_phone']) ? $row['emp_real_phone'] : 'Not Provided',
+                    'location'   => !empty($row['emp_real_location']) ? $row['emp_real_location'] : 'Corporate Office',
                     'initials'   => $empInitials
                 ],
-                'chat_thread' => json_decode($row['chat_history'] ?? '[]', true) ?: []
+                'chat_thread' => []
             ];
         }
         sqlsrv_free_stmt($tStmt);
+
+        // Populate conversation threads from dedicated ticket_messages table
+        if (!empty($allTickets)) {
+            $ticketNos = array_column($allTickets, 'id');
+            if (!empty($ticketNos)) {
+                $uniqueNos = array_values(array_unique(array_filter($ticketNos)));
+                $placeholders = implode(',', array_fill(0, count($uniqueNos), '?'));
+                $msgSql = "SELECT id, ticket_no, sender_type, sender_name, sender_avatar, message, created_at 
+                           FROM ticket_messages 
+                           WHERE ticket_no IN ($placeholders) 
+                           ORDER BY created_at ASC, id ASC";
+                $msgStmt = sqlsrv_query($conn, $msgSql, $uniqueNos);
+                $msgMap = [];
+                if ($msgStmt) {
+                    while ($mr = sqlsrv_fetch_array($msgStmt, SQLSRV_FETCH_ASSOC)) {
+                        $tNo = $mr['ticket_no'];
+                        if (!isset($msgMap[$tNo])) $msgMap[$tNo] = [];
+                        $dt = $mr['created_at'];
+                        $timeStr = ($dt instanceof DateTime) ? $dt->format('d M Y, h:i A') : (empty($dt) ? '' : date('d M Y, h:i A', strtotime($dt)));
+                        $msgMap[$tNo][] = [
+                            'id'     => $mr['id'],
+                            'author' => $mr['sender_name'],
+                            'avatar' => $mr['sender_avatar'] ?: strtoupper(substr($mr['sender_name'] ?? 'US', 0, 2)),
+                            'type'   => $mr['sender_type'],
+                            'time'   => $timeStr,
+                            'text'   => $mr['message']
+                        ];
+                    }
+                    sqlsrv_free_stmt($msgStmt);
+                }
+                foreach ($allTickets as &$at) {
+                    $tNo = $at['id'];
+                    if (isset($msgMap[$tNo]) && !empty($msgMap[$tNo])) {
+                        $at['chat_thread'] = $msgMap[$tNo];
+                    }
+                }
+                unset($at);
+            }
+        }
     }
 }
 
-if (empty($allTickets)) {
-    $allTickets = [
-    [
-        'id'        => 'TKT10261104',
-        'subject'   => 'Laptop battery draining rapidly and heating during Teams meetings',
-        'category'  => 'Hardware / Thermal & Battery',
-        'asset'     => 'Dell Latitude 5420 (AST2026001)',
-        'priority'  => 'High',
-        'p_class'   => 'badge-high',
-        'status'    => 'In Progress',
-        's_class'   => 'badge-status-progress',
-        's_filter'  => 'in-progress',
-        'date'      => '09 Oct 2026, 02:30 PM',
-        'description' => 'Battery drops from 100% to 20% in less than 45 minutes of video calls. Fan stays on continuously. Diagnostic requested for thermal paste or battery replacement.',
-        'requester' => [
-            'name'       => 'Rajesh Sharma',
-            'code'       => 'EMP-104',
-            'department' => 'Operations',
-            'email'      => 'rajesh.sharma@viros.in',
-            'phone'      => '+91 98765 43210',
-            'location'   => 'HQ Building - Floor 3',
-            'initials'   => 'RS'
-        ],
-        'chat_thread' => [
-            ['author' => 'Rajesh Sharma', 'avatar' => 'RS', 'type' => 'employee', 'time' => '09 Oct 2026, 02:30 PM', 'text' => 'Fan noise gets extremely loud whenever video camera is active.'],
-            ['author' => 'IT Support Service Desk', 'avatar' => 'IT', 'type' => 'tech', 'time' => '09 Oct 2026, 03:15 PM', 'text' => 'Hardware diagnostics ran. Replacement battery pack dispatched from OEM stock. Scheduled swap tomorrow morning.']
-        ]
-    ],
-    [
-        'id'        => 'TKT10261098',
-        'subject'   => 'Multiple ERP login auth timeouts and SSL certificate handshake error',
-        'category'  => 'Software / Enterprise ERP',
-        'asset'     => 'HP EliteBook 840 (AST2026019)',
-        'priority'  => 'Urgent',
-        'p_class'   => 'badge-urgent',
-        'status'    => 'Open / Triage',
-        's_class'   => 'badge-status-open',
-        's_filter'  => 'open',
-        'date'      => '09 Oct 2026, 12:45 PM',
-        'description' => 'User cannot process month-end accounts closure. Browser throws SEC_ERROR_UNKNOWN_ISSUER on ERP portal root gateway. Need immediate SSL trust store check.',
-        'requester' => [
-            'name'       => 'Priya Patel',
-            'code'       => 'EMP-108',
-            'department' => 'Finance & Accounts',
-            'email'      => 'priya.patel@viros.in',
-            'phone'      => '+91 98234 56789',
-            'location'   => 'Finance Wing - 2nd Floor',
-            'initials'   => 'PP'
-        ],
-        'chat_thread' => [
-            ['author' => 'Priya Patel', 'avatar' => 'PP', 'type' => 'employee', 'time' => '09 Oct 2026, 12:45 PM', 'text' => 'Critical blocker for today\'s vendor payout approvals. Please assist urgently.']
-        ]
-    ],
-    [
-        'id'        => 'TKT10261082',
-        'subject'   => 'External monitor HDMI signal flickering after workstation standby',
-        'category'  => 'Hardware / External Display',
-        'asset'     => 'Dell UltraSharp 27" (AST2026048)',
-        'priority'  => 'Medium',
-        'p_class'   => 'badge-medium',
-        'status'    => 'In Progress',
-        's_class'   => 'badge-status-progress',
-        's_filter'  => 'in-progress',
-        'date'      => '08 Oct 2026, 11:15 AM',
-        'description' => 'Whenever laptop wakes from sleep/standby, the secondary HDMI monitor flickers black for 5 seconds before returning to normal. Cable has been reseated once.',
-        'requester' => [
-            'name'       => 'Vikram Malhotra',
-            'code'       => 'EMP-115',
-            'department' => 'Engineering & R&D',
-            'email'      => 'vikram.m@viros.in',
-            'phone'      => '+91 97123 45678',
-            'location'   => 'Engineering Block - Floor 1',
-            'initials'   => 'VM'
-        ],
-        'chat_thread' => [
-            ['author' => 'IT Support Engineer', 'avatar' => 'IT', 'type' => 'tech', 'time' => '08 Oct 2026, 01:20 PM', 'text' => 'Driver update rolled out via Intune. Testing with high-speed 4K HDMI 2.1 cable today.']
-        ]
-    ],
-    [
-        'id'        => 'TKT10261075',
-        'subject'   => 'Cisco AnyConnect VPN gateway disconnects repeatedly during remote access',
-        'category'  => 'Network / Remote VPN',
-        'asset'     => 'Lenovo ThinkPad T14 (AST2026032)',
-        'priority'  => 'High',
-        'p_class'   => 'badge-high',
-        'status'    => 'In Progress',
-        's_class'   => 'badge-status-progress',
-        's_filter'  => 'in-progress',
-        'date'      => '07 Oct 2026, 04:10 PM',
-        'description' => 'VPN tunnel drops precisely every 15 minutes with "Tunnel connection reset by peer" alert. HR recruitment database records fail to save during candidate onboarding.',
-        'requester' => [
-            'name'       => 'Ananya Sen',
-            'code'       => 'EMP-122',
-            'department' => 'Human Resources',
-            'email'      => 'ananya.sen@viros.in',
-            'phone'      => '+91 99887 76655',
-            'location'   => 'HR Wing - 1st Floor',
-            'initials'   => 'AS'
-        ],
-        'chat_thread' => [
-            ['author' => 'IT Network Desk', 'avatar' => 'IT', 'type' => 'tech', 'time' => '07 Oct 2026, 05:00 PM', 'text' => 'Firewall keepalive timeout extended to 120 minutes on VPN profile #4. Verified session stability.']
-        ]
-    ],
-    [
-        'id'        => 'TKT10261060',
-        'subject'   => 'RAM upgrade request for 3D simulation and CAD rendering workstation',
-        'category'  => 'Hardware / Memory Upgrade',
-        'asset'     => 'HP ZBook Fury G8 (AST2026012)',
-        'priority'  => 'Medium',
-        'p_class'   => 'badge-medium',
-        'status'    => 'Open / Triage',
-        's_class'   => 'badge-status-open',
-        's_filter'  => 'open',
-        'date'      => '06 Oct 2026, 09:30 AM',
-        'description' => 'Current 16GB DDR4 reaches 98% utilization during SolidWorks & Ansys simulations. Requesting additional 16GB DDR4 SO-DIMM module from available component inventory.',
-        'requester' => [
-            'name'       => 'Rahul Deshmukh',
-            'code'       => 'EMP-130',
-            'department' => 'Engineering & R&D',
-            'email'      => 'rahul.d@viros.in',
-            'phone'      => '+91 96543 21098',
-            'location'   => 'CAD Center - Floor 2',
-            'initials'   => 'RD'
-        ],
-        'chat_thread' => []
-    ],
-    [
-        'id'        => 'TKT09261045',
-        'subject'   => 'Replacement 65W Type-C adapter for travel docking station',
-        'category'  => 'Peripherals / Cables & Power',
-        'asset'     => 'Lenovo 65W AC Adapter (ACC2026009)',
-        'priority'  => 'Low',
-        'p_class'   => 'badge-low',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-status-resolved',
-        's_filter'  => 'resolved',
-        'date'      => '28 Sep 2026, 03:45 PM',
-        'description' => 'Original adapter wire frayed near USB-C connector tip. Issued new Lenovo genuine 65W Type-C adapter from accessory storeroom.',
-        'requester' => [
-            'name'       => 'Sneha Kulkarni',
-            'code'       => 'EMP-102',
-            'department' => 'Executive Office',
-            'email'      => 'sneha.k@viros.in',
-            'phone'      => '+91 98112 23344',
-            'location'   => 'Executive Suite - Floor 4',
-            'initials'   => 'SK'
-        ],
-        'chat_thread' => [
-            ['author' => 'IT Support', 'avatar' => 'IT', 'type' => 'tech', 'time' => '29 Sep 2026, 11:00 AM', 'text' => 'New adapter handed over and sign-off custody receipt updated.']
-        ]
-    ],
-    [
-        'id'        => 'TKT09261031',
-        'subject'   => 'Outlook archive OST mailbox corruption after Windows security patch',
-        'category'  => 'Software / Email & Mailbox',
-        'asset'     => 'Dell OptiPlex 7090 (AST2026077)',
-        'priority'  => 'Medium',
-        'p_class'   => 'badge-medium',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-status-resolved',
-        's_filter'  => 'resolved',
-        'date'      => '24 Sep 2026, 10:20 AM',
-        'description' => 'Outlook hung on "Loading Profile". OST rebuilt from Exchange Online 365 cloud mailbox. Search index catalog repopulated completely.',
-        'requester' => [
-            'name'       => 'Amit Singhania',
-            'code'       => 'EMP-119',
-            'department' => 'Marketing & Sales',
-            'email'      => 'amit.s@viros.in',
-            'phone'      => '+91 97223 34455',
-            'location'   => 'Marketing Bay - Floor 2',
-            'initials'   => 'AS'
-        ],
-        'chat_thread' => [
-            ['author' => 'IT Service Desk', 'avatar' => 'IT', 'type' => 'tech', 'time' => '24 Sep 2026, 02:15 PM', 'text' => 'Mail sync verified. All 42GB mailbox items indexed and searchable.']
-        ]
-    ],
-    [
-        'id'        => 'TKT09261014',
-        'subject'   => 'Wireless keyboard keystrokes stuttering and repeating intermittently',
-        'category'  => 'Peripherals / Input Devices',
-        'asset'     => 'Logitech MK345 Combo (ACC2026014)',
-        'priority'  => 'Low',
-        'p_class'   => 'badge-low',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-status-resolved',
-        's_filter'  => 'resolved',
-        'date'      => '19 Sep 2026, 11:40 AM',
-        'description' => '2.4GHz USB receiver was plugged into rear metallic chassis causing radio frequency shielding. Moved receiver to front USB 3.0 port and changed AAA batteries.',
-        'requester' => [
-            'name'       => 'Karan Joshi',
-            'code'       => 'EMP-128',
-            'department' => 'Operations',
-            'email'      => 'karan.j@viros.in',
-            'phone'      => '+91 98456 78901',
-            'location'   => 'Operations Bay - Ground Floor',
-            'initials'   => 'KJ'
-        ],
-        'chat_thread' => []
-    ],
-    [
-        'id'        => 'TKT09261005',
-        'subject'   => 'Core switch port packet drops in 2nd Floor server rack patch bay',
-        'category'  => 'Network / LAN Infrastructure',
-        'asset'     => 'Cisco Catalyst 2960 (AST2026090)',
-        'priority'  => 'Urgent',
-        'p_class'   => 'badge-urgent',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-status-resolved',
-        's_filter'  => 'resolved',
-        'date'      => '15 Sep 2026, 08:15 AM',
-        'description' => 'Port Gi0/14 duplex mismatch caused 12% packet loss for accounts department cluster. Configured forced 1000Mbps Full Duplex and re-crimped Cat6 keystone jack.',
-        'requester' => [
-            'name'       => 'Sunita Reddy',
-            'code'       => 'EMP-105',
-            'department' => 'IT Infrastructure',
-            'email'      => 'sunita.r@viros.in',
-            'phone'      => '+91 99001 12233',
-            'location'   => 'IT NOC - 2nd Floor',
-            'initials'   => 'SR'
-        ],
-        'chat_thread' => [
-            ['author' => 'IT Infrastructure Team', 'avatar' => 'IT', 'type' => 'tech', 'time' => '15 Sep 2026, 10:30 AM', 'text' => 'Sniffer packets show 0 drops across 24-hour test period. Resolved.']
-        ]
-    ]
-];
-}
-
-// Calculate KPI Counts
+// Calculate KPI Counts from real dataset
 $totalCount = count($allTickets);
 $openCount = 0;
 $inProgressCount = 0;
@@ -334,8 +157,19 @@ foreach ($allTickets as $t) {
     if ($t['priority'] === 'Urgent') $urgentCount++;
 }
 
-// Categories list for filter
-$ticketCategories = ['Hardware / Thermal & Battery', 'Software / Enterprise ERP', 'Hardware / External Display', 'Network / Remote VPN', 'Hardware / Memory Upgrade', 'Peripherals / Cables & Power', 'Software / Email & Mailbox', 'Peripherals / Input Devices', 'Network / LAN Infrastructure'];
+// Dynamic Categories list from DB + standard IT categories
+$dbCategories = [];
+if (isset($conn) && $conn !== false) {
+    $catStmt = sqlsrv_query($conn, "SELECT DISTINCT category FROM support_tickets WHERE category IS NOT NULL AND category != ''");
+    if ($catStmt) {
+        while ($cr = sqlsrv_fetch_array($catStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($cr['category'])) $dbCategories[] = $cr['category'];
+        }
+        sqlsrv_free_stmt($catStmt);
+    }
+}
+$defaultCategories = ['General IT Support', 'Hardware / Workstation', 'Software / Application', 'Network / Connectivity', 'Peripherals / Accessories', 'Email / Office 365'];
+$ticketCategories = array_values(array_unique(array_merge($dbCategories, $defaultCategories)));
 
 // Include Global Layout Components
 include 'includes/header.php';
@@ -636,10 +470,10 @@ include 'includes/topbar.php';
             </table>
 
             <!-- Empty State -->
-            <div id="ticketsEmptyState" style="display: none; padding: 48px 20px; text-align: center; color: var(--text-muted);">
+            <div id="ticketsEmptyState" style="display: <?php echo empty($allTickets) ? 'block' : 'none'; ?>; padding: 48px 20px; text-align: center; color: var(--text-muted);">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #cbd5e1; margin-bottom: 12px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <div style="font-size: 14.5px; font-weight: 700; color: var(--navy-primary);">No Matching Tickets Found</div>
-                <div style="font-size: 12.5px; margin-top: 4px;">Adjust your filters or search keywords above.</div>
+                <div style="font-size: 14.5px; font-weight: 700; color: var(--navy-primary);">No Support Tickets Found</div>
+                <div style="font-size: 12.5px; margin-top: 4px;">No support incidents have been logged yet or adjust your filter keywords.</div>
             </div>
         </div>
     </div>
@@ -670,9 +504,9 @@ include 'includes/topbar.php';
         <div class="drawer-header-left">
             <div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span class="asset-tag-badge" id="drawerTicketId" style="font-size: 12px; font-weight: 700;">TKT10261104</span>
-                    <span class="badge badge-status-progress" id="drawerTicketStatusBadge">In Progress</span>
-                    <span class="serial-badge" id="drawerTicketDateBadge" style="font-size: 11.5px;">09 Oct 2026, 02:30 PM</span>
+                    <span class="asset-tag-badge" id="drawerTicketId" style="font-size: 12px; font-weight: 700;">—</span>
+                    <span class="badge badge-status-progress" id="drawerTicketStatusBadge">—</span>
+                    <span class="serial-badge" id="drawerTicketDateBadge" style="font-size: 11.5px;">—</span>
                 </div>
                 <h3 id="drawerTicketSubject" style="margin-top: 6px; font-size: 16px; font-weight: 700; color: var(--navy-primary); line-height: 1.35;">
                     Ticket Subject
@@ -690,7 +524,7 @@ include 'includes/topbar.php';
         </button>
         <button type="button" class="drawer-tab" data-tab="chat" onclick="switchDrawerTab('chat')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-            Support Conversation <span id="drawerChatCountBadge" style="margin-left: 5px; background: var(--cyan-primary); color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 700;">2</span>
+            Support Conversation <span id="drawerChatCountBadge" style="margin-left: 5px; background: var(--cyan-primary); color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0</span>
         </button>
     </div>
 
@@ -709,27 +543,27 @@ include 'includes/topbar.php';
                 <div class="drawer-spec-grid">
                     <div class="drawer-spec-item">
                         <div class="label">Requester Name</div>
-                        <div class="value" id="drawerReqName" style="font-weight: 700; color: var(--navy-primary);">Rajesh Sharma</div>
+                        <div class="value" id="drawerReqName" style="font-weight: 700; color: var(--navy-primary);">—</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Employee Code</div>
-                        <div class="value" id="drawerReqCode" style="font-family: monospace;">EMP-104</div>
+                        <div class="value" id="drawerReqCode" style="font-family: monospace;">—</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Department</div>
-                        <div class="value" id="drawerReqDept">Operations</div>
+                        <div class="value" id="drawerReqDept">—</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Office Location</div>
-                        <div class="value" id="drawerReqLocation">HQ Building - Floor 3</div>
+                        <div class="value" id="drawerReqLocation">—</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Official Email</div>
-                        <div class="value" id="drawerReqEmail">rajesh.sharma@viros.in</div>
+                        <div class="value" id="drawerReqEmail">—</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Contact Phone</div>
-                        <div class="value" id="drawerReqPhone">+91 98765 43210</div>
+                        <div class="value" id="drawerReqPhone">—</div>
                     </div>
                 </div>
             </div>
@@ -743,23 +577,23 @@ include 'includes/topbar.php';
                 <div class="drawer-spec-grid">
                     <div class="drawer-spec-item">
                         <div class="label">Current Status</div>
-                        <div class="value"><span class="badge badge-status-progress" id="drawerSpecStatus">In Progress</span></div>
+                        <div class="value"><span class="badge badge-status-progress" id="drawerSpecStatus">—</span></div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Urgency Priority</div>
-                        <div class="value"><span class="badge badge-high" id="drawerSpecUrgency">High</span></div>
+                        <div class="value"><span class="badge badge-high" id="drawerSpecUrgency">—</span></div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Affected Device</div>
-                        <div class="value" id="drawerSpecAsset" style="font-weight: 600; color: var(--navy-primary);">Dell Latitude 5420 (AST2026001)</div>
+                        <div class="value" id="drawerSpecAsset" style="font-weight: 600; color: var(--navy-primary);">—</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Incident Category</div>
-                        <div class="value" id="drawerSpecCategory">Hardware / Thermal & Battery</div>
+                        <div class="value" id="drawerSpecCategory">—</div>
                     </div>
                     <div class="drawer-spec-item">
                         <div class="label">Reported Timestamp</div>
-                        <div class="value" id="drawerSpecDate">09 Oct 2026, 02:30 PM</div>
+                        <div class="value" id="drawerSpecDate">—</div>
                     </div>
                 </div>
             </div>
