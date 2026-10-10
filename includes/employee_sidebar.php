@@ -55,7 +55,7 @@ if (empty($emp_initials)) $emp_initials = 'EM';
 
         <!-- 2. Employee Profile -->
         <li class="nav-item">
-            <a href="javascript:void(0)" class="nav-link" onclick="if(typeof openEmployeeProfileModal === 'function') openEmployeeProfileModal();">
+            <a href="employee_profile.php" class="nav-link <?php echo ($active_page === 'employee_profile') ? 'active' : ''; ?>">
                 <span class="nav-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>

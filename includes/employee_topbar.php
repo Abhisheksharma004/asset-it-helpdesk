@@ -72,7 +72,7 @@ if (empty($emp_initials)) $emp_initials = 'EM';
             </button>
 
             <!-- Employee User Pill -->
-            <div class="user-pill" onclick="if(typeof openEmployeeProfileModal === 'function') openEmployeeProfileModal();" title="Click to view full employee profile & security" style="cursor: pointer;">
+            <div class="user-pill" onclick="window.location.href='employee_profile.php';" title="Click to view full employee profile & security" style="cursor: pointer;">
                 <div class="avatar" style="background: var(--cyan-primary);"><?php echo htmlspecialchars($emp_initials); ?></div>
                 <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
                     <span class="user-info" style="font-size: 12.5px;"><?php echo htmlspecialchars($emp_topbar_name); ?></span>
