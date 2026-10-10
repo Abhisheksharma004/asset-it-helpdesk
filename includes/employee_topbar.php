@@ -139,33 +139,34 @@ if (!empty($allocatedItems)) {
                     <textarea class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="4" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
                 </div>
 
-                <!-- 3. Urgency Level -->
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
-                    <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="Medium" selected>Medium (Standard 24h SLA)</option>
-                        <option value="High">High (Impacting Daily Work)</option>
-                        <option value="Urgent">Urgent (System Down / Critical)</option>
-                        <option value="Low">Low (General Query)</option>
-                    </select>
-                </div>
+                <!-- 3 & 4. Urgency Level and Affected Asset in a single row -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
+                        <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                            <option value="Medium" selected>Medium (Standard 24h SLA)</option>
+                            <option value="High">High (Impacting Daily Work)</option>
+                            <option value="Urgent">Urgent (System Down / Critical)</option>
+                            <option value="Low">Low (General Query)</option>
+                        </select>
+                    </div>
 
-                <!-- 4. Affected Asset / Device -->
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device</label>
-                    <select class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="">-- Select Allocated Device or General --</option>
-                        <?php if (!empty($topbar_device_options)): ?>
-                            <?php foreach ($topbar_device_options as $opt): ?>
-                                <option value="<?php echo htmlspecialchars($opt['val']); ?>"><?php echo htmlspecialchars($opt['label']); ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                        <option value="General Workstation / Laptop">General Workstation / Laptop</option>
-                        <option value="Workstation Peripheral / Dock">Workstation Peripheral / Dock</option>
-                        <option value="Network / VPN / Internet">Network / VPN / Internet</option>
-                        <option value="Software License / Cloud Tool">Software License / Cloud Tool</option>
-                        <option value="Other / General Query">Other / General Query</option>
-                    </select>
+                    <div class="form-group">
+                        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device</label>
+                        <select class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                            <option value="">-- Select Allocated Device or General --</option>
+                            <?php if (!empty($topbar_device_options)): ?>
+                                <?php foreach ($topbar_device_options as $opt): ?>
+                                    <option value="<?php echo htmlspecialchars($opt['val']); ?>"><?php echo htmlspecialchars($opt['label']); ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            <option value="General Workstation / Laptop">General Workstation / Laptop</option>
+                            <option value="Workstation Peripheral / Dock">Workstation Peripheral / Dock</option>
+                            <option value="Network / VPN / Internet">Network / VPN / Internet</option>
+                            <option value="Software License / Cloud Tool">Software License / Cloud Tool</option>
+                            <option value="Other / General Query">Other / General Query</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px; text-align: center; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 8px;">
