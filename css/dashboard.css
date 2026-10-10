@@ -788,9 +788,16 @@ body {
    -------------------------------------------------------------------------- */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 1.9fr) minmax(320px, 1fr);
     gap: 24px;
     margin-bottom: 24px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.dashboard-grid > * {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .content-card {
@@ -802,6 +809,8 @@ body {
     flex-direction: column;
     width: 100%;
     min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
     box-sizing: border-box;
 }
 
@@ -1215,7 +1224,7 @@ body {
 /* --------------------------------------------------------------------------
    Responsive Layout & Collapsible Sidebar
    -------------------------------------------------------------------------- */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
     }

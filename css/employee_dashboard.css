@@ -54,12 +54,55 @@
     color: #ffffff;
 }
 
+/* Dashboard Layout & Overflow Containment */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.85fr) minmax(310px, 1.15fr);
+    gap: 24px;
+    margin-bottom: 24px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.dashboard-grid > div {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-content {
+    overflow-x: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.content-card {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.table-responsive {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+}
+
+#empAllocatedTable {
+    width: 100%;
+    min-width: 680px;
+}
+
 /* Quick Action Tiles Widget */
 .emp-quick-actions-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     padding: 16px 20px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .emp-action-tile {
@@ -75,6 +118,15 @@
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     text-align: left;
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    word-break: break-word;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .emp-action-tile:hover {

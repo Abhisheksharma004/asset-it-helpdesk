@@ -224,7 +224,8 @@ $recentTickets = [
     ]
 ];
 
-// First login password setup is now handled elegantly on index.php via Smart Login Check
+// First login password setup is handled on index.php via Smart Login Check
+$isFirstLogin = false;
 $body_attributes = '';
 
 // Include Modular Layout Components
@@ -357,7 +358,7 @@ include 'includes/employee_topbar.php';
     <div class="dashboard-grid">
 
         <!-- Left Column: Assigned Inventory & Open Tickets -->
-        <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="dashboard-col-main" style="display: flex; flex-direction: column; gap: 24px; min-width: 0; width: 100%; max-width: 100%;">
 
             <!-- Main Content Card: My Assigned IT Equipment -->
             <div class="content-card" id="secMyAssets">
@@ -553,7 +554,7 @@ include 'includes/employee_topbar.php';
         </div>
 
         <!-- Right Column: Self-Service Widgets & Information -->
-        <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="dashboard-col-side" style="display: flex; flex-direction: column; gap: 24px; min-width: 0; width: 100%; max-width: 100%;">
 
             <!-- Widget 1: Quick Self-Service Actions -->
             <div class="content-card">
@@ -1081,16 +1082,14 @@ include 'includes/employee_topbar.php';
                 </div>
                 <div>
                     <h3 id="pwdModalTitle" style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
-                        <?php echo $isFirstLogin ? 'Set Your New Password' : 'Change Account Password'; ?>
+                        Change Account Password
                     </h3>
                     <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
-                        <?php echo $isFirstLogin ? 'First login security setup for your portal account.' : 'Update your portal login credentials.'; ?>
+                        Update your portal login credentials.
                     </p>
                 </div>
             </div>
-            <?php if (!$isFirstLogin): ?>
-                <button type="button" class="modal-close-btn" onclick="closeModal('changePasswordModal')">&times;</button>
-            <?php endif; ?>
+            <button type="button" class="modal-close-btn" onclick="closeModal('changePasswordModal')">&times;</button>
         </div>
 
         <form id="changePasswordForm">
@@ -1135,9 +1134,7 @@ include 'includes/employee_topbar.php';
             </div>
 
             <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
-                <?php if (!$isFirstLogin): ?>
-                    <button type="button" class="btn-secondary" onclick="closeModal('changePasswordModal')">Cancel</button>
-                <?php endif; ?>
+                <button type="button" class="btn-secondary" onclick="closeModal('changePasswordModal')">Cancel</button>
                 <button type="submit" class="btn-primary" id="savePasswordBtn" style="padding: 9px 20px;">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>

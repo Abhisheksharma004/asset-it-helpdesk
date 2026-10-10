@@ -4,6 +4,7 @@
  * Location: api/check_employee.php
  * Method: POST
  * Accepts: JSON or Form POST (identifier/email/username)
+ * Employees are validated strictly against `employees` table without inserting into `users`.
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -37,87 +38,86 @@ if (empty($identifier)) {
     exit;
 }
 
-// 1. Search in users table
-$sql = "SELECT id, username, email, password_hash, full_name, role, department, is_active, is_first_login 
-        FROM users 
-        WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)";
-$stmt = sqlsrv_query($conn, $sql, [$identifier, $identifier]);
+// 1. Check users table (for Administrator & System Staff)
+$userSql = "SELECT id, username, email, full_name, role, is_active 
+            FROM users 
+            WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)";
+$userStmt = sqlsrv_query($conn, $userSql, [$identifier, $identifier]);
+$systemUser = ($userStmt !== false) ? sqlsrv_fetch_array($userStmt, SQLSRV_FETCH_ASSOC) : null;
+if ($userStmt) sqlsrv_free_stmt($userStmt);
 
-if ($stmt === false) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database error occurred.']);
-    exit;
-}
-
-$user = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-sqlsrv_free_stmt($stmt);
-
-// 2. If not in users, check employees table
-if (!$user) {
-    $empSql = "SELECT e.id, e.emp_code, e.first_name, e.last_name, e.email, e.status, e.password_hash, e.is_first_login, d.department_name 
-               FROM employees e 
-               LEFT JOIN departments d ON e.department_id = d.id 
-               WHERE LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)";
-    $empStmt = sqlsrv_query($conn, $empSql, [$identifier, $identifier]);
-    if ($empStmt && ($emp = sqlsrv_fetch_array($empStmt, SQLSRV_FETCH_ASSOC))) {
-        sqlsrv_free_stmt($empStmt);
-        $fullName = trim(($emp['first_name'] ?? '') . ' ' . ($emp['last_name'] ?? ''));
-        $isActive = (strtolower($emp['status'] ?? '') === 'active') ? 1 : 0;
-        
-        $insUserSql = "INSERT INTO users (username, email, password_hash, full_name, role, department, is_active, is_first_login, created_at, updated_at) 
-                       VALUES (?, ?, NULL, ?, 'Employee', ?, ?, 1, GETDATE(), GETDATE())";
-        $insStmt = sqlsrv_query($conn, $insUserSql, [
-            $emp['emp_code'] ?: $emp['email'],
-            $emp['email'],
-            $fullName ?: 'Employee',
-            $emp['department_name'] ?? 'General',
-            $isActive
+if ($systemUser) {
+    if ((int)$systemUser['is_active'] !== 1) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'exists'  => true,
+            'message' => 'Your account is inactive. Please contact the administrator.'
         ]);
-        if ($insStmt) {
-            sqlsrv_free_stmt($insStmt);
-            $getStmt = sqlsrv_query($conn, "SELECT TOP 1 id, username, email, password_hash, full_name, role, department, is_active, is_first_login FROM users WHERE LOWER(email) = LOWER(?)", [$emp['email']]);
-            if ($getStmt && ($newUser = sqlsrv_fetch_array($getStmt, SQLSRV_FETCH_ASSOC))) {
-                $user = $newUser;
-                sqlsrv_free_stmt($getStmt);
-            }
-        }
+        exit;
     }
-}
 
-if (!$user) {
-    http_response_code(404);
+    // System users always authenticate with standard password
+    http_response_code(200);
     echo json_encode([
-        'success' => false,
-        'exists'  => false,
-        'message' => 'No account found matching this username or email.'
+        'success'              => true,
+        'exists'               => true,
+        'require_set_password' => false,
+        'identifier'           => $systemUser['email'] ?: ($systemUser['username'] ?? $identifier),
+        'email'                => $systemUser['email'],
+        'username'             => $systemUser['username'] ?? '',
+        'name'                 => $systemUser['full_name'] ?? 'User',
+        'role'                 => $systemUser['role'] ?? 'Administrator',
+        'message'              => 'Account verified.'
     ]);
     exit;
 }
 
-if ((int)$user['is_active'] !== 1) {
-    http_response_code(403);
+// 2. Check employees table (for Employees)
+$empSql = "SELECT e.id, e.emp_code, e.first_name, e.last_name, e.email, e.status, e.password_hash, e.is_first_login, d.department_name 
+           FROM employees e 
+           LEFT JOIN departments d ON e.department_id = d.id 
+           WHERE LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)";
+$empStmt = sqlsrv_query($conn, $empSql, [$identifier, $identifier]);
+$emp = ($empStmt !== false) ? sqlsrv_fetch_array($empStmt, SQLSRV_FETCH_ASSOC) : null;
+if ($empStmt) sqlsrv_free_stmt($empStmt);
+
+if ($emp) {
+    if (strtolower(trim($emp['status'] ?? '')) !== 'active') {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'exists'  => true,
+            'message' => 'Your employee account is inactive. Please contact the IT administrator.'
+        ]);
+        exit;
+    }
+
+    $empFullName = trim(($emp['first_name'] ?? '') . ' ' . ($emp['last_name'] ?? ''));
+    $needsPasswordSetup = empty($emp['password_hash']) || ((int)($emp['is_first_login'] ?? 0) === 1);
+
+    http_response_code(200);
     echo json_encode([
-        'success' => false,
-        'exists'  => true,
-        'message' => 'Your account is inactive. Please contact the IT administrator.'
+        'success'              => true,
+        'exists'               => true,
+        'require_set_password' => $needsPasswordSetup,
+        'identifier'           => $emp['email'],
+        'email'                => $emp['email'],
+        'username'             => $emp['emp_code'],
+        'name'                 => $empFullName ?: 'Employee',
+        'role'                 => 'Employee',
+        'message'              => $needsPasswordSetup 
+            ? ('Welcome ' . ($empFullName ?: 'Employee') . '! Please set your password to activate your account.')
+            : 'Account verified.'
     ]);
     exit;
 }
 
-$needsPasswordSetup = empty($user['password_hash']) || ((int)($user['is_first_login'] ?? 0) === 1);
-
-http_response_code(200);
+// 3. Not found
+http_response_code(404);
 echo json_encode([
-    'success'              => true,
-    'exists'               => true,
-    'require_set_password' => $needsPasswordSetup,
-    'identifier'           => $user['email'] ?: ($user['username'] ?? $identifier),
-    'email'                => $user['email'],
-    'username'             => $user['username'] ?? '',
-    'name'                 => $user['full_name'] ?? 'Employee',
-    'role'                 => $user['role'] ?? 'Employee',
-    'message'              => $needsPasswordSetup 
-        ? ('Welcome ' . ($user['full_name'] ?? 'Employee') . '! Please set your password to activate your account.')
-        : 'Account verified.'
+    'success' => false,
+    'exists'  => false,
+    'message' => 'No account found matching this username or email.'
 ]);
 exit;
