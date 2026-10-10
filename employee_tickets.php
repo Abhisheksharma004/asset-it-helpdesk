@@ -104,84 +104,84 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
     }
 }
 
-// Support Tickets UI Data (Curated IT incident & service requests for this employee)
-$supportTickets = [
-    [
-        'id'        => 'TKT10261104',
-        'subject'   => 'Laptop battery draining rapidly and heating during Teams meetings',
-        'category'  => 'Hardware / Thermal & Battery',
-        'asset'     => !empty($employeeAssets[0]['name']) ? ($employeeAssets[0]['name'] . ' (' . $employeeAssets[0]['tag'] . ')') : 'Dell Latitude 5420 (AST2026001)',
-        'priority'  => 'High',
-        'p_class'   => 'badge-high',
-        'status'    => 'In Progress',
-        's_class'   => 'badge-status-progress',
-        's_filter'  => 'in-progress',
-        'date'      => '09 Oct 2026, 02:30 PM',
-        'tech'      => 'Rajesh Verma (Hardware Support)',
-        'tech_init' => 'RV',
-        'description' => 'Battery drops from 100% to 20% in less than 45 minutes of video calls. Fan stays on continuously. Diagnostic requested for thermal paste or battery replacement.'
-    ],
-    [
-        'id'        => 'TKT10261082',
-        'subject'   => 'External monitor HDMI signal flickering after workstation standby',
-        'category'  => 'Hardware / External Display',
-        'asset'     => 'Dell UltraSharp 24" (AST2026048)',
-        'priority'  => 'Medium',
-        'p_class'   => 'badge-medium',
-        'status'    => 'In Progress',
-        's_class'   => 'badge-status-progress',
-        's_filter'  => 'in-progress',
-        'date'      => '08 Oct 2026, 11:15 AM',
-        'tech'      => 'Deepak Patel (IT Helpdesk)',
-        'tech_init' => 'DP',
-        'description' => 'Whenever laptop wakes from sleep/standby, the secondary HDMI monitor flickers black for 5 seconds before returning to normal. Cable has been reseated once.'
-    ],
-    [
-        'id'        => 'TKT09261045',
-        'subject'   => 'Request for USB-C Multiport Display Adapter for meeting room',
-        'category'  => 'Peripherals / Cables & Docks',
-        'asset'     => 'Workstation Peripheral Accessory',
-        'priority'  => 'Low',
-        'p_class'   => 'badge-low',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-status-resolved',
-        's_filter'  => 'resolved',
-        'date'      => '12 Sep 2026, 04:45 PM',
-        'tech'      => 'IT Procurement Team',
-        'tech_init' => 'IP',
-        'description' => 'Need USB-C to HDMI/VGA adapter to connect laptop to conference room projector for client presentations.'
-    ],
-    [
-        'id'        => 'TKT08260988',
-        'subject'   => 'VPN Client failing with TLS handshake timeout on home broadband',
-        'category'  => 'Network & Remote Access',
-        'asset'     => 'GlobalProtect Enterprise VPN Gateway',
-        'priority'  => 'Medium',
-        'p_class'   => 'badge-medium',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-status-resolved',
-        's_filter'  => 'resolved',
-        'date'      => '04 Aug 2026, 09:20 AM',
-        'tech'      => 'Neha Gupta (Network Admin)',
-        'tech_init' => 'NG',
-        'description' => 'VPN gateway Bangalore-HQ was failing to authenticate on Airtel home fiber. Resolved after MTU adjustment and DNS cache flush.'
-    ],
-    [
-        'id'        => 'TKT06260912',
-        'subject'   => 'Dual-Factor Authentication (2FA) reset on corporate phone change',
-        'category'  => 'Identity & Access Management',
-        'asset'     => 'Microsoft Authenticator SSO',
-        'priority'  => 'Urgent',
-        'p_class'   => 'badge-urgent',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-status-resolved',
-        's_filter'  => 'resolved',
-        'date'      => '18 Jun 2026, 10:05 AM',
-        'tech'      => 'Security Operations Team',
-        'tech_init' => 'SO',
-        'description' => 'Migrated to new corporate mobile device. Need temporary bypass code to register Microsoft Authenticator application.'
-    ]
-];
+// Fetch Dynamic Support Tickets from MS SQL Server Database for THIS active employee ONLY
+$supportTickets = [];
+if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
+    $empId   = intval($activeEmployee['id'] ?? 0);
+    $empCode = trim($activeEmployee['code'] ?? '');
+    $empName = trim($activeEmployee['name'] ?? '');
+
+    $whereEmp = [];
+    $paramsEmp = [];
+
+    if ($empId > 0) {
+        $whereEmp[] = "employee_id = ?";
+        $paramsEmp[] = $empId;
+    }
+    if (!empty($empCode)) {
+        $whereEmp[] = "LOWER(emp_code) = LOWER(?)";
+        $paramsEmp[] = $empCode;
+    }
+    if (!empty($empName)) {
+        $whereEmp[] = "LOWER(employee_name) = LOWER(?)";
+        $paramsEmp[] = $empName;
+    }
+
+    if (!empty($whereEmp)) {
+        $whereSql = '(' . implode(' OR ', $whereEmp) . ')';
+        $tSql = "SELECT * FROM support_tickets WHERE {$whereSql} ORDER BY incident_date DESC, id DESC";
+        $tStmt = sqlsrv_query($conn, $tSql, $paramsEmp);
+        if ($tStmt !== false) {
+            while ($row = sqlsrv_fetch_array($tStmt, SQLSRV_FETCH_ASSOC)) {
+                $dt = $row['incident_date'];
+                $formattedDate = '';
+                if ($dt instanceof DateTime) {
+                    $formattedDate = $dt->format('d M Y, h:i A');
+                } elseif (!empty($dt)) {
+                    $formattedDate = date('d M Y, h:i A', strtotime($dt));
+                } else {
+                    $formattedDate = date('d M Y, h:i A');
+                }
+
+                $prio = $row['priority'] ?? 'Medium';
+                $pClass = 'badge-medium';
+                if ($prio === 'Urgent') $pClass = 'badge-urgent';
+                elseif ($prio === 'High') $pClass = 'badge-high';
+                elseif ($prio === 'Low') $pClass = 'badge-low';
+
+                $st = $row['status'] ?? 'Open';
+                $sClass = 'badge-status-progress';
+                $sFilter = 'in-progress';
+                if (stripos($st, 'open') !== false) {
+                    $sClass = 'badge-status-open';
+                    $sFilter = 'open';
+                } elseif (stripos($st, 'resolved') !== false || stripos($st, 'closed') !== false) {
+                    $sClass = 'badge-status-resolved';
+                    $sFilter = 'resolved';
+                }
+
+                $chatList = json_decode($row['chat_history'] ?? '[]', true) ?: [];
+
+                $supportTickets[] = [
+                    'id'          => $row['ticket_no'],
+                    'ticket_no'   => $row['ticket_no'],
+                    'subject'     => $row['subject'],
+                    'category'    => $row['category'] ?: 'General IT Support',
+                    'asset'       => $row['asset_name'] ?: 'General Workstation / Laptop',
+                    'priority'    => $prio,
+                    'p_class'     => $pClass,
+                    'status'      => $st,
+                    's_class'     => $sClass,
+                    's_filter'    => $sFilter,
+                    'date'        => $formattedDate,
+                    'description' => $row['description'] ?? '',
+                    'chat_thread' => $chatList
+                ];
+            }
+            sqlsrv_free_stmt($tStmt);
+        }
+    }
+}
 
 // Compute summary counters
 $totalTicketsCount   = count($supportTickets);
@@ -386,11 +386,13 @@ include 'includes/employee_topbar.php';
                 </tbody>
             </table>
 
-            <!-- Empty Search State -->
-            <div id="ticketsEmptyState" class="assets-empty-state" style="display: none; padding: 48px 20px; text-align: center; color: var(--text-muted);">
+            <!-- Empty State -->
+            <div id="ticketsEmptyState" class="assets-empty-state" style="<?php echo empty($supportTickets) ? 'display: block;' : 'display: none;'; ?> padding: 48px 20px; text-align: center; color: var(--text-muted);">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #cbd5e1; margin-bottom: 12px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <div style="font-size: 14px; font-weight: 700; color: var(--navy-primary);">No Matching Support Tickets Found</div>
-                <div style="font-size: 12px; margin-top: 4px;">Try searching with another keyword or adjust your status filter above.</div>
+                <div style="font-size: 14px; font-weight: 700; color: var(--navy-primary);">No Support Tickets Found</div>
+                <div style="font-size: 12px; margin-top: 4px;">
+                    <?php echo empty($supportTickets) ? 'You have not logged any support tickets yet. Click "Raise New Ticket" above to report an issue.' : 'Try searching with another keyword or adjust your status filter above.'; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -406,7 +408,7 @@ include 'includes/employee_topbar.php';
 <aside class="ticket-details-drawer" id="ticketDetailsModal">
     <div class="drawer-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); border-top: 4px solid var(--cyan-primary); display: flex; align-items: flex-start; justify-content: space-between; background: #ffffff; flex-shrink: 0;">
         <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1; padding-right: 12px;">
-            <span class="ticket-id-pill" id="detTicketId" style="font-size: 13px; padding: 4px 10px; font-weight: 700; white-space: nowrap;">TKT10261082</span>
+            <span class="ticket-id-pill" id="detTicketId" style="font-size: 13px; padding: 4px 10px; font-weight: 700; white-space: nowrap;">--</span>
             <div>
                 <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary); line-height: 1.35;" id="detTicketSubject">
                     Ticket Subject
@@ -422,22 +424,22 @@ include 'includes/employee_topbar.php';
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 14px; margin-bottom: 16px; font-size: 12px;">
             <div style="display: inline-flex; align-items: center; gap: 6px;">
                 <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Status:</span>
-                <span class="badge badge-status-progress" id="detTicketStatus" style="font-size: 11px; padding: 2px 8px;">In Progress</span>
+                <span class="badge badge-status-progress" id="detTicketStatus" style="font-size: 11px; padding: 2px 8px;">--</span>
             </div>
             <span style="color: #cbd5e1; font-size: 12px;">•</span>
             <div style="display: inline-flex; align-items: center; gap: 6px;">
                 <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Urgency:</span>
-                <span class="badge badge-medium" id="detTicketPriority" style="font-size: 11px; padding: 2px 8px;">Medium</span>
+                <span class="badge badge-medium" id="detTicketPriority" style="font-size: 11px; padding: 2px 8px;">--</span>
             </div>
             <span style="color: #cbd5e1; font-size: 12px;">•</span>
             <div style="display: inline-flex; align-items: center; gap: 6px;">
                 <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Incident:</span>
-                <span style="font-size: 12px; font-weight: 700; color: var(--navy-primary);" id="detTicketDate">08 Oct 2026, 11:15 AM</span>
+                <span style="font-size: 12px; font-weight: 700; color: var(--navy-primary);" id="detTicketDate">--</span>
             </div>
             <span style="color: #cbd5e1; font-size: 12px;">•</span>
             <div style="display: inline-flex; align-items: center; gap: 6px;">
                 <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Device:</span>
-                <span class="ticket-asset-pill" id="detTicketAsset" style="font-weight: 600; font-size: 11.5px; padding: 2px 8px;">Dell UltraSharp 24" (AST2026048)</span>
+                <span class="ticket-asset-pill" id="detTicketAsset" style="font-weight: 600; font-size: 11.5px; padding: 2px 8px;">--</span>
             </div>
         </div>
 
@@ -464,40 +466,12 @@ include 'includes/employee_topbar.php';
                 </div>
             </div>
 
-            <!-- Scrollable Chat Stream -->
+            <!-- Scrollable Chat Stream (Dynamically populated from ticket chat thread) -->
             <div class="ticket-chat-stream" id="ticketActivityList">
                 <!-- System Registered Event Bubble -->
                 <div class="chat-system-event">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span id="chatSystemAckText">Ticket Logged & Auto-Acknowledged by IT Service Desk Queue</span>
-                </div>
-
-                <!-- Incoming Message 1 (IT Helpdesk Auto-Triage) -->
-                <div class="chat-message-row incoming">
-                    <div class="chat-avatar tech">IT</div>
-                    <div class="chat-bubble-wrap">
-                        <div class="chat-meta">
-                            <span class="chat-author">Tier-1 IT Service Desk</span>
-                            <span class="chat-timestamp" id="chatTime1">09 Oct 2026, 02:40 PM</span>
-                        </div>
-                        <div class="chat-bubble">
-                            Ticket has been logged and assigned to hardware technician for initial diagnostics and device verification.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Incoming Message 2 (IT Support Engineer) -->
-                <div class="chat-message-row incoming">
-                    <div class="chat-avatar tech" id="chatTechAvatar">RV</div>
-                    <div class="chat-bubble-wrap">
-                        <div class="chat-meta">
-                            <span class="chat-author" id="chatTechName">Rajesh Verma (Hardware Support)</span>
-                            <span class="chat-timestamp" id="chatTime2">09 Oct 2026, 03:15 PM</span>
-                        </div>
-                        <div class="chat-bubble" id="chatTechMsg">
-                            Diagnostics in progress. Investigating device telemetry, thermal logs, and cable conflicts. Will update shortly.
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -519,6 +493,10 @@ include 'includes/employee_topbar.php';
         <button type="button" class="btn-secondary" onclick="closeTicketDetailsDrawer()" style="padding: 9px 22px;">Close</button>
     </div>
 </aside>
+
+<script>
+window.currentActiveEmployee = <?php echo json_encode($activeEmployee, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+</script>
 
 <?php
 // Layout Footer

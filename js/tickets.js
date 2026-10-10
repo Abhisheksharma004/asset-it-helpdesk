@@ -455,6 +455,17 @@ function initDrawerAdminActions() {
             chatStream.scrollTop = chatStream.scrollHeight;
         }
 
+        // Persist to backend API
+        fetch('api/tickets.php?action=update_triage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ticket_no: currentOpenTicket.id,
+                status: statusText,
+                priority: newPriorityVal
+            })
+        }).catch(err => console.warn('Triage update save error:', err));
+
         if (typeof showPortalToast === 'function') {
             showPortalToast(`Ticket ${currentOpenTicket.id} triage updated successfully!`, 'success');
         } else if (typeof showToast === 'function') {
@@ -512,6 +523,18 @@ function initDrawerChatReply() {
             const currentCount = parseInt(chatBadge.textContent, 10) || 0;
             chatBadge.textContent = currentCount + 1;
         }
+
+        // Persist admin message to backend API
+        fetch('api/tickets.php?action=reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ticket_no: currentOpenTicket.id,
+                message: text,
+                type: 'admin',
+                author: 'IT Service Desk Admin'
+            })
+        }).catch(err => console.warn('Admin reply save error:', err));
 
         if (typeof showPortalToast === 'function') {
             showPortalToast('Message posted to ticket conversation thread.', 'success');

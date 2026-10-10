@@ -198,31 +198,69 @@ $accessoryCount = count(array_filter($allocatedItems, fn($i) => $i['type'] === '
 $softwareCount = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'software'));
 $totalItemsCount = count($allocatedItems);
 
-// Recent Support Requests for this employee
-$recentTickets = [
-    [
-        'id'        => 'TKT10261082',
-        'subject'   => 'External monitor HDMI signal flickering after standby',
-        'asset'     => 'Dell UltraSharp 24" (AST2026048)',
-        'priority'  => 'Medium',
-        'p_class'   => 'badge-medium',
-        'status'    => 'In Progress',
-        's_class'   => 'badge-progress',
-        'date'      => '08 Oct 2026',
-        'tech'      => 'Deepak Patel (IT Support Desk)'
-    ],
-    [
-        'id'        => 'TKT09261045',
-        'subject'   => 'Request for USB-C Multiport Display Adapter for meeting room',
-        'asset'     => 'General Accessory Request',
-        'priority'  => 'Low',
-        'p_class'   => 'badge-open',
-        'status'    => 'Resolved & Closed',
-        's_class'   => 'badge-resolved',
-        'date'      => '12 Sep 2026',
-        'tech'      => 'IT Procurement Team'
-    ]
-];
+// Recent Support Requests for this employee ONLY
+$recentTickets = [];
+if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
+    $empId   = intval($activeEmployee['id'] ?? 0);
+    $empCode = trim($activeEmployee['code'] ?? '');
+    $empName = trim($activeEmployee['name'] ?? '');
+
+    $whereEmp = [];
+    $paramsEmp = [];
+    if ($empId > 0) {
+        $whereEmp[] = "employee_id = ?";
+        $paramsEmp[] = $empId;
+    }
+    if (!empty($empCode)) {
+        $whereEmp[] = "LOWER(emp_code) = LOWER(?)";
+        $paramsEmp[] = $empCode;
+    }
+    if (!empty($empName)) {
+        $whereEmp[] = "LOWER(employee_name) = LOWER(?)";
+        $paramsEmp[] = $empName;
+    }
+
+    if (!empty($whereEmp)) {
+        $whereSql = '(' . implode(' OR ', $whereEmp) . ')';
+        $rtStmt = sqlsrv_query(
+            $conn,
+            "SELECT TOP 5 * FROM support_tickets WHERE {$whereSql} ORDER BY incident_date DESC, id DESC",
+            $paramsEmp
+        );
+        if ($rtStmt) {
+            while ($r = sqlsrv_fetch_array($rtStmt, SQLSRV_FETCH_ASSOC)) {
+                $dt = $r['incident_date'];
+                $formattedDate = '';
+                if ($dt instanceof DateTime) $formattedDate = $dt->format('d M Y');
+                elseif (!empty($dt)) $formattedDate = date('d M Y', strtotime($dt));
+
+                $st = $r['status'] ?? 'Open';
+                $sClass = 'badge-progress';
+                if (stripos($st, 'open') !== false) $sClass = 'badge-open';
+                elseif (stripos($st, 'resolved') !== false || stripos($st, 'closed') !== false) $sClass = 'badge-resolved';
+
+                $prio = $r['priority'] ?? 'Medium';
+                $pClass = 'badge-medium';
+                if ($prio === 'Urgent') $pClass = 'badge-urgent';
+                elseif ($prio === 'High') $pClass = 'badge-high';
+                elseif ($prio === 'Low') $pClass = 'badge-open';
+
+                $recentTickets[] = [
+                    'id'       => $r['ticket_no'],
+                    'subject'  => $r['subject'],
+                    'asset'    => $r['asset_name'] ?: 'Corporate Device',
+                    'priority' => $prio,
+                    'p_class'  => $pClass,
+                    'status'   => $st,
+                    's_class'  => $sClass,
+                    'date'     => $formattedDate,
+                    'tech'     => 'IT Service Desk Queue'
+                ];
+            }
+            sqlsrv_free_stmt($rtStmt);
+        }
+    }
+}
 
 // First login password setup is handled on index.php via Smart Login Check
 $isFirstLogin = false;
@@ -522,33 +560,42 @@ include 'includes/employee_topbar.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($recentTickets as $t): ?>
+                            <?php if (empty($recentTickets)): ?>
                                 <tr>
-                                    <td>
-                                        <span class="ticket-id" style="font-weight: 700; color: var(--navy-primary); font-family: monospace;">
-                                            <?php echo htmlspecialchars($t['id']); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="ticket-subject"><?php echo htmlspecialchars($t['subject']); ?></span>
-                                    </td>
-                                    <td>
-                                        <span style="font-size: 12px; color: var(--text-secondary);">
-                                            <?php echo htmlspecialchars($t['asset']); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?php echo $t['p_class']; ?>"><?php echo htmlspecialchars($t['priority']); ?></span>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?php echo $t['s_class']; ?>"><?php echo htmlspecialchars($t['status']); ?></span>
-                                    </td>
-                                    <td>
-                                        <div style="font-size: 12px; color: var(--text-primary); font-weight: 500;"><?php echo htmlspecialchars($t['date']); ?></div>
-                                        <div style="font-size: 11px; color: var(--text-muted);"><?php echo htmlspecialchars($t['tech']); ?></div>
+                                    <td colspan="6" style="text-align: center; padding: 32px 16px; color: var(--text-muted);">
+                                        <div style="font-weight: 600; color: var(--navy-primary); font-size: 13px;">No Support Tickets Logged</div>
+                                        <div style="font-size: 12px; margin-top: 3px;">You have no active technical tickets. Click "Raise New Ticket" if you require assistance.</div>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($recentTickets as $t): ?>
+                                    <tr>
+                                        <td>
+                                            <span class="ticket-id" style="font-weight: 700; color: var(--navy-primary); font-family: monospace;">
+                                                <?php echo htmlspecialchars($t['id']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="ticket-subject"><?php echo htmlspecialchars($t['subject']); ?></span>
+                                        </td>
+                                        <td>
+                                            <span style="font-size: 12px; color: var(--text-secondary);">
+                                                <?php echo htmlspecialchars($t['asset']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?php echo $t['p_class']; ?>"><?php echo htmlspecialchars($t['priority']); ?></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?php echo $t['s_class']; ?>"><?php echo htmlspecialchars($t['status']); ?></span>
+                                        </td>
+                                        <td>
+                                            <div style="font-size: 12px; color: var(--text-primary); font-weight: 500;"><?php echo htmlspecialchars($t['date']); ?></div>
+                                            <div style="font-size: 11px; color: var(--text-muted);"><?php echo htmlspecialchars($t['tech']); ?></div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>

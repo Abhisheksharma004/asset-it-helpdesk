@@ -29,7 +29,72 @@ if (empty($dbDepartments)) {
 }
 
 // Enterprise IT Support Tickets Dataset (Format: prefix + MMYY + serial, e.g. TKT10261104)
-$allTickets = [
+$allTickets = [];
+if (isset($conn) && $conn !== false) {
+    $tSql = "SELECT * FROM support_tickets ORDER BY incident_date DESC, id DESC";
+    $tStmt = sqlsrv_query($conn, $tSql);
+    if ($tStmt !== false) {
+        while ($row = sqlsrv_fetch_array($tStmt, SQLSRV_FETCH_ASSOC)) {
+            $dt = $row['incident_date'];
+            $formattedDate = '';
+            if ($dt instanceof DateTime) {
+                $formattedDate = $dt->format('d M Y, h:i A');
+            } elseif (!empty($dt)) {
+                $formattedDate = date('d M Y, h:i A', strtotime($dt));
+            } else {
+                $formattedDate = date('d M Y, h:i A');
+            }
+
+            $prio = $row['priority'] ?? 'Medium';
+            $pClass = 'badge-medium';
+            if ($prio === 'Urgent') $pClass = 'badge-urgent';
+            elseif ($prio === 'High') $pClass = 'badge-high';
+            elseif ($prio === 'Low') $pClass = 'badge-low';
+
+            $st = $row['status'] ?? 'Open';
+            $sClass = 'badge-status-progress';
+            $sFilter = 'in-progress';
+            if (stripos($st, 'open') !== false) {
+                $sClass = 'badge-status-open';
+                $sFilter = 'open';
+            } elseif (stripos($st, 'resolved') !== false || stripos($st, 'closed') !== false) {
+                $sClass = 'badge-status-resolved';
+                $sFilter = 'resolved';
+            }
+
+            $empName = $row['employee_name'] ?: 'Employee Member';
+            $empInitials = strtoupper(substr($empName, 0, 2));
+
+            $allTickets[] = [
+                'id'          => $row['ticket_no'],
+                'subject'     => $row['subject'],
+                'category'    => $row['category'] ?: 'General IT Support',
+                'asset'       => $row['asset_name'] ?: 'Corporate Device',
+                'priority'    => $prio,
+                'p_class'     => $pClass,
+                'status'      => $st,
+                's_class'     => $sClass,
+                's_filter'    => $sFilter,
+                'date'        => $formattedDate,
+                'description' => $row['description'] ?? '',
+                'requester'   => [
+                    'name'       => $empName,
+                    'code'       => $row['emp_code'] ?: 'EMP-001',
+                    'department' => $row['department'] ?: 'General Staff',
+                    'email'      => strtolower(str_replace(' ', '.', $empName)) . '@viros.in',
+                    'phone'      => '+91 98765 00000',
+                    'location'   => 'Corporate Office',
+                    'initials'   => $empInitials
+                ],
+                'chat_thread' => json_decode($row['chat_history'] ?? '[]', true) ?: []
+            ];
+        }
+        sqlsrv_free_stmt($tStmt);
+    }
+}
+
+if (empty($allTickets)) {
+    $allTickets = [
     [
         'id'        => 'TKT10261104',
         'subject'   => 'Laptop battery draining rapidly and heating during Teams meetings',
@@ -253,6 +318,7 @@ $allTickets = [
         ]
     ]
 ];
+}
 
 // Calculate KPI Counts
 $totalCount = count($allTickets);
