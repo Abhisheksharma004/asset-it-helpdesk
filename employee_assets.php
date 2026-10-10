@@ -379,18 +379,17 @@ include 'includes/employee_topbar.php';
             <table class="custom-table" id="empAssetsTable">
                 <thead>
                     <tr>
-                        <th style="width: 28%;">Item Name & Tag</th>
-                        <th style="width: 25%;">Category & Specifications</th>
-                        <th style="width: 17%;">Serial / Key</th>
+                        <th style="width: 30%;">Item Name & Tag</th>
+                        <th style="width: 28%;">Category & Specifications</th>
+                        <th style="width: 18%;">Serial / Key</th>
                         <th style="width: 12%;">Assigned Date</th>
-                        <th style="width: 10%;">Custody Status</th>
-                        <th style="width: 8%; text-align: right; padding-right: 24px;">Actions</th>
+                        <th style="width: 12%;">Custody Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($allocatedItems)): ?>
                         <tr>
-                            <td colspan="6" style="padding: 48px 20px; text-align: center; color: var(--text-muted);">
+                            <td colspan="5" style="padding: 48px 20px; text-align: center; color: var(--text-muted);">
                                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #94a3b8; margin-bottom: 12px;">
                                         <rect x="2" y="3" width="20" height="14" rx="2"></rect>
@@ -463,15 +462,6 @@ include 'includes/employee_topbar.php';
                                         <?php echo htmlspecialchars($item['status']); ?>
                                     </span>
                                 </td>
-
-                                <td style="text-align: right; padding-right: 24px;">
-                                    <button type="button" class="btn-action-slip" 
-                                        onclick='openHandoverSlipModal(<?php echo json_encode($item, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)'
-                                        title="View & Print Official Handover Slip">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                        Handover Slip
-                                    </button>
-                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -488,126 +478,6 @@ include 'includes/employee_topbar.php';
     </div>
 
 </main>
-
-<!-- Official IT Handover Custody Slip Modal -->
-<div class="modal-overlay" id="handoverSlipModal" style="display: none; z-index: 9999;">
-    <div class="modal-box" style="max-width: 680px; border-top: 4px solid var(--navy-primary);">
-        <div class="modal-header" style="padding: 18px 24px 14px; border-bottom: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 147, 167, 0.12); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                </div>
-                <div>
-                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: var(--navy-primary);">
-                        IT Asset Handover & Custody Document
-                    </h3>
-                    <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
-                        Official custody record issued by VIROS Enterprise IT Infrastructure
-                    </p>
-                </div>
-            </div>
-            <button type="button" class="modal-close-btn" onclick="closeModal('handoverSlipModal')">&times;</button>
-        </div>
-
-        <div class="modal-body" style="padding: 24px; max-height: 75vh; overflow-y: auto;">
-            <!-- Printable Custody Document Sheet -->
-            <div class="slip-doc-box" id="printableSlipSheet">
-                <div class="slip-doc-header">
-                    <div class="slip-doc-brand">
-                        <h3>VIROS IT SERVICES • ASSET CUSTODY SLIP</h3>
-                        <p>Corporate IT Infrastructure & Endpoint Asset Management</p>
-                    </div>
-                    <div class="slip-doc-ref">
-                        <div>Document No:</div>
-                        <strong id="slipAssetDocId">HS-2026001</strong>
-                    </div>
-                </div>
-
-                <div class="slip-info-grid">
-                    <div class="slip-info-item">
-                        <div class="lbl">Custody Recipient</div>
-                        <div class="val"><?php echo htmlspecialchars($activeEmployee['name']); ?></div>
-                    </div>
-                    <div class="slip-info-item">
-                        <div class="lbl">Employee ID / Code</div>
-                        <div class="val"><?php echo htmlspecialchars($activeEmployee['code']); ?></div>
-                    </div>
-                    <div class="slip-info-item">
-                        <div class="lbl">Assigned Department</div>
-                        <div class="val"><?php echo htmlspecialchars($activeEmployee['department']); ?></div>
-                    </div>
-                    <div class="slip-info-item">
-                        <div class="lbl">Primary Location / Bay</div>
-                        <div class="val"><?php echo htmlspecialchars($activeEmployee['location']); ?></div>
-                    </div>
-                </div>
-
-                <div class="slip-item-specs-box">
-                    <div style="font-size: 11px; font-weight: 700; color: var(--cyan-primary); text-transform: uppercase; margin-bottom: 8px;">
-                        Allocated Hardware / Software Details
-                    </div>
-                    <div style="font-size: 15px; font-weight: 800; color: var(--navy-primary);" id="slipAssetName">
-                        Dell Latitude 5420 Laptop
-                    </div>
-                    <div style="margin-top: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.4;" id="slipAssetSpecs">
-                        Intel Core i7-1185G7 • 16GB RAM • 512GB SSD
-                    </div>
-
-                    <div style="display: flex; gap: 20px; margin-top: 12px; font-size: 12px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
-                        <div>
-                            <span style="color: var(--text-muted);">Asset Tag:</span> 
-                            <strong style="font-family: monospace; color: var(--navy-primary);" id="slipAssetTag">AST2026001</strong>
-                        </div>
-                        <div>
-                            <span style="color: var(--text-muted);">Serial Number:</span> 
-                            <strong style="font-family: monospace; color: var(--navy-primary);" id="slipAssetSerial">C02G40PZMD6T</strong>
-                        </div>
-                        <div>
-                            <span style="color: var(--text-muted);">Condition:</span> 
-                            <strong style="color: #059669;" id="slipAssetCondition">Excellent</strong>
-                        </div>
-                        <div>
-                            <span style="color: var(--text-muted);">Issued Date:</span> 
-                            <strong style="color: var(--navy-primary);" id="slipAssetDate">15 Jan 2025</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="slip-terms-box">
-                    <strong>Custody Compliance Agreement:</strong> The equipment/license detailed above is provided exclusively for official corporate business purposes. The user is responsible for appropriate security, physical safeguarding, and policy adherence under the VIROS Information Security Standard. Any hardware malfunction or loss must be reported immediately to the IT Helpdesk.
-                </div>
-
-                <div class="slip-signature-row">
-                    <div class="slip-sig-box">
-                        <div class="slip-sig-line"></div>
-                        <div class="slip-sig-text">IT Asset Custodian</div>
-                    </div>
-                    <div style="text-align: center; color: var(--text-muted); font-size: 10.5px;">
-                        Digital Verification Seal<br>
-                        <strong style="color: #059669;">[ VERIFIED & ACTIVE ]</strong>
-                    </div>
-                    <div class="slip-sig-box">
-                        <div class="slip-sig-line"></div>
-                        <div class="slip-sig-text">Employee Signature</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
-            <div style="font-size: 12px; color: var(--text-muted);">
-                Valid document verification timestamp: <?php echo date('d M Y'); ?>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button type="button" class="btn-secondary" onclick="closeModal('handoverSlipModal')">Close</button>
-                <button type="button" class="btn-primary" onclick="printHandoverSlip()" style="padding: 9px 18px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                    Print / Download Slip
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <?php
 // Layout Footer
