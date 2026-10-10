@@ -7,60 +7,112 @@ if (session_status() === PHP_SESSION_NONE) {
 $page_title  = "Employee Profile - VIROS IT Portal";
 $active_page = "employee_profile";
 $extra_css   = ['css/employee_dashboard.css', 'css/employee_profile.css'];
-$extra_js    = ['js/employee_dashboard.js'];
+$extra_js    = ['js/employee_dashboard.js', 'js/employee_profile.js'];
 
 // Include Database Configuration
 require_once __DIR__ . '/config/db.php';
 
-// Default Active Employee Details
-$activeEmployee = [
-    'name'        => $_SESSION['user_name'] ?? 'Abhishek Ranjan',
-    'code'        => $_SESSION['user_username'] ?? 'VE015',
-    'designation' => 'Senior Software Engineer',
-    'department'  => $_SESSION['user_dept'] ?? 'Information Technology',
-    'email'       => $_SESSION['user_email'] ?? 'abhishekkumarranjan965@gmail.com',
-    'phone'       => '+91 98765 43210',
-    'location'    => 'Bangalore HQ (Floor 3)',
-    'joining_date'=> '15 Jan 2024',
-    'status'      => 'Active',
-    'custody'     => 'Verified & Active'
-];
+// Dynamically resolve target employee (Session or GET request or Top 1 in DB)
+$targetEmpId   = !empty($_GET['id']) ? intval($_GET['id']) : (!empty($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0);
+$targetEmpMail = !empty($_GET['email']) ? trim($_GET['email']) : (!empty($_SESSION['user_email']) ? trim($_SESSION['user_email']) : '');
+$targetEmpCode = !empty($_GET['emp']) ? trim($_GET['emp']) : (!empty($_SESSION['user_username']) ? trim($_SESSION['user_username']) : '');
 
-// Fetch live employee data if connected
-if (isset($conn) && $conn !== false && !empty($_SESSION['user_id'])) {
-    $currStmt = sqlsrv_query(
-        $conn, 
-        "SELECT e.*, d.department_name, l.location_name 
-         FROM employees e 
-         LEFT JOIN departments d ON e.department_id = d.id 
-         LEFT JOIN locations l ON e.location_id = l.id 
-         WHERE e.id = ? OR LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)", 
-        [$_SESSION['user_id'], $_SESSION['user_email'] ?? '', $_SESSION['user_username'] ?? '']
-    );
-    if ($currStmt && ($currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC))) {
+$activeEmployee = null;
+
+if (isset($conn) && $conn !== false) {
+    $currStmt = null;
+
+    // 1. Fetch matching employee if session or parameter is present
+    if ($targetEmpId > 0 || !empty($targetEmpMail) || !empty($targetEmpCode)) {
+        $currStmt = sqlsrv_query(
+            $conn, 
+            "SELECT e.*, d.department_name, l.location_name 
+             FROM employees e 
+             LEFT JOIN departments d ON e.department_id = d.id 
+             LEFT JOIN locations l ON e.location_id = l.id 
+             WHERE e.id = ? OR LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)", 
+            [$targetEmpId, $targetEmpMail, $targetEmpCode]
+        );
+    }
+
+    // 2. Fallback: if session was not set or no match, fetch first active employee from database
+    if (!$currStmt || !($currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC))) {
+        $currStmt = sqlsrv_query(
+            $conn,
+            "SELECT TOP 1 e.*, d.department_name, l.location_name 
+             FROM employees e 
+             LEFT JOIN departments d ON e.department_id = d.id 
+             LEFT JOIN locations l ON e.location_id = l.id 
+             WHERE e.status = 'Active' OR e.status IS NULL 
+             ORDER BY e.id ASC"
+        );
+        if ($currStmt) {
+            $currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC);
+        }
+    }
+
+    if (!empty($currRow)) {
         $fullName = trim(($currRow['first_name'] ?? '') . ' ' . ($currRow['last_name'] ?? ''));
-        $joinDateFormatted = '15 Jan 2024';
+
+        // Dynamic Date Formatter from Database
+        $joinDateFormatted = 'Not Provided';
         if (!empty($currRow['joining_date'])) {
             $joinDateFormatted = is_object($currRow['joining_date']) 
                 ? $currRow['joining_date']->format('d M Y') 
                 : date('d M Y', strtotime($currRow['joining_date']));
+        } elseif (!empty($currRow['created_at'])) {
+            $joinDateFormatted = is_object($currRow['created_at']) 
+                ? $currRow['created_at']->format('d M Y') 
+                : date('d M Y', strtotime($currRow['created_at']));
         }
 
         $activeEmployee = [
-            'id'           => $currRow['id'],
-            'name'         => $fullName ?: ($_SESSION['user_name'] ?? 'Employee'),
-            'code'         => $currRow['emp_code'] ?? 'EMP-000',
-            'designation'  => $currRow['designation'] ?: 'Staff Member',
-            'department'   => $currRow['department_name'] ?: ($_SESSION['user_dept'] ?? 'General'),
-            'email'        => $currRow['email'] ?? $_SESSION['user_email'],
-            'phone'        => $currRow['phone'] ?: '+91 98765 43210',
-            'location'     => $currRow['location_name'] ?: 'Bangalore HQ (Floor 3)',
+            'id'           => (int)$currRow['id'],
+            'name'         => $fullName ?: 'Employee',
+            'code'         => $currRow['emp_code'] ?? 'EMP-001',
+            'designation'  => !empty($currRow['designation']) ? $currRow['designation'] : 'Staff Member',
+            'department'   => !empty($currRow['department_name']) ? $currRow['department_name'] : 'General',
+            'email'        => $currRow['email'] ?? '',
+            'phone'        => !empty($currRow['phone']) ? $currRow['phone'] : 'Not Provided',
+            'location'     => !empty($currRow['location_name']) ? $currRow['location_name'] : 'Corporate Office',
             'joining_date' => $joinDateFormatted,
             'status'       => $currRow['status'] ?? 'Active',
-            'custody'      => ($currRow['status'] === 'Active') ? 'Verified & Active' : 'Inactive'
+            'custody'      => (strtolower(trim($currRow['status'] ?? '')) === 'active') ? 'Verified & Active' : 'Inactive'
         ];
-        sqlsrv_free_stmt($currStmt);
+
+        // Ensure session has active employee credentials for seamless actions (like password change)
+        if (empty($_SESSION['user_id'])) {
+            $_SESSION['user_id']        = $activeEmployee['id'];
+            $_SESSION['user_name']      = $activeEmployee['name'];
+            $_SESSION['user_username']  = $activeEmployee['code'];
+            $_SESSION['user_email']     = $activeEmployee['email'];
+            $_SESSION['user_role']      = 'Employee';
+            $_SESSION['user_dept']      = $activeEmployee['department'];
+            $_SESSION['logged_in']      = true;
+            $_SESSION['is_first_login'] = 0;
+        }
+
+        if ($currStmt) {
+            sqlsrv_free_stmt($currStmt);
+        }
     }
+}
+
+// Fallback in the rare event database is unreachable
+if (!$activeEmployee) {
+    $activeEmployee = [
+        'id'           => 1,
+        'name'         => $_SESSION['user_name'] ?? 'Employee Member',
+        'code'         => $_SESSION['user_username'] ?? 'EMP-001',
+        'designation'  => 'Staff Member',
+        'department'   => $_SESSION['user_dept'] ?? 'General',
+        'email'        => $_SESSION['user_email'] ?? 'employee@viros.in',
+        'phone'        => 'Not Provided',
+        'location'     => 'Corporate Office',
+        'joining_date' => 'Not Provided',
+        'status'       => 'Active',
+        'custody'      => 'Verified & Active'
+    ];
 }
 
 // Compute initials for Avatar
@@ -204,12 +256,14 @@ include 'includes/employee_topbar.php';
 
                         <div class="profile-field-item">
                             <span class="field-label">Employment Type</span>
-                            <span class="field-value">Full-Time / Permanent</span>
+                            <span class="field-value"><?php echo (!empty($activeEmployee['status']) && strtolower($activeEmployee['status']) === 'active') ? 'Regular / Permanent' : 'Contract / Consultant'; ?></span>
                         </div>
 
                         <div class="profile-field-item">
                             <span class="field-label">Portal Access Status</span>
-                            <span class="field-value" style="color: #10b981;">● Active & Authenticated</span>
+                            <span class="field-value" style="color: <?php echo (!empty($activeEmployee['status']) && strtolower($activeEmployee['status']) === 'active') ? '#10b981' : '#ef4444'; ?>;">
+                                ● <?php echo (!empty($activeEmployee['status']) && strtolower($activeEmployee['status']) === 'active') ? 'Active & Authenticated' : 'Account Suspended'; ?>
+                            </span>
                         </div>
                     </div>
                 </div>

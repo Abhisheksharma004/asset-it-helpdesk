@@ -56,21 +56,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // 2. Modals Helper
-    function openModal(modalId) {
+    window.openModal = function (modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.style.display = 'flex';
             modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
-    }
+    };
+    function openModal(modalId) { return window.openModal(modalId); }
 
-    function closeModal(modalId) {
+    window.closeModal = function (modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.style.display = 'none';
             modal.classList.remove('active');
+            document.body.style.overflow = '';
         }
-    }
+    };
+    function closeModal(modalId) { return window.closeModal(modalId); }
 
     // Close buttons
     document.querySelectorAll('.modal-close-btn, .modal-cancel-btn').forEach(btn => {

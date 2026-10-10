@@ -66,7 +66,16 @@ $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
 
 if ($isEmployee) {
     // 1. Employee: Fetch & verify against employees table
-    $stmt = sqlsrv_query($conn, "SELECT id, password_hash, status FROM employees WHERE id = ?", [$userId]);
+    if ($userId <= 0 && !empty($_SESSION['user_email'])) {
+        $fStmt = sqlsrv_query($conn, "SELECT id FROM employees WHERE LOWER(email) = LOWER(?)", [$_SESSION['user_email']]);
+        if ($fStmt && ($fRow = sqlsrv_fetch_array($fStmt, SQLSRV_FETCH_ASSOC))) {
+            $userId = intval($fRow['id']);
+            $_SESSION['user_id'] = $userId;
+        }
+        if ($fStmt) sqlsrv_free_stmt($fStmt);
+    }
+
+    $stmt = sqlsrv_query($conn, "SELECT id, password, password_hash, status FROM employees WHERE id = ?", [$userId]);
     if (!$stmt || !($emp = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC))) {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Employee record not found.']);
@@ -74,7 +83,14 @@ if ($isEmployee) {
     }
     sqlsrv_free_stmt($stmt);
 
-    if (!password_verify($currentPassword, $emp['password_hash'])) {
+    $isCurrentMatch = false;
+    if (!empty($emp['password_hash']) && password_verify($currentPassword, $emp['password_hash'])) {
+        $isCurrentMatch = true;
+    } elseif (!empty($emp['password']) && $emp['password'] === $currentPassword) {
+        $isCurrentMatch = true;
+    }
+
+    if (!$isCurrentMatch) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
         exit;
