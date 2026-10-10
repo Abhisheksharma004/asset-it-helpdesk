@@ -68,7 +68,7 @@ if (empty($emp_initials)) $emp_initials = 'EM';
 
         <!-- 3. My Assets -->
         <li class="nav-item">
-            <a href="javascript:void(0)" class="nav-link" onclick="if(typeof scrollToMyAssets === 'function') { scrollToMyAssets(); } else { document.getElementById('secMyAssets')?.scrollIntoView({behavior: 'smooth'}); }">
+            <a href="employee_assets.php" class="nav-link <?php echo ($active_page === 'employee_assets') ? 'active' : ''; ?>">
                 <span class="nav-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="3" width="20" height="14" rx="2"></rect>
