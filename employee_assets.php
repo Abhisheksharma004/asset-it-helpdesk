@@ -290,42 +290,12 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
         }
         sqlsrv_free_stmt($assetStmt);
     }
-
-    // 3. Dynamic Software Licenses from software_licenses table
-    $licSql = "SELECT TOP 3 * FROM software_licenses WHERE status = 'Active' OR status IS NULL ORDER BY id ASC";
-    $licStmt = sqlsrv_query($conn, $licSql);
-    if ($licStmt) {
-        while ($sl = sqlsrv_fetch_array($licStmt, SQLSRV_FETCH_ASSOC)) {
-            $slTag = 'LIC-' . str_pad($sl['id'], 4, '0', STR_PAD_LEFT);
-            $licDate = 'Active';
-            if (!empty($sl['created_at'])) {
-                $licDate = is_object($sl['created_at']) ? $sl['created_at']->format('d M Y') : date('d M Y', strtotime($sl['created_at']));
-            }
-
-            $allocatedItems[] = [
-                'tag'       => $slTag,
-                'name'      => $sl['software_name'],
-                'specs'     => !empty($sl['publisher']) ? ($sl['publisher'] . ' • ' . ($sl['version'] ?? 'Latest')) : ($sl['category'] ?? 'Corporate Cloud License'),
-                'category'  => $sl['category'] ?: 'Software Tool',
-                'type'      => 'software',
-                'serial'    => !empty($sl['license_key']) ? $sl['license_key'] : ('Corporate SSO (' . $empEmail . ')'),
-                'date'      => $licDate,
-                'condition' => 'Valid',
-                'status'    => 'Active Subscription',
-                'badge'     => 'badge-resolved',
-                'icon_type' => 'software',
-                'slip_no'   => 'LIC-DOC-' . $sl['id']
-            ];
-        }
-        sqlsrv_free_stmt($licStmt);
-    }
 }
 
 // Compute dynamic item counters
 $totalAssetCount = count($allocatedItems);
 $hardwareCount   = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'hardware'));
 $accessoryCount  = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'accessory'));
-$softwareCount   = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'software'));
 
 // Layout Components
 include 'includes/header.php';
@@ -358,7 +328,7 @@ include 'includes/employee_topbar.php';
             <div class="assets-hero-info">
                 <h1>My Allocated IT Assets</h1>
                 <p>
-                    Official computing hardware, workstation peripherals, and corporate software licenses registered in the custody of 
+                    Official computing hardware and workstation peripherals registered in the custody of 
                     <strong><?php echo htmlspecialchars($activeEmployee['name']); ?></strong> (<?php echo htmlspecialchars($activeEmployee['code']); ?>).
                 </p>
                 <div class="assets-tags-wrap">
@@ -440,20 +410,6 @@ include 'includes/employee_topbar.php';
                 <div class="lbl">Docks, Keyboards & Mouse</div>
             </div>
         </div>
-
-        <div class="assets-stat-card">
-            <div class="assets-stat-icon green">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="7.5" cy="15.5" r="5.5"></circle>
-                    <path d="m21 2-9.6 9.6"></path>
-                    <path d="m15.5 7.5 3 3"></path>
-                </svg>
-            </div>
-            <div class="assets-stat-text">
-                <div class="val"><?php echo $softwareCount; ?> Software</div>
-                <div class="lbl">Corporate Cloud Licenses</div>
-            </div>
-        </div>
     </div>
 
     <!-- Main Assets Inventory Card -->
@@ -485,9 +441,6 @@ include 'includes/employee_topbar.php';
                 </button>
                 <button type="button" class="assets-pill-btn" data-filter="accessory">
                     Workstation Peripherals <span class="assets-pill-count"><?php echo $accessoryCount; ?></span>
-                </button>
-                <button type="button" class="assets-pill-btn" data-filter="software">
-                    Software Licenses <span class="assets-pill-count"><?php echo $softwareCount; ?></span>
                 </button>
             </div>
 
@@ -524,7 +477,7 @@ include 'includes/employee_topbar.php';
                                         No IT Assets Currently in Custody
                                     </div>
                                     <div style="font-size: 12.5px; color: var(--text-muted); max-width: 460px; line-height: 1.4;">
-                                        You currently have no hardware units, workstation peripherals, or licenses registered in your custody. You can requisition equipment anytime using the button above.
+                                        You currently have no hardware units or workstation peripherals registered in your custody. You can requisition equipment anytime using the button above.
                                     </div>
                                 </div>
                             </td>
@@ -745,7 +698,7 @@ include 'includes/employee_topbar.php';
                         Request Equipment or Asset Requisition
                     </h3>
                     <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">
-                        Submit hardware, accessory, or software license requisition to IT Ops.
+                        Submit hardware or workstation accessory requisition to IT Ops.
                     </p>
                 </div>
             </div>
@@ -765,7 +718,6 @@ include 'includes/employee_topbar.php';
                         <option value="Docking Station">Universal Docking Station</option>
                         <option value="Keyboard & Mouse">Wireless Keyboard / Ergonomic Mouse</option>
                         <option value="Headset / Audio">Noise Cancelling Headset</option>
-                        <option value="Software License">Software Tool License (JetBrains / M365 / Cloud)</option>
                     </select>
                 </div>
 
