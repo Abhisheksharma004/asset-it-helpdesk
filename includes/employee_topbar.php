@@ -127,9 +127,33 @@ if (!empty($allocatedItems)) {
         </div>
         <form id="employeeTicketForm">
             <div class="modal-body" style="padding: 20px 24px; max-height: 75vh; overflow-y: auto;">
+                <!-- 1. Issue Subject -->
                 <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device *</label>
-                    <select class="modal-select" id="ticketAssetSelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Subject *</label>
+                    <input type="text" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                </div>
+
+                <!-- 2. Detailed Description -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Detailed Description *</label>
+                    <textarea class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="4" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
+                </div>
+
+                <!-- 3. Urgency Level -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
+                    <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                        <option value="Medium" selected>Medium (Standard 24h SLA)</option>
+                        <option value="High">High (Impacting Daily Work)</option>
+                        <option value="Urgent">Urgent (System Down / Critical)</option>
+                        <option value="Low">Low (General Query)</option>
+                    </select>
+                </div>
+
+                <!-- 4. Affected Asset / Device -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Affected Asset / Device</label>
+                    <select class="modal-select" id="ticketAssetSelect" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
                         <option value="">-- Select Allocated Device or General --</option>
                         <?php if (!empty($topbar_device_options)): ?>
                             <?php foreach ($topbar_device_options as $opt): ?>
@@ -142,26 +166,6 @@ if (!empty($allocatedItems)) {
                         <option value="Software License / Cloud Tool">Software License / Cloud Tool</option>
                         <option value="Other / General Query">Other / General Query</option>
                     </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Issue Subject *</label>
-                    <input type="text" class="modal-input" id="ticketSubjectInput" placeholder="Brief summary of the problem..." required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Urgency Level *</label>
-                    <select class="modal-select" id="ticketUrgencySelect" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13.5px; box-sizing: border-box; outline: none;">
-                        <option value="Medium" selected>Medium (Standard 24h SLA)</option>
-                        <option value="High">High (Impacting Daily Work)</option>
-                        <option value="Urgent">Urgent (System Down / Critical)</option>
-                        <option value="Low">Low (General Query)</option>
-                    </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">Detailed Description *</label>
-                    <textarea class="modal-textarea" id="ticketDescTextarea" placeholder="Please describe what happened, any error codes, and steps already tried..." rows="4" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; resize: vertical;"></textarea>
                 </div>
 
                 <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px; text-align: center; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 8px;">
