@@ -171,13 +171,21 @@ function initNewTicketForm() {
         let rawDt = dtInput ? dtInput.value.trim() : '';
 
         if (!subjectVal) {
-            alert('Please enter an Issue Subject.');
+            if (typeof showToast === 'function') {
+                showToast('Please enter an Issue Subject.', 'warning');
+            } else {
+                alert('Please enter an Issue Subject.');
+            }
             if (subjectEl) subjectEl.focus();
             return;
         }
 
         if (!descVal) {
-            alert('Please enter a Detailed Description.');
+            if (typeof showToast === 'function') {
+                showToast('Please enter a Detailed Description.', 'warning');
+            } else {
+                alert('Please enter a Detailed Description.');
+            }
             if (descEl) descEl.focus();
             return;
         }
@@ -243,7 +251,9 @@ function initNewTicketForm() {
                     updateAllTicketCounters();
                     applyTicketFilterAndSearch();
 
-                    if (typeof showPortalToast === 'function') {
+                    if (typeof showToast === 'function') {
+                        showToast(`Ticket ${tkt.id} registered successfully in IT Helpdesk!`, 'success');
+                    } else if (typeof showPortalToast === 'function') {
                         showPortalToast(`Ticket ${tkt.id} registered successfully in IT Helpdesk!`, 'success');
                     } else {
                         alert(`Ticket ${tkt.id} created successfully.`);
@@ -260,7 +270,9 @@ function initNewTicketForm() {
                     btn.innerHTML = origContent;
                 }
                 const errMsg = err.message || 'Network error occurred while submitting ticket.';
-                if (typeof showPortalToast === 'function') {
+                if (typeof showToast === 'function') {
+                    showToast(`Ticket registration failed: ${errMsg}`, 'error');
+                } else if (typeof showPortalToast === 'function') {
                     showPortalToast(`Ticket registration failed: ${errMsg}`, 'error');
                 } else {
                     alert(`Error: ${errMsg}`);
@@ -545,7 +557,9 @@ function initTicketReplyForm() {
         })
             .then(res => res.json())
             .then(data => {
-                if (typeof showPortalToast === 'function') {
+                if (typeof showToast === 'function') {
+                    showToast('Message posted to IT Support conversation.', 'success');
+                } else if (typeof showPortalToast === 'function') {
                     showPortalToast('Message posted to IT Support conversation.', 'success');
                 }
             })

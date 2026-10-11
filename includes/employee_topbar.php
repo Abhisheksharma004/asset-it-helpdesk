@@ -359,13 +359,21 @@ document.addEventListener('DOMContentLoaded', function () {
             let rawDt         = form.querySelector('#ticketDateTimeInput')?.value.trim() || '';
 
             if (!subjectVal) {
-                alert('Please enter an Issue Subject.');
+                if (typeof showToast === 'function') {
+                    showToast('Please enter an Issue Subject.', 'warning');
+                } else {
+                    alert('Please enter an Issue Subject.');
+                }
                 form.querySelector('#ticketSubjectInput')?.focus();
                 delete form.dataset.submitting;
                 return;
             }
             if (!descVal) {
-                alert('Please enter a Detailed Description.');
+                if (typeof showToast === 'function') {
+                    showToast('Please enter a Detailed Description.', 'warning');
+                } else {
+                    alert('Please enter a Detailed Description.');
+                }
                 form.querySelector('#ticketDescTextarea')?.focus();
                 delete form.dataset.submitting;
                 return;
@@ -424,7 +432,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     btn.disabled = false;
                     btn.innerHTML = origContent;
                 }
-                alert('Error submitting ticket: ' + (err.message || 'Network error'));
+                const errMsg = err.message || 'Network error';
+                if (typeof showToast === 'function') {
+                    showToast('Error submitting ticket: ' + errMsg, 'error');
+                } else {
+                    alert('Error submitting ticket: ' + errMsg);
+                }
             });
         });
     }

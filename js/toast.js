@@ -89,9 +89,8 @@
         container.appendChild(toast);
 
         // Animate entrance
-        requestAnimationFrame(() => {
-            toast.classList.add("toast-show");
-        });
+        toast.offsetHeight;
+        toast.classList.add("toast-show");
 
         // Setup progress bar animation & timer
         let timer = null;
