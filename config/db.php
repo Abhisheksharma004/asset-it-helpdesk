@@ -92,4 +92,49 @@ function getLastInsertId($connection = null) {
 
     return $row['last_id'] ?? false;
 }
+
+/**
+ * Helper function to retrieve Organization Settings (Legal name, branding logo, favicon, etc.).
+ * Cached per request for optimum performance across components.
+ *
+ * @param resource|null $connection Optional sqlsrv connection resource
+ * @return array
+ */
+function getOrganizationSettings($connection = null) {
+    static $cachedSettings = null;
+    if ($cachedSettings !== null) {
+        return $cachedSettings;
+    }
+
+    if ($connection === null) {
+        global $conn;
+        $connection = $conn;
+    }
+
+    $defaultSettings = [
+        'organization_legal_name' => 'VIROS PORTAL',
+        'support_desk_email'      => 'it@virosentrepreneurs.com',
+        'it_helpdesk_helpline'    => '',
+        'primary_brand_logo'      => 'assets/images/logo.png',
+        'browser_favicon'         => 'assets/images/logo.png'
+    ];
+
+    if (!$connection) {
+        $cachedSettings = $defaultSettings;
+        return $cachedSettings;
+    }
+
+    $stmt = @sqlsrv_query($connection, "SELECT TOP 1 organization_legal_name, support_desk_email, it_helpdesk_helpline, primary_brand_logo, browser_favicon FROM organization_settings ORDER BY id ASC");
+    if ($stmt !== false && ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC))) {
+        foreach ($defaultSettings as $k => $v) {
+            if (isset($row[$k]) && trim((string)$row[$k]) !== '') {
+                $defaultSettings[$k] = trim((string)$row[$k]);
+            }
+        }
+        sqlsrv_free_stmt($stmt);
+    }
+
+    $cachedSettings = $defaultSettings;
+    return $cachedSettings;
+}
 ?>

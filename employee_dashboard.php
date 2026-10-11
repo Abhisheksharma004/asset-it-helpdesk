@@ -838,7 +838,7 @@ include 'includes/employee_topbar.php';
                 
                 <div class="slip-header-top">
                     <div class="slip-company-info">
-                        <h3>VIROS IT SOLUTIONS & SERVICES</h3>
+                        <h3><?php echo htmlspecialchars(!empty($orgSettings['organization_legal_name']) ? $orgSettings['organization_legal_name'] : 'VIROS IT SOLUTIONS & SERVICES'); ?></h3>
                         <p>Enterprise IT Asset Management & Service Desk Division</p>
                         <p style="font-size: 11px; color: #94a3b8;">Document Form: IT-AST-HND-2025/V1</p>
                     </div>

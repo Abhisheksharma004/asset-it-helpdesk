@@ -4,6 +4,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/../config/db.php';
+$orgHeaderSettings = function_exists('getOrganizationSettings') ? getOrganizationSettings() : [];
+$orgSiteName = !empty($orgHeaderSettings['organization_legal_name']) ? $orgHeaderSettings['organization_legal_name'] : 'VIROS Portal';
+$orgFavicon = !empty($orgHeaderSettings['browser_favicon']) ? $orgHeaderSettings['browser_favicon'] : 'assets/images/logo.png';
+if (!file_exists(__DIR__ . '/../' . $orgFavicon) && !filter_var($orgFavicon, FILTER_VALIDATE_URL)) {
+    $orgFavicon = 'assets/images/logo.png';
+}
+
 /**
  * Global Header Component
  * Can be included in any page across the portal.
@@ -13,7 +21,7 @@ if (session_status() === PHP_SESSION_NONE) {
  *   $extra_css (array)   - Optional additional CSS file paths
  */
 if (!isset($page_title)) {
-    $page_title = "VIROS Portal - Asset Management & IT Service Desk";
+    $page_title = $orgSiteName . " - Asset Management & IT Service Desk";
 }
 ?>
 <!DOCTYPE html>
@@ -22,6 +30,7 @@ if (!isset($page_title)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
+    <link rel="shortcut icon" href="<?php echo htmlspecialchars($orgFavicon); ?>" type="image/x-icon">
     
     <!-- Core Stylesheets -->
     <link rel="stylesheet" href="css/dashboard.css?v=<?php echo file_exists(__DIR__ . '/../css/dashboard.css') ? filemtime(__DIR__ . '/../css/dashboard.css') : time(); ?>">

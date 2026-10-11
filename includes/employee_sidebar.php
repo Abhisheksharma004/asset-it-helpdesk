@@ -21,18 +21,34 @@ foreach (explode(' ', trim($emp_sidebar_name)) as $w) {
     if (strlen($emp_initials) >= 2) break;
 }
 if (empty($emp_initials)) $emp_initials = 'EM';
+
+// Fetch Dynamic Organization Branding Settings
+if (!function_exists('getOrganizationSettings')) {
+    require_once __DIR__ . '/../config/db.php';
+}
+$orgSettings = getOrganizationSettings();
+$orgName = !empty($orgSettings['organization_legal_name']) ? trim($orgSettings['organization_legal_name']) : 'VIROS PORTAL';
+$orgLogo = !empty($orgSettings['primary_brand_logo']) ? $orgSettings['primary_brand_logo'] : 'assets/images/logo.png';
+if (!file_exists(__DIR__ . '/../' . $orgLogo) && !filter_var($orgLogo, FILTER_VALIDATE_URL)) {
+    $orgLogo = 'assets/images/logo.png';
+}
+
+$orgWords = preg_split('/\s+/', $orgName);
+if (count($orgWords) > 1) {
+    $firstWord = array_shift($orgWords);
+    $restWords = implode(' ', $orgWords);
+    $brandTitleHtml = htmlspecialchars($firstWord) . ' <span>' . htmlspecialchars($restWords) . '</span>';
+} else {
+    $brandTitleHtml = htmlspecialchars($orgName);
+}
 ?>
 <!-- ==================== EMPLOYEE SIDEBAR ==================== -->
 <aside class="sidebar" id="sidebar">
     
     <!-- Sidebar Brand Header -->
-    <a href="employee_dashboard.php" class="sidebar-brand">
+    <a href="employee_dashboard.php" class="sidebar-brand" title="<?php echo htmlspecialchars($orgName); ?>">
         <div class="brand-logo-wrap">
-            <img src="assets/images/logo.png" alt="VIROS Logo">
-        </div>
-        <div class="brand-text">
-            <span class="brand-title">VIROS <span>PORTAL</span></span>
-            <span class="brand-subtitle">Employee IT Self-Service</span>
+            <img src="<?php echo htmlspecialchars($orgLogo); ?>" alt="<?php echo htmlspecialchars($orgName); ?> Logo">
         </div>
     </a>
 

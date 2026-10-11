@@ -98,8 +98,8 @@ body {
     height: var(--header-height);
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 0 20px;
+    justify-content: center;
+    padding: 0 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     text-decoration: none;
     color: #ffffff;
@@ -107,21 +107,28 @@ body {
 }
 
 .brand-logo-wrap {
-    width: 38px;
-    height: 38px;
+    width: 100%;
+    max-width: 220px;
+    height: 44px;
     border-radius: 8px;
     background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 3px;
+    padding: 4px 14px;
     flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    box-sizing: border-box;
+    transition: all var(--transition);
 }
 
 .brand-logo-wrap img {
-    width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 36px;
+    width: auto;
+    height: auto;
     object-fit: contain;
+    display: block;
 }
 
 .brand-text {
@@ -132,10 +139,14 @@ body {
 }
 
 .brand-title {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 700;
     letter-spacing: 0.5px;
     color: #ffffff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 175px;
 }
 
 .brand-title span {
@@ -1286,7 +1297,13 @@ body {
 
 .sidebar.collapsed .sidebar-brand {
     justify-content: center;
-    padding: 0;
+    padding: 0 8px;
+}
+
+.sidebar.collapsed .brand-logo-wrap {
+    width: 44px;
+    height: 44px;
+    padding: 4px;
 }
 
 .sidebar.collapsed .nav-link {

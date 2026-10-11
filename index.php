@@ -10,13 +10,26 @@ if (!empty($_SESSION['logged_in'])) {
     }
     exit;
 }
+
+require_once __DIR__ . '/config/db.php';
+$orgSettings = function_exists('getOrganizationSettings') ? getOrganizationSettings() : [];
+$loginOrgLogo = !empty($orgSettings['primary_brand_logo']) ? $orgSettings['primary_brand_logo'] : 'assets/images/logo.png';
+if (!file_exists(__DIR__ . '/' . $loginOrgLogo) && !filter_var($loginOrgLogo, FILTER_VALIDATE_URL)) {
+    $loginOrgLogo = 'assets/images/logo.png';
+}
+$loginOrgFavicon = !empty($orgSettings['browser_favicon']) ? $orgSettings['browser_favicon'] : 'assets/images/logo.png';
+if (!file_exists(__DIR__ . '/' . $loginOrgFavicon) && !filter_var($loginOrgFavicon, FILTER_VALIDATE_URL)) {
+    $loginOrgFavicon = 'assets/images/logo.png';
+}
+$loginOrgName = !empty($orgSettings['organization_legal_name']) ? $orgSettings['organization_legal_name'] : 'VIROS IT Portal';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Asset Management & IT Service Desk</title>
+    <title>Login - <?php echo htmlspecialchars($loginOrgName); ?></title>
+    <link rel="shortcut icon" href="<?php echo htmlspecialchars($loginOrgFavicon); ?>" type="image/x-icon">
     <link rel="stylesheet" href="css/style.css?v=<?= time() ?>">
     <link rel="stylesheet" href="css/toast.css?v=<?= time() ?>">
 </head>
@@ -28,7 +41,7 @@ if (!empty($_SESSION['logged_in'])) {
     <div class="login-card">
 
         <div class="logo">
-            <img src="assets/images/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+            <img src="<?php echo htmlspecialchars($loginOrgLogo); ?>" alt="<?php echo htmlspecialchars($loginOrgName); ?> Logo">
         </div>
 
         <h1 class="title" id="pageTitle">Welcome Back</h1>
