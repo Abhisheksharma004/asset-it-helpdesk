@@ -161,8 +161,6 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
                     $sFilter = 'resolved';
                 }
 
-                $chatList = json_decode($row['chat_history'] ?? '[]', true) ?: [];
-
                 $supportTickets[] = [
                     'id'          => $row['ticket_no'],
                     'ticket_no'   => $row['ticket_no'],
@@ -176,7 +174,7 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
                     's_filter'    => $sFilter,
                     'date'        => $formattedDate,
                     'description' => $row['description'] ?? '',
-                    'chat_thread' => $chatList
+                    'chat_thread' => []
                 ];
             }
             sqlsrv_free_stmt($tStmt);

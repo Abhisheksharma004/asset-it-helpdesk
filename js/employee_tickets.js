@@ -108,7 +108,8 @@ function getNowLocalDatetimeString() {
 // Submit New Ticket Form Handler (Integrated with backend api/tickets.php)
 function initNewTicketForm() {
     const form = document.getElementById('employeeTicketForm') || document.getElementById('newTicketForm');
-    if (!form) return;
+    if (!form || form.dataset.ticketsJsBound) return;
+    form.dataset.ticketsJsBound = 'true';
 
     // Ensure datetime input starts with live local now
     const dtEl = form.querySelector('#ticketDateTimeInput') || document.getElementById('ticketDateTimeInput');
@@ -118,6 +119,11 @@ function initNewTicketForm() {
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
+        e.stopImmediatePropagation();
+
+        if (form.dataset.submitting === 'true') {
+            return;
+        }
 
         const btn = form.querySelector('button[type="submit"]');
         const origContent = btn ? btn.innerHTML : '';
@@ -151,6 +157,7 @@ function initNewTicketForm() {
             if (dtInput) dtInput.value = rawDt;
         }
 
+        form.dataset.submitting = 'true';
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Submitting...';
@@ -183,6 +190,7 @@ function initNewTicketForm() {
         })
         .then(res => res.json())
         .then(data => {
+            delete form.dataset.submitting;
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = origContent;
@@ -217,6 +225,7 @@ function initNewTicketForm() {
             }
         })
         .catch(err => {
+            delete form.dataset.submitting;
             console.error('API submission failed:', err);
             if (btn) {
                 btn.disabled = false;

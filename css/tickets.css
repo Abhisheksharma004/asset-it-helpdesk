@@ -1077,6 +1077,7 @@
     font-size: 12.5px;
     line-height: 1.5;
     word-break: break-word;
+    white-space: pre-wrap;
 }
 
 .chat-message-row.incoming .chat-bubble {

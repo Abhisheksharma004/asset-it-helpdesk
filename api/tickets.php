@@ -141,6 +141,36 @@ if ($method === 'POST' && $action === 'create') {
         exit;
     }
 
+    // Prevent immediate duplicate submission (if identical subject submitted within last 6 seconds by same requester)
+    $dupCheckSql = "SELECT TOP 1 ticket_no, id, subject, description, category, priority, status, asset_name 
+                    FROM support_tickets 
+                    WHERE (employee_id = ? OR LOWER(emp_code) = LOWER(?)) 
+                      AND LOWER(subject) = LOWER(?) 
+                      AND DATEDIFF(SECOND, created_at, GETDATE()) <= 6
+                    ORDER BY id DESC";
+    $dupStmt = sqlsrv_query($conn, $dupCheckSql, [$empId, $empCode, $subject]);
+    if ($dupStmt && ($dupRow = sqlsrv_fetch_array($dupStmt, SQLSRV_FETCH_ASSOC))) {
+        $existingTicketNo = $dupRow['ticket_no'];
+        echo json_encode([
+            'success'   => true,
+            'message'   => "Ticket {$existingTicketNo} raised successfully!",
+            'ticket_no' => $existingTicketNo,
+            'ticket'    => [
+                'id'          => $existingTicketNo,
+                'ticket_no'   => $existingTicketNo,
+                'subject'     => $dupRow['subject'],
+                'description' => $dupRow['description'],
+                'category'    => $dupRow['category'],
+                'priority'    => $dupRow['priority'],
+                'status'      => $dupRow['status'] ?: 'Open',
+                'asset'       => $dupRow['asset_name'],
+                'date'        => $formattedDateStr,
+                'chat_thread' => []
+            ]
+        ]);
+        exit;
+    }
+
     // Generate dynamic Ticket ID: TKT + MMYY + 4-digit serial
     $mmyy = $incidentDateObj->format('my');
     
@@ -159,7 +189,7 @@ if ($method === 'POST' && $action === 'create') {
     }
     $newTicketNo = 'TKT' . $mmyy . str_pad($nextSerialNum, 4, '0', STR_PAD_LEFT);
 
-    // Initial chat history array
+    // Initial message payload (for immediate UI response)
     $initialChat = [
         [
             'author' => $empName,
@@ -171,8 +201,8 @@ if ($method === 'POST' && $action === 'create') {
     ];
 
     $insertSql = "INSERT INTO support_tickets 
-                  (ticket_no, subject, description, category, priority, status, asset_name, employee_id, employee_name, emp_code, department, incident_date, chat_history, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, 'Open', ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
+                  (ticket_no, subject, description, category, priority, status, asset_name, employee_id, employee_name, emp_code, department, incident_date, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, 'Open', ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
 
     $insertStmt = sqlsrv_query($conn, $insertSql, [
         $newTicketNo,
@@ -185,8 +215,7 @@ if ($method === 'POST' && $action === 'create') {
         $empName,
         $empCode,
         $department,
-        $incidentSqlDate,
-        json_encode($initialChat)
+        $incidentSqlDate
     ]);
 
     if ($insertStmt === false) {
@@ -263,7 +292,7 @@ if ($method === 'POST' && $action === 'reply') {
     }
 
     // Verify ticket exists
-    $getStmt = sqlsrv_query($conn, "SELECT id, chat_history FROM support_tickets WHERE ticket_no = ?", [$ticketNo]);
+    $getStmt = sqlsrv_query($conn, "SELECT id FROM support_tickets WHERE ticket_no = ?", [$ticketNo]);
     if (!$getStmt || !($tRow = sqlsrv_fetch_array($getStmt, SQLSRV_FETCH_ASSOC))) {
         echo json_encode(['success' => false, 'message' => 'Ticket not found.']);
         exit;
@@ -275,7 +304,7 @@ if ($method === 'POST' && $action === 'reply') {
     $sqlDate = $nowObj->format('Y-m-d H:i:s');
     $avatar = ($senderType === 'admin' || $senderType === 'tech') ? 'IT' : strtoupper(substr($authorName, 0, 2));
 
-    // 1. Insert new message directly into ticket_messages table
+    // 1. Insert new message directly into dedicated ticket_messages table
     $insertMsgSql = "INSERT INTO ticket_messages (ticket_no, ticket_id, sender_type, sender_name, sender_avatar, message, created_at) 
                      VALUES (?, ?, ?, ?, ?, ?, ?)";
     $msgStmt = sqlsrv_query($conn, $insertMsgSql, [$ticketNo, $ticketId, $senderType, $authorName, $avatar, $messageText, $sqlDate]);
@@ -286,8 +315,7 @@ if ($method === 'POST' && $action === 'reply') {
         exit;
     }
 
-    // 2. Also keep support_tickets updated_at and chat_history snapshot updated
-    $chatHistory = json_decode($tRow['chat_history'] ?? '[]', true) ?: [];
+    // 2. Keep support_tickets updated_at timestamp updated
     $newMsg = [
         'author' => $authorName,
         'avatar' => $avatar,
@@ -295,12 +323,11 @@ if ($method === 'POST' && $action === 'reply') {
         'time'   => $nowStr,
         'text'   => $messageText
     ];
-    $chatHistory[] = $newMsg;
 
     sqlsrv_query(
         $conn, 
-        "UPDATE support_tickets SET chat_history = ?, updated_at = GETDATE() WHERE id = ?", 
-        [json_encode($chatHistory), $ticketId]
+        "UPDATE support_tickets SET updated_at = GETDATE() WHERE id = ?", 
+        [$ticketId]
     );
 
     echo json_encode([
@@ -317,10 +344,19 @@ if ($method === 'POST' && $action === 'update_triage') {
     $ticketNo = trim($input['ticket_no'] ?? ($input['id'] ?? ''));
     $newStatus = trim($input['status'] ?? '');
     $newPriority = trim($input['priority'] ?? '');
+    $customMessage = trim($input['message'] ?? ($input['remark'] ?? ''));
+    $adminAuthor = trim($input['author'] ?? ($_SESSION['user_name'] ?? 'IT Service Desk Admin'));
 
     if (empty($ticketNo)) {
         echo json_encode(['success' => false, 'message' => 'Ticket number is required.']);
         exit;
+    }
+
+    // Fetch ticket ID for message foreign reference
+    $ticketId = null;
+    $idStmt = sqlsrv_query($conn, "SELECT id, status, priority FROM support_tickets WHERE ticket_no = ?", [$ticketNo]);
+    if ($idStmt && ($tRow = sqlsrv_fetch_array($idStmt, SQLSRV_FETCH_ASSOC))) {
+        $ticketId = intval($tRow['id']);
     }
 
     $updates = [];
@@ -344,7 +380,54 @@ if ($method === 'POST' && $action === 'update_triage') {
         exit;
     }
 
-    echo json_encode(['success' => true, 'message' => "Ticket {$ticketNo} triage updated."]);
+    // Compose status update message text
+    $isClosedOrResolved = (stripos($newStatus, 'resolved') !== false || stripos($newStatus, 'closed') !== false);
+
+    if ($isClosedOrResolved) {
+        if (!empty($customMessage)) {
+            $msgText = "Dear Sir/Ma'am, your IT support ticket has been successfully resolved and closed.\n\nResolution Details: " . $customMessage . "\n\nThank you for your patience and cooperation! If you face any further issue or require assistance, please feel free to reach out to the IT Service Desk.";
+        } else {
+            $msgText = "Dear Sir/Ma'am, your IT support ticket has been successfully resolved and closed by IT Service Desk.\n\nAll reported issues have been addressed. Thank you for your patience and cooperation! If you continue to experience any issue or require further assistance, feel free to reply here or raise a new request.";
+        }
+    } elseif (!empty($customMessage)) {
+        $msgText = $customMessage;
+    } else {
+        if (stripos($newStatus, 'progress') !== false) {
+            $msgText = "Ticket status has been updated to 'In Progress' by " . $adminAuthor . ". Our IT technical team has taken up your request and is actively working on resolving it.";
+        } else {
+            $parts = [];
+            if (!empty($newStatus)) {
+                $parts[] = "Status set to \"{$newStatus}\"";
+            }
+            if (!empty($newPriority)) {
+                $parts[] = "Priority set to \"{$newPriority}\"";
+            }
+            $msgText = implode(', ', $parts) . " by " . $adminAuthor . ".";
+        }
+    }
+
+    $nowObj = new DateTime();
+    $sqlDate = $nowObj->format('Y-m-d H:i:s');
+    $nowStr = $nowObj->format('d M Y, h:i A');
+
+    // Save status change message into dedicated ticket_messages table
+    $msgInsertSql = "INSERT INTO ticket_messages (ticket_no, ticket_id, sender_type, sender_name, sender_avatar, message, created_at) 
+                     VALUES (?, ?, 'admin', ?, 'IT', ?, ?)";
+    sqlsrv_query($conn, $msgInsertSql, [$ticketNo, $ticketId, $adminAuthor, $msgText, $sqlDate]);
+
+    $newMsgItem = [
+        'author' => $adminAuthor,
+        'avatar' => 'IT',
+        'type'   => 'admin',
+        'time'   => $nowStr,
+        'text'   => $msgText
+    ];
+
+    echo json_encode([
+        'success' => true, 
+        'message' => "Ticket {$ticketNo} triage updated.",
+        'msg'     => $newMsgItem
+    ]);
     exit;
 }
 

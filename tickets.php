@@ -640,6 +640,11 @@ include 'includes/topbar.php';
                     </div>
                 </div>
 
+                <div style="margin-bottom: 12px;">
+                    <label for="triageRemarkInput" style="display: block; font-size: 11.5px; font-weight: 600; color: #1e3a8a; margin-bottom: 4px;">Status Update Note / Message (Sent to Employee)</label>
+                    <input type="text" id="triageRemarkInput" placeholder="Optional remark (e.g. Technician assigned, work started, parts dispatched...)" style="width: 100%; padding: 8px 12px; border: 1.5px solid #93c5fd; border-radius: 6px; font-size: 12.5px; background: #ffffff; box-sizing: border-box; outline: none;">
+                </div>
+
                 <button type="button" class="btn-primary" id="btnUpdateAdminTriage" style="padding: 7px 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span>Save & Update Triage</span>

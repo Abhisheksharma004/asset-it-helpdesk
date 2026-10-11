@@ -340,10 +340,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Fallback form submission for pages where employee_tickets.js is not loaded
     const form = document.getElementById('employeeTicketForm');
-    if (form) {
+    const isTicketsPage = !!document.getElementById('empTicketsTable');
+    if (form && !isTicketsPage && !form.dataset.fallbackBound) {
+        form.dataset.fallbackBound = 'true';
         form.addEventListener('submit', function (e) {
-            // If already handled by employee_tickets.js, do not re-run
-            if (e.defaultPrevented) return;
+            // If already handled or currently submitting, do not re-run
+            if (e.defaultPrevented || form.dataset.submitting === 'true') return;
+            form.dataset.submitting = 'true';
             e.preventDefault();
 
             const btn = form.querySelector('button[type="submit"]');
@@ -358,11 +361,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!subjectVal) {
                 alert('Please enter an Issue Subject.');
                 form.querySelector('#ticketSubjectInput')?.focus();
+                delete form.dataset.submitting;
                 return;
             }
             if (!descVal) {
                 alert('Please enter a Detailed Description.');
                 form.querySelector('#ticketDescTextarea')?.focus();
+                delete form.dataset.submitting;
                 return;
             }
             if (!rawDt) {
@@ -395,6 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(res => res.json())
             .then(data => {
+                delete form.dataset.submitting;
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = origContent;
@@ -413,6 +419,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(err => {
+                delete form.dataset.submitting;
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = origContent;

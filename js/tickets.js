@@ -267,6 +267,11 @@ function openAdminTicketDrawer(ticketData) {
         prioritySelect.value = ticketData.priority || 'Medium';
     }
 
+    const remarkInput = document.getElementById('triageRemarkInput');
+    if (remarkInput) {
+        remarkInput.value = '';
+    }
+
     // Render Conversation Stream
     renderDrawerChatStream(ticketData);
 
@@ -389,6 +394,21 @@ window.closeAdminTicketDrawer = closeAdminTicketDrawer;
 // Drawer Triage Save & Status Update
 function initDrawerAdminActions() {
     const updateBtn = document.getElementById('btnUpdateAdminTriage');
+    const statusSelect = document.getElementById('triageStatusSelect');
+    const remarkInput = document.getElementById('triageRemarkInput');
+
+    if (statusSelect && remarkInput) {
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'resolved') {
+                remarkInput.placeholder = "Resolution note (e.g. Replaced RAM, configured printer, user verified...)";
+            } else if (this.value === 'in-progress') {
+                remarkInput.placeholder = "Progress note (e.g. Technician assigned, diagnostic running...)";
+            } else {
+                remarkInput.placeholder = "Optional note for employee...";
+            }
+        });
+    }
+
     if (!updateBtn) return;
 
     updateBtn.addEventListener('click', function () {
@@ -455,29 +475,34 @@ function initDrawerAdminActions() {
             }
         }
 
-        // Add a System Note to the Chat Thread
-        const chatStream = document.getElementById('adminChatStream');
-        if (chatStream) {
-            const eventBubble = document.createElement('div');
-            eventBubble.className = 'chat-system-event';
-            eventBubble.innerHTML = `
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Triage Updated: Status set to "${statusText}", Priority set to "${newPriorityVal}"</span>
-            `;
-            chatStream.appendChild(eventBubble);
-            chatStream.scrollTop = chatStream.scrollHeight;
-        }
+        const remarkInput = document.getElementById('triageRemarkInput');
+        const remarkText = remarkInput ? remarkInput.value.trim() : '';
 
-        // Persist to backend API
+        // Persist to backend API with message
         fetch('api/tickets.php?action=update_triage', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 ticket_no: currentOpenTicket.id,
                 status: statusText,
-                priority: newPriorityVal
+                priority: newPriorityVal,
+                message: remarkText
             })
-        }).catch(err => console.warn('Triage update save error:', err));
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.msg) {
+                if (currentOpenTicket) {
+                    if (!Array.isArray(currentOpenTicket.chat_thread)) {
+                        currentOpenTicket.chat_thread = [];
+                    }
+                    currentOpenTicket.chat_thread.push(data.msg);
+                    renderDrawerChatStream(currentOpenTicket);
+                }
+            }
+            if (remarkInput) remarkInput.value = '';
+        })
+        .catch(err => console.warn('Triage update save error:', err));
 
         if (typeof showPortalToast === 'function') {
             showPortalToast(`Ticket ${currentOpenTicket.id} triage updated successfully!`, 'success');
