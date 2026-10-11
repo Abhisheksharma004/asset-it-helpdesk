@@ -719,7 +719,8 @@
     align-items: center;
     justify-content: center;
     z-index: 99999;
-    padding: 16px;
+    padding: 20px 16px;
+    overflow-y: auto;
     animation: fadeInModal 0.2s ease-out;
 }
 
@@ -738,27 +739,15 @@
     }
 }
 
-.modal-box-large {
-    background: #ffffff;
-    border-radius: var(--radius-lg, 16px);
-    width: 100%;
-    max-width: 800px;
-    max-height: calc(100vh - 40px);
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 24px 50px rgba(0, 25, 56, 0.24);
-    animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-    overflow: hidden;
-    border: 1px solid var(--border-color, #e2e8f0);
-}
-
+.modal-box,
+.modal-box-large,
 .modal-box-medium {
     background: #ffffff;
     border-radius: var(--radius-lg, 16px);
     width: 100%;
-    max-width: 540px;
-    max-height: calc(100vh - 40px);
+    max-width: 660px;
+    max-height: calc(100vh - 36px);
+    max-height: calc(100dvh - 36px);
     display: flex;
     flex-direction: column;
     box-shadow: 0 24px 50px rgba(0, 25, 56, 0.24);
@@ -766,6 +755,26 @@
     position: relative;
     overflow: hidden;
     border: 1px solid var(--border-color, #e2e8f0);
+    margin: auto;
+}
+
+.modal-box-large {
+    max-width: 800px;
+}
+
+.modal-box-medium {
+    max-width: 540px;
+}
+
+.modal-box form,
+.modal-box-large form,
+.modal-box-medium form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin: 0;
 }
 
 @keyframes modalPop {
@@ -863,13 +872,32 @@
 
 /* Modal Body & Forms */
 .modal-body {
-    padding: 22px 26px;
+    padding: 18px 24px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     flex: 1;
+    min-height: 0;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .modal-footer {
-    padding: 16px 26px;
+    padding: 14px 24px;
     border-top: 1px solid var(--border-color, #e2e8f0);
     display: flex;
     align-items: center;
@@ -882,8 +910,8 @@
 .modal-form-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 15px;
+    gap: 5px;
+    margin-bottom: 11px;
     width: 100%;
 }
 

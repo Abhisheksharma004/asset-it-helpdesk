@@ -1092,7 +1092,8 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    padding: 20px;
+    padding: 20px 16px;
+    overflow-y: auto;
 }
 
 .modal-overlay.active {
@@ -1104,10 +1105,24 @@ body {
     border-radius: var(--radius-md);
     width: 100%;
     max-width: 500px;
+    max-height: calc(100vh - 36px);
+    max-height: calc(100dvh - 36px);
+    display: flex;
+    flex-direction: column;
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-color);
     overflow: hidden;
     animation: modalPop 0.25s ease-out;
+    margin: auto;
+}
+
+.modal-box form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin: 0;
 }
 
 @keyframes modalPop {
@@ -1122,6 +1137,7 @@ body {
     align-items: center;
     justify-content: space-between;
     background: #f8fafc;
+    flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -1152,6 +1168,14 @@ body {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.modal-footer {
+    flex-shrink: 0;
 }
 
 .modal-form-group {

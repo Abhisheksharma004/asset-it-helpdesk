@@ -786,16 +786,16 @@ include 'includes/topbar.php';
                     </div>
                 </div>
 
-                <!-- Row 6: Total Cost -->
-                <div class="modal-form-group">
-                    <label for="formCost">Total Cost (₹ / INR)</label>
-                    <input type="number" step="0.01" id="formCost" placeholder="e.g. 5000" value="0">
-                </div>
-
-                <!-- Row 7: Notes -->
-                <div class="modal-form-group" style="margin-bottom: 0;">
-                    <label for="formNotes">Notes &amp; Remarks</label>
-                    <textarea id="formNotes" rows="2" placeholder="e.g. Assigned to team. Single-tenant installation."></textarea>
+                <!-- Row 6: Total Cost & Notes in 2-Column Grid -->
+                <div class="form-grid-2">
+                    <div class="modal-form-group">
+                        <label for="formCost">Total Cost (₹ / INR)</label>
+                        <input type="number" step="0.01" id="formCost" placeholder="e.g. 5000" value="0">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="formNotes">Notes &amp; Remarks</label>
+                        <input type="text" id="formNotes" placeholder="e.g. Assigned to team. Single-tenant.">
+                    </div>
                 </div>
 
             </div>
