@@ -9,7 +9,7 @@
 ?>
         <!-- Dashboard Footer -->
         <footer class="dashboard-footer">
-            <div>© 2026 Asset IT Helpdesk Portal. All rights reserved.</div>
+            <div>© 2026 Viros Entrepreneurs IT Solutions Pvt. Ltd. All rights reserved.</div>
             <div>
                 Design and Maintain by <a href="https://virosentrepreneurs.com" target="_blank">Viros</a>
             </div>

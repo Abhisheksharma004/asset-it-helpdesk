@@ -826,7 +826,8 @@
     background: #fee2e2;
 }
 
-/* Modal Wizard Tabs */
+/* Modal Wizard Tabs (Matching assets.php & asset_assignment.php) */
+.modal-tabs-header,
 .modal-tabs-nav {
     display: flex;
     background: #f8fafc;
@@ -1256,6 +1257,28 @@
     border-radius: 8px;
     color: #64748b;
     font-size: 12px;
+.duration-pill-btn {
+    border-radius: 20px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: var(--text-secondary, #64748b) !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+.duration-pill-btn:hover {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    background: #f0f9ff !important;
+}
+
+.duration-pill-btn.active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0284c7 !important;
 }
 
 @media (max-width: 768px) {

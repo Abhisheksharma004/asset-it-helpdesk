@@ -682,7 +682,7 @@ include 'includes/topbar.php';
      MODAL 1: ADD / EDIT SOFTWARE LICENSE (CLEAN & SIMPLE DESIGN)
      ========================================================================= -->
 <div class="modal-overlay" id="addLicenseModalOverlay" style="display: none;">
-    <div class="modal-box" style="max-width: 660px;">
+    <div class="modal-box" style="max-width: 780px;">
         <div class="modal-header">
             <h3 id="modalLicenseTitle">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);">
@@ -695,118 +695,131 @@ include 'includes/topbar.php';
             <button type="button" class="modal-close-btn" onclick="closeAddLicenseModal()" title="Close">&times;</button>
         </div>
 
+        <!-- Modal Tab Headers (Exact pattern from assets.php & asset_assignment.php) -->
+        <div class="modal-tabs-header">
+            <button type="button" class="modal-tab-btn active" id="tabBtn_basic" onclick="switchModalTab('basic')">General Info</button>
+            <button type="button" class="modal-tab-btn" id="tabBtn_licensing" onclick="switchModalTab('licensing')">License &amp; Key</button>
+            <button type="button" class="modal-tab-btn" id="tabBtn_procurement" onclick="switchModalTab('procurement')">Procurement &amp; Cost</button>
+        </div>
+
         <form id="licenseForm" onsubmit="saveLicenseForm(event)">
             <input type="hidden" id="editLicenseId" value="">
             <div class="modal-body" style="padding: 20px 24px;">
                 
-                <!-- Row 1: Name & Publisher -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="formSoftwareName">Software Name <span class="req">*</span></label>
-                        <input type="text" id="formSoftwareName" placeholder="e.g. Adobe Creative Cloud, Windows 11" required>
+                <!-- Tab Pane 1: General Info -->
+                <div class="modal-tab-pane active" id="modal_pane_basic">
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="formSoftwareName">Software Name <span class="req">*</span></label>
+                            <input type="text" id="formSoftwareName" placeholder="e.g. Adobe Creative Cloud, Windows 11" required>
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="formPublisher">Publisher / Manufacturer <span class="req">*</span></label>
+                            <input type="text" id="formPublisher" placeholder="e.g. Microsoft, Adobe, JetBrains" required>
+                        </div>
                     </div>
-                    <div class="modal-form-group">
-                        <label for="formPublisher">Publisher / Manufacturer <span class="req">*</span></label>
-                        <input type="text" id="formPublisher" placeholder="e.g. Microsoft, Adobe, JetBrains" required>
+
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="formCategory">Category <span class="req">*</span></label>
+                            <select id="formCategory" required>
+                                <option value="Office & Productivity">Office &amp; Productivity</option>
+                                <option value="Developer Tools">Developer Tools</option>
+                                <option value="Design & Media">Design &amp; Media</option>
+                                <option value="Operating Systems">Operating Systems</option>
+                                <option value="Security & Antivirus">Security &amp; Antivirus</option>
+                                <option value="Cloud & SaaS">Cloud &amp; SaaS</option>
+                                <option value="Utilities & IT Ops">Utilities &amp; IT Ops</option>
+                            </select>
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="formVersion">Version / Edition</label>
+                            <input type="text" id="formVersion" placeholder="e.g. 2026 Enterprise, Pro, v24">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Row 2: Category & Version -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="formCategory">Category <span class="req">*</span></label>
-                        <select id="formCategory" required>
-                            <option value="Office & Productivity">Office &amp; Productivity</option>
-                            <option value="Developer Tools">Developer Tools</option>
-                            <option value="Design & Media">Design &amp; Media</option>
-                            <option value="Operating Systems">Operating Systems</option>
-                            <option value="Security & Antivirus">Security &amp; Antivirus</option>
-                            <option value="Cloud & SaaS">Cloud &amp; SaaS</option>
-                            <option value="Utilities & IT Ops">Utilities &amp; IT Ops</option>
-                        </select>
+                <!-- Tab Pane 2: License & Key -->
+                <div class="modal-tab-pane" id="modal_pane_licensing">
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="formLicenseType">License Model / Type <span class="req">*</span></label>
+                            <select id="formLicenseType" required>
+                                <option value="SaaS Subscription">SaaS Subscription</option>
+                                <option value="Per-Seat / Volume">Per-Seat / Volume</option>
+                                <option value="OEM / Perpetual">OEM / Perpetual</option>
+                                <option value="Perpetual">Perpetual (One-Time)</option>
+                                <option value="Enterprise Agreement">Enterprise Agreement</option>
+                            </select>
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="formStatus">License Status <span class="req">*</span></label>
+                            <select id="formStatus">
+                                <option value="Active" selected>Active</option>
+                                <option value="Expiring Soon">Expiring Soon</option>
+                                <option value="Expired">Expired</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="modal-form-group">
-                        <label for="formVersion">Version / Edition</label>
-                        <input type="text" id="formVersion" placeholder="e.g. 2026 Enterprise, Pro, v24">
-                    </div>
-                </div>
 
-                <!-- Row 3: License Model & License Key -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="formLicenseType">License Type <span class="req">*</span></label>
-                        <select id="formLicenseType" required>
-                            <option value="SaaS Subscription">SaaS Subscription</option>
-                            <option value="Per-Seat / Volume">Per-Seat / Volume</option>
-                            <option value="OEM / Perpetual">OEM / Perpetual</option>
-                            <option value="Perpetual">Perpetual (One-Time)</option>
-                            <option value="Enterprise Agreement">Enterprise Agreement</option>
-                        </select>
-                    </div>
                     <div class="modal-form-group">
                         <label for="formLicenseKey">
-                            <span>License Key</span>
-                            <a href="javascript:void(0)" onclick="generateSampleKey()" style="font-size: 11px; color: var(--cyan-primary); text-decoration: none; font-weight: 600;">+ Auto-Generate</a>
+                            <span>License Product Key</span>
+                            <a href="javascript:void(0)" onclick="generateSampleKey()" style="font-size: 11px; color: var(--cyan-primary); text-decoration: none; font-weight: 600;">+ Auto-Generate Key</a>
                         </label>
-                        <input type="text" id="formLicenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" style="font-family: monospace;">
+                        <input type="text" id="formLicenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" style="font-family: monospace; font-size: 13.5px; font-weight: 600;">
                     </div>
                 </div>
 
-                <!-- Row 4: Vendor & Status -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="formVendor">Vendor / Supplier</label>
-                        <select id="formVendor">
-                            <option value="">-- Select Vendor --</option>
-                            <?php foreach ($vendorsList as $vnd): ?>
-                                <option value="<?php echo htmlspecialchars($vnd); ?>"><?php echo htmlspecialchars($vnd); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                <!-- Tab Pane 3: Procurement & Cost -->
+                <div class="modal-tab-pane" id="modal_pane_procurement">
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="formVendor">Supplier / Vendor</label>
+                            <select id="formVendor">
+                                <option value="">-- Select Vendor --</option>
+                                <?php foreach ($vendorsList as $vnd): ?>
+                                    <option value="<?php echo htmlspecialchars($vnd); ?>"><?php echo htmlspecialchars($vnd); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="formCost">Total Cost (₹ / INR)</label>
+                            <input type="number" step="0.01" id="formCost" placeholder="e.g. 5000" value="0">
+                        </div>
                     </div>
-                    <div class="modal-form-group">
-                        <label for="formStatus">Status</label>
-                        <select id="formStatus">
-                            <option value="Active">Active</option>
-                            <option value="Expiring Soon">Expiring Soon</option>
-                            <option value="Expired">Expired</option>
-                        </select>
-                    </div>
-                </div>
 
-                <!-- Row 5: Purchase Date & Expiry Date -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="formPurchaseDate">Purchase Date</label>
-                        <input type="date" id="formPurchaseDate" value="<?php echo date('Y-m-d'); ?>">
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="formPurchaseDate">Purchase Date</label>
+                            <input type="date" id="formPurchaseDate" value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="formExpiryDate">Expiry / Renewal Date</label>
+                            <input type="date" id="formExpiryDate">
+                            <small style="font-size: 11px; color: #64748b; margin-top: 2px;">Leave empty if lifetime / perpetual.</small>
+                        </div>
                     </div>
-                    <div class="modal-form-group">
-                        <label for="formExpiryDate">Expiry / Renewal Date</label>
-                        <input type="date" id="formExpiryDate">
-                        <small style="font-size: 11px; color: #64748b; margin-top: 2px;">Leave empty if lifetime / perpetual.</small>
-                    </div>
-                </div>
 
-                <!-- Row 6: Total Cost & Notes in 2-Column Grid -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="formCost">Total Cost (₹ / INR)</label>
-                        <input type="number" step="0.01" id="formCost" placeholder="e.g. 5000" value="0">
-                    </div>
-                    <div class="modal-form-group">
+                    <div class="modal-form-group" style="margin-bottom: 0;">
                         <label for="formNotes">Notes &amp; Remarks</label>
-                        <input type="text" id="formNotes" placeholder="e.g. Assigned to team. Single-tenant.">
+                        <input type="text" id="formNotes" placeholder="e.g. Assigned to team. Single-tenant installation.">
                     </div>
                 </div>
 
             </div>
 
-            <!-- Modal Footer -->
+            <!-- Modal Footer (matching assets.php & asset_assignment.php) -->
             <div class="modal-footer" style="padding: 14px 24px;">
                 <button type="button" class="btn-secondary" onclick="closeAddLicenseModal()">Cancel</button>
-                <button type="submit" class="btn-primary" id="saveLicenseBtn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Save License
-                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-secondary" id="modalPrevStepBtn" onclick="navigateModalStep(-1)" style="display: none;">Previous</button>
+                    <button type="button" class="btn-secondary" id="modalNextStepBtn" onclick="navigateModalStep(1)">Next Step &rarr;</button>
+                    <button type="submit" class="btn-primary" id="saveLicenseBtn">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Save License
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -816,7 +829,7 @@ include 'includes/topbar.php';
      MODAL 2: RENEW SOFTWARE LICENSE (ENTERPRISE SUBSCRIPTION RENEWAL)
      ========================================================================= -->
 <div class="modal-overlay" id="renewLicenseModalOverlay" style="display: none;">
-    <div class="modal-box" style="max-width: 680px;">
+    <div class="modal-box" style="max-width: 780px;">
         <div class="modal-header">
             <h3 id="modalRenewTitle" style="color: #0369a1;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0284c7;">
@@ -827,124 +840,152 @@ include 'includes/topbar.php';
             <button type="button" class="modal-close-btn" onclick="closeRenewLicenseModal()" title="Close">&times;</button>
         </div>
 
+        <!-- Modal Tab Headers (Exact pattern from assets.php & Modal 1) -->
+        <div class="modal-tabs-header">
+            <button type="button" class="modal-tab-btn active" id="tabRenewBtn_target" onclick="switchRenewModalTab('target')">Software Selection</button>
+            <button type="button" class="modal-tab-btn" id="tabRenewBtn_term" onclick="switchRenewModalTab('term')">Renewal Term &amp; Cost</button>
+            <button type="button" class="modal-tab-btn" id="tabRenewBtn_key" onclick="switchRenewModalTab('key')">Product Key &amp; Audit</button>
+        </div>
+
         <form id="renewLicenseForm" onsubmit="saveRenewLicenseForm(event)">
             <input type="hidden" id="renewLicenseId" value="">
             <div class="modal-body" style="padding: 20px 24px;">
 
-                <!-- Software Selection Dropdown (if opening from header or changing) -->
-                <div class="modal-form-group" id="renewSelectGroup">
-                    <label for="renewSelectLicense">Select Software License to Renew <span class="req">*</span></label>
-                    <select id="renewSelectLicense" onchange="onRenewLicenseSelectChange(this.value)">
-                        <?php foreach ($initialLicenses as $licOpt): ?>
-                            <option value="<?php echo $licOpt['id']; ?>">
-                                <?php echo htmlspecialchars($licOpt['name']); ?> (<?php echo htmlspecialchars($licOpt['publisher']); ?>) — Exp: <?php echo htmlspecialchars($licOpt['expiry_date']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <!-- Selected Software License Summary Card -->
-                <div class="renew-summary-card">
-                    <div class="renew-summary-left">
-                        <div class="software-logo-badge brand-default" id="renewLogoBadge" style="width: 44px; height: 44px; font-size: 15px;">
-                            SW
-                        </div>
-                        <div>
-                            <div class="renew-summary-title" id="renewSummaryName">—</div>
-                            <div class="renew-summary-sub" id="renewSummaryPublisher">—</div>
-                        </div>
-                    </div>
-                    <div class="renew-summary-stats">
-                        <div class="renew-stat-badge">
-                            <span class="stat-label">Current Expiry</span>
-                            <span class="stat-value" id="renewSummaryCurrentExpiry" style="color: #ea580c;">—</span>
-                        </div>
-                        <div class="renew-stat-badge">
-                            <span class="stat-label">Annual Spend</span>
-                            <span class="stat-value" id="renewSummaryCurrentCost">—</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Row 1: New Expiry Date & Renewal Cost -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="renewNewExpiryDate">New Expiry / Renewal Date <span class="req">*</span></label>
-                        <input type="date" id="renewNewExpiryDate" required>
-                    </div>
-                    <div class="modal-form-group">
-                        <label for="renewCost">Renewal Cost / Spend (₹ / INR) <span class="req">*</span></label>
-                        <input type="number" step="0.01" id="renewCost" placeholder="0" required>
-                    </div>
-                </div>
-
-                <!-- Row 2: Renewal PO / Invoice & Vendor -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="renewPoNumber">
-                            <span>Renewal PO / Invoice No.</span>
-                            <a href="javascript:void(0)" onclick="generateRenewPo()" style="font-size: 11px; color: #0284c7; text-decoration: none; font-weight: 600;">+ Auto-Generate</a>
-                        </label>
-                        <input type="text" id="renewPoNumber" placeholder="PO Number">
-                    </div>
-                    <div class="modal-form-group">
-                        <label for="renewVendor">Vendor / Reseller</label>
-                        <select id="renewVendor">
-                            <option value="">-- Select Vendor --</option>
-                            <?php foreach ($vendorsList as $vnd): ?>
-                                <option value="<?php echo htmlspecialchars($vnd); ?>"><?php echo htmlspecialchars($vnd); ?></option>
+                <!-- Tab Pane 1: Software Selection -->
+                <div class="modal-tab-pane active" id="modal_renew_pane_target">
+                    <!-- Software Selection Dropdown -->
+                    <div class="modal-form-group" id="renewSelectGroup">
+                        <label for="renewSelectLicense">Select Software License to Renew <span class="req">*</span></label>
+                        <select id="renewSelectLicense" onchange="onRenewLicenseSelectChange(this.value)">
+                            <?php foreach ($initialLicenses as $licOpt): ?>
+                                <option value="<?php echo $licOpt['id']; ?>">
+                                    <?php echo htmlspecialchars($licOpt['name']); ?> (<?php echo htmlspecialchars($licOpt['publisher']); ?>) — Exp: <?php echo htmlspecialchars($licOpt['expiry_date']); ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                </div>
 
-                <!-- Row 3: Product Key Update & Status -->
-                <div class="form-grid-2">
-                    <div class="modal-form-group">
-                        <label for="renewLicenseKey">
-                            <span>Updated Product Key (Optional)</span>
-                            <a href="javascript:void(0)" onclick="generateSampleRenewKey()" style="font-size: 11px; color: #0284c7; text-decoration: none; font-weight: 600;">+ New Key</a>
-                        </label>
-                        <input type="text" id="renewLicenseKey" placeholder="Leave empty to retain existing key" style="font-family: monospace;">
-                        <div style="font-size: 11.5px; color: #64748b; margin-top: 5px;">
-                            <span>Current (Old) Key: </span>
-                            <code id="renewCurrentKeyDisplay" style="font-family: monospace; font-weight: 700; color: #0f172a; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">—</code>
+                    <!-- Selected Software License Summary Card -->
+                    <div class="renew-summary-card">
+                        <div class="renew-summary-left">
+                            <div class="software-logo-badge brand-default" id="renewLogoBadge" style="width: 46px; height: 46px; font-size: 15px;">
+                                SW
+                            </div>
+                            <div>
+                                <div class="renew-summary-title" id="renewSummaryName">—</div>
+                                <div class="renew-summary-sub" id="renewSummaryPublisher">—</div>
+                            </div>
+                        </div>
+                        <div class="renew-summary-stats">
+                            <div class="renew-stat-badge">
+                                <span class="stat-label">Current Expiry</span>
+                                <span class="stat-value" id="renewSummaryCurrentExpiry" style="color: #ea580c;">—</span>
+                            </div>
+                            <div class="renew-stat-badge">
+                                <span class="stat-label">Annual Spend</span>
+                                <span class="stat-value" id="renewSummaryCurrentCost">—</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-form-group">
-                        <label for="renewStatus">Post-Renewal Status</label>
-                        <select id="renewStatus">
-                            <option value="Active" selected>Active</option>
-                            <option value="Expiring Soon">Expiring Soon</option>
-                        </select>
+
+                    <!-- Quick Renewal Duration Presets -->
+                    <div class="modal-form-group" style="margin-top: 14px; margin-bottom: 0;">
+                        <label style="font-size: 12.5px; font-weight: 700; color: var(--navy-primary);">Quick Renewal Duration</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+                            <button type="button" class="duration-pill-btn active" data-months="12" onclick="setRenewalDuration('12', this)">+ 1 Year (12 Months)</button>
+                            <button type="button" class="duration-pill-btn" data-months="24" onclick="setRenewalDuration('24', this)">+ 2 Years (24 Months)</button>
+                            <button type="button" class="duration-pill-btn" data-months="36" onclick="setRenewalDuration('36', this)">+ 3 Years (36 Months)</button>
+                            <button type="button" class="duration-pill-btn" data-months="custom" onclick="setRenewalDuration('custom', this)">Custom Date</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Row 4: Renewal Remarks -->
-                <div class="modal-form-group" style="margin-bottom: 0;">
-                    <label for="renewNotes">Renewal Notes &amp; Approvals</label>
-                    <textarea id="renewNotes" rows="2" placeholder="Renewal notes or justification"></textarea>
+                <!-- Tab Pane 2: Renewal Term & Cost -->
+                <div class="modal-tab-pane" id="modal_renew_pane_term">
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="renewNewExpiryDate">New Expiry / Extended Date <span class="req">*</span></label>
+                            <input type="date" id="renewNewExpiryDate" required>
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="renewCost">Renewal Cost / Spend (₹ / INR) <span class="req">*</span></label>
+                            <input type="number" step="0.01" id="renewCost" placeholder="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="renewPoNumber">
+                                <span>Renewal PO / Invoice No.</span>
+                                <a href="javascript:void(0)" onclick="generateRenewPo()" style="font-size: 11px; color: #0284c7; text-decoration: none; font-weight: 600;">+ Auto-Generate</a>
+                            </label>
+                            <input type="text" id="renewPoNumber" placeholder="PO Number">
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="renewVendor">Vendor / Reseller</label>
+                            <select id="renewVendor">
+                                <option value="">-- Select Vendor --</option>
+                                <?php foreach ($vendorsList as $vnd): ?>
+                                    <option value="<?php echo htmlspecialchars($vnd); ?>"><?php echo htmlspecialchars($vnd); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-form-group" style="margin-bottom: 0;">
+                        <label for="renewNotes">Renewal Notes &amp; Approvals</label>
+                        <input type="text" id="renewNotes" placeholder="Renewal notes, invoice notes or justification">
+                    </div>
                 </div>
 
-                <!-- Impact Notice -->
-                <div class="renew-notice-box">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: #16a34a; flex-shrink: 0;">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                    </svg>
-                    <span><strong>Compliance Notice:</strong> Confirming renewal will extend license validity, archive the previous key into audit logs, and reset status to <strong>Active</strong>.</span>
+                <!-- Tab Pane 3: Product Key & Audit -->
+                <div class="modal-tab-pane" id="modal_renew_pane_key">
+                    <div class="form-grid-2">
+                        <div class="modal-form-group">
+                            <label for="renewLicenseKey">
+                                <span>Updated Product Key (Optional)</span>
+                                <a href="javascript:void(0)" onclick="generateSampleRenewKey()" style="font-size: 11px; color: #0284c7; text-decoration: none; font-weight: 600;">+ New Key</a>
+                            </label>
+                            <input type="text" id="renewLicenseKey" placeholder="Leave empty to retain existing key" style="font-family: monospace;">
+                            <div style="font-size: 11.5px; color: #64748b; margin-top: 5px;">
+                                <span>Current (Old) Key: </span>
+                                <code id="renewCurrentKeyDisplay" style="font-family: monospace; font-weight: 700; color: #0f172a; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">—</code>
+                            </div>
+                        </div>
+                        <div class="modal-form-group">
+                            <label for="renewStatus">Post-Renewal Status</label>
+                            <select id="renewStatus">
+                                <option value="Active" selected>Active</option>
+                                <option value="Expiring Soon">Expiring Soon</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Impact Notice -->
+                    <div class="renew-notice-box" style="margin-top: 10px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: #16a34a; flex-shrink: 0;">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        <span><strong>Compliance Notice:</strong> Confirming renewal will extend license validity, archive the previous key into audit logs, and reset status to <strong>Active</strong>.</span>
+                    </div>
                 </div>
+
             </div>
 
             <!-- Modal Footer -->
             <div class="modal-footer" style="padding: 14px 24px;">
                 <button type="button" class="btn-secondary" onclick="closeRenewLicenseModal()">Cancel</button>
-                <button type="submit" class="btn-primary" id="saveRenewBtn" style="background: linear-gradient(135deg, #0284c7, #0369a1); border-color: #0284c7;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                    </svg>
-                    Confirm &amp; Renew License
-                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-secondary" id="renewPrevStepBtn" onclick="navigateRenewModalStep(-1)" style="display: none;">Previous</button>
+                    <button type="button" class="btn-secondary" id="renewNextStepBtn" onclick="navigateRenewModalStep(1)">Next Step &rarr;</button>
+                    <button type="submit" class="btn-primary" id="saveRenewBtn" style="background: linear-gradient(135deg, #0284c7, #0369a1); border-color: #0284c7;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                        Confirm &amp; Renew License
+                    </button>
+                </div>
             </div>
         </form>
     </div>

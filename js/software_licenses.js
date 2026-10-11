@@ -571,6 +571,8 @@
         if (licenseForm) licenseForm.reset();
         document.getElementById('formPurchaseDate').value = new Date().toISOString().split('T')[0];
 
+        switchModalTab('basic');
+
         addModalOverlay.style.display = 'flex';
         addModalOverlay.classList.add('active');
         addModalOverlay.classList.add('open');
@@ -612,6 +614,8 @@
         document.getElementById('formCost').value = lic.total_cost || '';
         document.getElementById('formStatus').value = lic.status || 'Active';
         document.getElementById('formNotes').value = lic.notes || '';
+
+        switchModalTab('basic');
 
         if (addModalOverlay) {
             addModalOverlay.style.display = 'flex';
@@ -749,6 +753,35 @@
     // =========================================================================
     // MODAL 2: RENEW SOFTWARE LICENSE (ACTIONS & FORM HANDLING)
     // =========================================================================
+    let currentRenewStep = 0;
+    const renewStepKeys = ['target', 'term', 'key'];
+
+    window.switchRenewModalTab = function (tabKey) {
+        const idx = renewStepKeys.indexOf(tabKey);
+        if (idx !== -1) {
+            currentRenewStep = idx;
+        }
+
+        renewStepKeys.forEach(k => {
+            const btn = document.getElementById(`tabRenewBtn_${k}`);
+            const pane = document.getElementById(`modal_renew_pane_${k}`);
+            if (btn) btn.classList.toggle('active', k === tabKey);
+            if (pane) pane.classList.toggle('active', k === tabKey);
+        });
+
+        const prevBtn = document.getElementById('renewPrevStepBtn');
+        const nextBtn = document.getElementById('renewNextStepBtn');
+        if (prevBtn) prevBtn.style.display = (currentRenewStep > 0) ? 'inline-flex' : 'none';
+        if (nextBtn) nextBtn.style.display = (currentRenewStep < renewStepKeys.length - 1) ? 'inline-flex' : 'none';
+    };
+
+    window.navigateRenewModalStep = function (direction) {
+        const newStep = currentRenewStep + direction;
+        if (newStep >= 0 && newStep < renewStepKeys.length) {
+            switchRenewModalTab(renewStepKeys[newStep]);
+        }
+    };
+
     window.openRenewModal = function (targetId) {
         if (!renewModalOverlay) return;
 
@@ -775,6 +808,7 @@
         }
 
         populateRenewModalData(selectedId);
+        switchRenewModalTab('target');
 
         renewModalOverlay.style.display = 'flex';
         renewModalOverlay.classList.add('active', 'open');
