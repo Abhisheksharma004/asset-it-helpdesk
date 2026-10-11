@@ -165,19 +165,22 @@ function switchDrawerTab(tabName) {
 
     const paneOverview = document.getElementById('pane_overview');
     const paneChat = document.getElementById('pane_chat');
+    const drawerFooter = document.getElementById('adminDrawerFooter');
 
     if (tabName === 'chat') {
         if (paneOverview) paneOverview.style.display = 'none';
         if (paneChat) {
-            paneChat.style.display = 'block';
+            paneChat.style.display = 'flex';
             const chatStream = document.getElementById('adminChatStream');
             if (chatStream) {
                 setTimeout(() => { chatStream.scrollTop = chatStream.scrollHeight; }, 60);
             }
         }
+        if (drawerFooter) drawerFooter.style.display = 'none';
     } else {
         if (paneOverview) paneOverview.style.display = 'block';
         if (paneChat) paneChat.style.display = 'none';
+        if (drawerFooter) drawerFooter.style.display = 'flex';
     }
 }
 window.switchDrawerTab = switchDrawerTab;
@@ -327,18 +330,33 @@ function renderDrawerChatStream(ticketData) {
             const isOutgoing = (msg.type === 'admin' || msg.type === 'tech');
             msgRow.className = 'chat-message-row ' + (isOutgoing ? 'outgoing' : 'incoming');
 
-            msgRow.innerHTML = `
-                <div class="chat-bubble-wrap">
-                    <div class="chat-meta">
-                        <span class="chat-author">${escapeHtml(msg.author || (isOutgoing ? 'IT Support' : reqName))}</span>
-                        <span class="chat-timestamp">${escapeHtml(msg.time || '')}</span>
+            if (isOutgoing) {
+                msgRow.innerHTML = `
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="chat-author">${escapeHtml(msg.author || 'IT Support')}</span>
+                            <span class="chat-timestamp">${escapeHtml(msg.time || '')}</span>
+                        </div>
+                        <div class="chat-bubble">
+                            ${escapeHtml(msg.text)}
+                        </div>
                     </div>
-                    <div class="chat-bubble">
-                        ${escapeHtml(msg.text)}
+                    <div class="chat-avatar tech">${escapeHtml(msg.avatar || 'IT')}</div>
+                `;
+            } else {
+                msgRow.innerHTML = `
+                    <div class="chat-avatar user">${escapeHtml(msg.avatar || reqInitials)}</div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="chat-author">${escapeHtml(msg.author || reqName)}</span>
+                            <span class="chat-timestamp">${escapeHtml(msg.time || '')}</span>
+                        </div>
+                        <div class="chat-bubble">
+                            ${escapeHtml(msg.text)}
+                        </div>
                     </div>
-                </div>
-                <div class="chat-avatar ${isOutgoing ? 'tech' : 'user'}">${escapeHtml(msg.avatar || (isOutgoing ? 'IT' : reqInitials))}</div>
-            `;
+                `;
+            }
             chatStream.appendChild(msgRow);
             messageCount++;
         });
@@ -548,12 +566,26 @@ function initDrawerChatReply() {
                     ${escapeHtml(text)}
                 </div>
             </div>
-            <div class="chat-avatar admin">ADM</div>
+            <div class="chat-avatar tech">IT</div>
         `;
 
         chatStream.appendChild(newMsgRow);
         input.value = '';
         chatStream.scrollTop = chatStream.scrollHeight;
+
+        // Push to local ticket chat_thread cache
+        if (currentOpenTicket) {
+            if (!Array.isArray(currentOpenTicket.chat_thread)) {
+                currentOpenTicket.chat_thread = [];
+            }
+            currentOpenTicket.chat_thread.push({
+                author: 'IT Service Desk Admin',
+                avatar: 'IT',
+                type: 'admin',
+                time: nowFormatted,
+                text: text
+            });
+        }
 
         // Increment Chat badge count
         const chatBadge = document.getElementById('drawerChatCountBadge');

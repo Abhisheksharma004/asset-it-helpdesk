@@ -11,79 +11,109 @@ document.addEventListener('DOMContentLoaded', function () {
     initTicketSearch();
     initNewTicketForm();
     initTicketReplyForm();
+    updateAllTicketCounters();
 });
 
-// Status Pill Filter
+// Calculate and update all KPI stats, pill counter badges, and empty-state display
+function updateAllTicketCounters() {
+    const rows = document.querySelectorAll('#empTicketsTable tbody tr.emp-ticket-row');
+    const total = rows.length;
+    let inProgress = 0;
+    let resolved = 0;
+
+    rows.forEach(r => {
+        const st = (r.getAttribute('data-status') || '').toLowerCase();
+        if (st === 'resolved' || st.includes('resolved') || st.includes('closed')) {
+            resolved++;
+        } else {
+            inProgress++;
+        }
+    });
+
+    // Update filter pill counts
+    const pAll = document.getElementById('pillAllCount');
+    const pProg = document.getElementById('pillProgressCount');
+    const pRes = document.getElementById('pillResolvedCount');
+    if (pAll) pAll.textContent = total;
+    if (pProg) pProg.textContent = inProgress;
+    if (pRes) pRes.textContent = resolved;
+
+    // Update top KPI cards
+    const statTotal = document.getElementById('statTotalTickets');
+    const statOpen = document.getElementById('statOpenTickets');
+    const statResolved = document.getElementById('statResolvedTickets');
+    if (statTotal) statTotal.textContent = total;
+    if (statOpen) statOpen.textContent = inProgress;
+    if (statResolved) statResolved.textContent = resolved;
+
+    // Toggle Empty State message
+    const emptyState = document.getElementById('ticketsEmptyState');
+    if (emptyState) {
+        emptyState.style.display = total === 0 ? 'block' : 'none';
+    }
+}
+
+// Unified filter & search application across all current table rows
+function applyTicketFilterAndSearch() {
+    const activeFilterBtn = document.querySelector('.tickets-pill-btn.active');
+    const filterStatus = activeFilterBtn ? activeFilterBtn.getAttribute('data-status') : 'all';
+    const searchVal = document.getElementById('ticketSearchInput')?.value.toLowerCase().trim() || '';
+    const tableRows = document.querySelectorAll('#empTicketsTable tbody tr.emp-ticket-row');
+    const emptyState = document.getElementById('ticketsEmptyState');
+    let visibleCount = 0;
+
+    tableRows.forEach(row => {
+        const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+        const rowText = row.innerText.toLowerCase();
+
+        let matchesFilter = false;
+        if (filterStatus === 'all') {
+            matchesFilter = true;
+        } else if (filterStatus === 'resolved') {
+            matchesFilter = (rowStatus === 'resolved' || rowStatus.includes('resolved') || rowStatus.includes('closed'));
+        } else if (filterStatus === 'in-progress') {
+            matchesFilter = (rowStatus === 'in-progress' || rowStatus === 'open' || !rowStatus.includes('resolved'));
+        } else {
+            matchesFilter = (rowStatus === filterStatus);
+        }
+
+        const matchesSearch = (searchVal === '' || rowText.includes(searchVal));
+
+        if (matchesFilter && matchesSearch) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (emptyState) {
+        emptyState.style.display = (visibleCount === 0) ? 'block' : 'none';
+    }
+}
+
+// Status Pill Filter Setup
 function initTicketFilters() {
     const pillBtns = document.querySelectorAll('.tickets-pill-btn');
-    const tableRows = document.querySelectorAll('.emp-ticket-row');
-    const emptyState = document.getElementById('ticketsEmptyState');
-
     pillBtns.forEach(btn => {
         btn.addEventListener('click', function () {
             pillBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-
-            const filterStatus = this.getAttribute('data-status');
-            const searchVal = document.getElementById('ticketSearchInput')?.value.toLowerCase().trim() || '';
-            let visibleCount = 0;
-
-            tableRows.forEach(row => {
-                const rowStatus = row.getAttribute('data-status');
-                const rowText = row.innerText.toLowerCase();
-
-                const matchesFilter = (filterStatus === 'all' || rowStatus === filterStatus);
-                const matchesSearch = (searchVal === '' || rowText.includes(searchVal));
-
-                if (matchesFilter && matchesSearch) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            if (emptyState) {
-                emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
-            }
+            applyTicketFilterAndSearch();
         });
     });
 }
 
-// Live Search Input
+// Live Search Input Setup
 function initTicketSearch() {
     const searchInput = document.getElementById('ticketSearchInput');
-    const tableRows = document.querySelectorAll('.emp-ticket-row');
-    const emptyState = document.getElementById('ticketsEmptyState');
-
     if (!searchInput) return;
 
     searchInput.addEventListener('input', function () {
-        const searchVal = this.value.toLowerCase().trim();
-        const activeFilterBtn = document.querySelector('.tickets-pill-btn.active');
-        const activeFilter = activeFilterBtn ? activeFilterBtn.getAttribute('data-status') : 'all';
-        let visibleCount = 0;
-
-        tableRows.forEach(row => {
-            const rowStatus = row.getAttribute('data-status');
-            const rowText = row.innerText.toLowerCase();
-
-            const matchesFilter = (activeFilter === 'all' || rowStatus === activeFilter);
-            const matchesSearch = (searchVal === '' || rowText.includes(searchVal));
-
-            if (matchesFilter && matchesSearch) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        if (emptyState) {
-            emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
-        }
+        applyTicketFilterAndSearch();
     });
 }
+
 
 // Open Raise New Ticket Modal
 function openNewTicketModal(assetTag = '') {
@@ -128,17 +158,17 @@ function initNewTicketForm() {
         const btn = form.querySelector('button[type="submit"]');
         const origContent = btn ? btn.innerHTML : '';
 
-        const subjectEl  = form.querySelector('#ticketSubjectInput') || document.getElementById('ticketSubjectInput');
-        const descEl     = form.querySelector('#ticketDescTextarea') || document.getElementById('ticketDescTextarea');
-        const assetEl    = form.querySelector('#ticketAssetSelect') || document.getElementById('ticketAssetSelect');
+        const subjectEl = form.querySelector('#ticketSubjectInput') || document.getElementById('ticketSubjectInput');
+        const descEl = form.querySelector('#ticketDescTextarea') || document.getElementById('ticketDescTextarea');
+        const assetEl = form.querySelector('#ticketAssetSelect') || document.getElementById('ticketAssetSelect');
         const priorityEl = form.querySelector('#ticketUrgencySelect') || document.getElementById('ticketUrgencySelect');
-        const dtInput    = form.querySelector('#ticketDateTimeInput') || document.getElementById('ticketDateTimeInput');
+        const dtInput = form.querySelector('#ticketDateTimeInput') || document.getElementById('ticketDateTimeInput');
 
-        const subjectVal  = subjectEl ? subjectEl.value.trim() : '';
-        const descVal     = descEl ? descEl.value.trim() : '';
-        const assetVal    = (assetEl && assetEl.value) ? assetEl.value.trim() : 'General Workstation / Laptop';
+        const subjectVal = subjectEl ? subjectEl.value.trim() : '';
+        const descVal = descEl ? descEl.value.trim() : '';
+        const assetVal = (assetEl && assetEl.value) ? assetEl.value.trim() : 'General Workstation / Laptop';
         const priorityVal = (priorityEl && priorityEl.value) ? priorityEl.value.trim() : 'Medium';
-        let rawDt         = dtInput ? dtInput.value.trim() : '';
+        let rawDt = dtInput ? dtInput.value.trim() : '';
 
         if (!subjectVal) {
             alert('Please enter an Issue Subject.');
@@ -164,7 +194,7 @@ function initNewTicketForm() {
         }
 
         const emp = window.currentActiveEmployee || {};
-        const empId   = form.querySelector('input[name="employee_id"]')?.value || emp.id || 0;
+        const empId = form.querySelector('input[name="employee_id"]')?.value || emp.id || 0;
         const empName = form.querySelector('input[name="employee_name"]')?.value || emp.name || 'Employee Member';
         const empCode = form.querySelector('input[name="emp_code"]')?.value || emp.code || 'EMP-001';
         const empDept = form.querySelector('input[name="department"]')?.value || emp.department || 'General Staff';
@@ -188,56 +218,54 @@ function initNewTicketForm() {
             },
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
-        .then(data => {
-            delete form.dataset.submitting;
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = origContent;
-            }
-
-            if (data.success && data.ticket) {
-                closeModal('employeeTicketModal');
-                closeModal('newTicketModal');
-                form.reset();
-
-                // Re-sync date time to live now after reset
-                if (dtInput) {
-                    dtInput.value = getNowLocalDatetimeString();
+            .then(res => res.json())
+            .then(data => {
+                delete form.dataset.submitting;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origContent;
                 }
 
-                const tkt = data.ticket;
-                insertTicketTableRow(tkt);
+                if (data.success && data.ticket) {
+                    closeModal('employeeTicketModal');
+                    closeModal('newTicketModal');
+                    form.reset();
 
-                // Update counter numbers
-                const totalCountEl = document.getElementById('statTotalTickets');
-                const openCountEl = document.getElementById('statOpenTickets');
-                if (totalCountEl) totalCountEl.textContent = parseInt(totalCountEl.textContent || '0') + 1;
-                if (openCountEl) openCountEl.textContent = parseInt(openCountEl.textContent || '0') + 1;
+                    // Re-sync date time to live now after reset
+                    if (dtInput) {
+                        dtInput.value = getNowLocalDatetimeString();
+                    }
 
-                if (typeof showPortalToast === 'function') {
-                    showPortalToast(`Ticket ${tkt.id} registered successfully in IT Helpdesk!`, 'success');
+                    const tkt = data.ticket;
+                    insertTicketTableRow(tkt);
+
+                    // Refresh all counters, pill badges, and hide empty state
+                    updateAllTicketCounters();
+                    applyTicketFilterAndSearch();
+
+                    if (typeof showPortalToast === 'function') {
+                        showPortalToast(`Ticket ${tkt.id} registered successfully in IT Helpdesk!`, 'success');
+                    } else {
+                        alert(`Ticket ${tkt.id} created successfully.`);
+                    }
                 } else {
-                    alert(`Ticket ${tkt.id} created successfully.`);
+                    throw new Error(data.message || 'Submission failed');
                 }
-            } else {
-                throw new Error(data.message || 'Submission failed');
-            }
-        })
-        .catch(err => {
-            delete form.dataset.submitting;
-            console.error('API submission failed:', err);
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = origContent;
-            }
-            const errMsg = err.message || 'Network error occurred while submitting ticket.';
-            if (typeof showPortalToast === 'function') {
-                showPortalToast(`Ticket registration failed: ${errMsg}`, 'error');
-            } else {
-                alert(`Error: ${errMsg}`);
-            }
-        });
+            })
+            .catch(err => {
+                delete form.dataset.submitting;
+                console.error('API submission failed:', err);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origContent;
+                }
+                const errMsg = err.message || 'Network error occurred while submitting ticket.';
+                if (typeof showPortalToast === 'function') {
+                    showPortalToast(`Ticket registration failed: ${errMsg}`, 'error');
+                } else {
+                    alert(`Error: ${errMsg}`);
+                }
+            });
     });
 }
 
@@ -296,6 +324,14 @@ function insertTicketTableRow(tkt) {
     }
 
     tbody.insertBefore(newRow, tbody.firstChild);
+
+    // Immediately hide empty state & refresh all pill counts + stats
+    const emptyState = document.getElementById('ticketsEmptyState');
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+    updateAllTicketCounters();
+    applyTicketFilterAndSearch();
 }
 
 // View Ticket Details Slide-Over Drawer
@@ -444,13 +480,13 @@ function initTicketReplyForm() {
         const authorName = emp.name || 'You';
 
         const now = new Date();
-        const nowFormatted = now.toLocaleString('en-GB', { 
-            day: '2-digit', 
-            month: 'short', 
-            year: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: true 
+        const nowFormatted = now.toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
         });
 
         // Optimistically append outgoing chat message
@@ -500,15 +536,15 @@ function initTicketReplyForm() {
                 author: authorName
             })
         })
-        .then(res => res.json())
-        .then(data => {
-            if (typeof showPortalToast === 'function') {
-                showPortalToast('Message posted to IT Support conversation.', 'success');
-            }
-        })
-        .catch(err => {
-            console.warn('Reply save error:', err);
-        });
+            .then(res => res.json())
+            .then(data => {
+                if (typeof showPortalToast === 'function') {
+                    showPortalToast('Message posted to IT Support conversation.', 'success');
+                }
+            })
+            .catch(err => {
+                console.warn('Reply save error:', err);
+            });
     });
 }
 

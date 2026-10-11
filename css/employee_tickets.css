@@ -489,8 +489,9 @@
 }
 
 .ticket-chat-stream {
-    padding: 16px;
-    max-height: 380px;
+    flex: 1;
+    min-height: 0;
+    padding: 20px 24px;
     overflow-y: auto;
     background: #f8fafc;
     display: flex;

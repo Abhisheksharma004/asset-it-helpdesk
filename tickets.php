@@ -529,10 +529,10 @@ include 'includes/topbar.php';
     </div>
 
     <!-- Drawer Content Panes -->
-    <div class="drawer-content" style="flex: 1; overflow-y: auto; padding: 22px;">
+    <div class="drawer-content" id="adminDrawerContent" style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
 
         <!-- PANE 1: Overview & Triage (active by default) -->
-        <div class="drawer-tab-pane active" id="pane_overview" style="display: block;">
+        <div class="drawer-tab-pane active" id="pane_overview" style="display: block; flex: 1; overflow-y: auto; padding: 22px;">
             
             <!-- Requester Profile Section (.drawer-section from assets.php) -->
             <div class="drawer-section">
@@ -653,41 +653,40 @@ include 'includes/topbar.php';
 
         </div>
 
-        <!-- PANE 2: Support Conversation Thread (hidden by default) -->
-        <div class="drawer-tab-pane" id="pane_chat" style="display: none;">
-            <div class="ticket-chat-container">
-                <div class="ticket-chat-header">
-                    <div class="ticket-chat-header-title">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        <span>Support Conversation & Updates</span>
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 5px;">
-                        <span style="color: #10b981; font-size: 10px;">●</span> Active Thread
-                    </div>
+        <!-- PANE 2: Support Conversation Thread (Full-height modern chat stream) -->
+        <div class="drawer-tab-pane" id="pane_chat" style="display: none; flex: 1; min-height: 0; flex-direction: column; height: 100%;">
+            <!-- Sub-bar matching active thread status -->
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border-bottom: 1px solid var(--border-color); padding: 10px 24px; font-size: 12px; flex-shrink: 0;">
+                <div style="font-weight: 700; color: var(--navy-primary); display: flex; align-items: center; gap: 7px; font-size: 13px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Support Conversation & Updates</span>
                 </div>
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                    <span style="color: #10b981; font-size: 10px;">●</span> Active Thread
+                </div>
+            </div>
 
-                <!-- Scrollable Chat Stream (with real date & time) -->
-                <div class="ticket-chat-stream" id="adminChatStream" style="max-height: 420px; min-height: 260px; overflow-y: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 16px; background: #ffffff;">
-                    <!-- Populated dynamically via js/tickets.js -->
-                </div>
+            <!-- Scrollable Chat Stream (takes full remaining height) -->
+            <div class="ticket-chat-stream" id="adminChatStream" style="flex: 1; min-height: 0; max-height: none; overflow-y: auto; padding: 20px 24px; background: #f8fafc; display: flex; flex-direction: column; gap: 14px;">
+                <!-- Populated dynamically via js/tickets.js -->
+            </div>
 
-                <!-- Chat Bottom Input Bar for Admin -->
-                <div class="chat-input-container" style="padding: 12px 16px; background: #f8fafc; border-top: 1px solid var(--border-color);">
-                    <form id="adminDrawerChatForm" style="display: flex; gap: 10px; align-items: center; background: #ffffff; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 5px 8px 5px 14px;">
-                        <input type="text" id="adminDrawerChatInput" required placeholder="Reply to employee as IT Administrator..." style="flex: 1; border: none; outline: none; font-size: 13px; color: var(--navy-primary); background: transparent;">
-                        <button type="submit" class="btn-primary" style="padding: 8px 18px; border-radius: 6px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                            <span>Send Reply</span>
-                        </button>
-                    </form>
-                </div>
+            <!-- Pinned Chat Bottom Input Bar for Admin -->
+            <div class="chat-input-container" style="padding: 14px 24px; background: #ffffff; border-top: 1px solid var(--border-color); flex-shrink: 0;">
+                <form id="adminDrawerChatForm" style="display: flex; gap: 10px; align-items: center; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 6px 10px 6px 14px; transition: border-color 0.2s;">
+                    <input type="text" id="adminDrawerChatInput" required placeholder="Reply to employee as IT Administrator..." style="flex: 1; border: none; outline: none; font-size: 13px; color: var(--navy-primary); background: transparent;">
+                    <button type="submit" class="btn-primary" style="padding: 9px 20px; border-radius: 6px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        <span>Send Reply</span>
+                    </button>
+                </form>
             </div>
         </div>
 
     </div>
 
-    <!-- Drawer Footer (matching assets.php) -->
-    <div style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: #f8fafc; flex-shrink: 0;">
+    <!-- Drawer Footer (matching assets.php, shown on overview tab) -->
+    <div id="adminDrawerFooter" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: #f8fafc; flex-shrink: 0;">
         <span style="font-size: 11.5px; color: var(--text-muted);">VIROS Enterprise IT Service Desk Engine</span>
         <button type="button" class="btn-secondary" onclick="closeAdminTicketDrawer()" style="padding: 8px 20px;">Close Drawer</button>
     </div>

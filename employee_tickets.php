@@ -307,7 +307,7 @@ include 'includes/employee_topbar.php';
                 </svg>
             </div>
             <div class="tickets-stat-text">
-                <div class="val"><?php echo $resolvedCount; ?></div>
+                <div class="val" id="statResolvedTickets"><?php echo $resolvedCount; ?></div>
                 <div class="lbl">Resolved & Closed</div>
             </div>
         </div>
@@ -340,13 +340,13 @@ include 'includes/employee_topbar.php';
         <div class="tickets-toolbar">
             <div class="tickets-filter-pills">
                 <button type="button" class="tickets-pill-btn active" data-status="all">
-                    All Tickets <span class="tickets-pill-count"><?php echo $totalTicketsCount; ?></span>
+                    All Tickets <span class="tickets-pill-count" id="pillAllCount"><?php echo $totalTicketsCount; ?></span>
                 </button>
                 <button type="button" class="tickets-pill-btn" data-status="in-progress">
-                    In Progress <span class="tickets-pill-count"><?php echo $inProgressCount; ?></span>
+                    In Progress <span class="tickets-pill-count" id="pillProgressCount"><?php echo $inProgressCount; ?></span>
                 </button>
                 <button type="button" class="tickets-pill-btn" data-status="resolved">
-                    Resolved & Closed <span class="tickets-pill-count"><?php echo $resolvedCount; ?></span>
+                    Resolved & Closed <span class="tickets-pill-count" id="pillResolvedCount"><?php echo $resolvedCount; ?></span>
                 </button>
             </div>
 
@@ -456,79 +456,48 @@ include 'includes/employee_topbar.php';
         <button type="button" class="drawer-close-btn" onclick="closeTicketDetailsDrawer()" title="Close Drawer">&times;</button>
     </div>
 
-    <div class="drawer-body" style="flex: 1; overflow-y: auto; padding: 24px;">
-        
-        <!-- Quick Meta Attributes Bar (Single Unified Compact Section) -->
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 14px; margin-bottom: 16px; font-size: 12px;">
-            <div style="display: inline-flex; align-items: center; gap: 6px;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Status:</span>
-                <span class="badge badge-status-progress" id="detTicketStatus" style="font-size: 11px; padding: 2px 8px;">--</span>
-            </div>
-            <span style="color: #cbd5e1; font-size: 12px;">•</span>
-            <div style="display: inline-flex; align-items: center; gap: 6px;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Urgency:</span>
-                <span class="badge badge-medium" id="detTicketPriority" style="font-size: 11px; padding: 2px 8px;">--</span>
-            </div>
-            <span style="color: #cbd5e1; font-size: 12px;">•</span>
-            <div style="display: inline-flex; align-items: center; gap: 6px;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Incident:</span>
-                <span style="font-size: 12px; font-weight: 700; color: var(--navy-primary);" id="detTicketDate">--</span>
-            </div>
-            <span style="color: #cbd5e1; font-size: 12px;">•</span>
-            <div style="display: inline-flex; align-items: center; gap: 6px;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Device:</span>
-                <span class="ticket-asset-pill" id="detTicketAsset" style="font-weight: 600; font-size: 11.5px; padding: 2px 8px;">--</span>
-            </div>
+    <!-- Compact Meta Bar Directly Under Header -->
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #f8fafc; border-bottom: 1px solid var(--border-color); padding: 10px 24px; font-size: 12px; flex-shrink: 0;">
+        <div style="display: inline-flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Status:</span>
+            <span class="badge badge-status-progress" id="detTicketStatus" style="font-size: 11px; padding: 2px 8px;">--</span>
         </div>
-
-        <!-- Detailed Description Box (Prominent & Full View) -->
-        <div style="margin-bottom: 22px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px;">
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                Detailed Description
-            </div>
-            <div style="font-size: 13.5px; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap; word-break: break-word;" id="detTicketDescription">
-                Description details...
-            </div>
+        <span style="color: #cbd5e1; font-size: 12px;">•</span>
+        <div style="display: inline-flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Urgency:</span>
+            <span class="badge badge-medium" id="detTicketPriority" style="font-size: 11px; padding: 2px 8px;">--</span>
         </div>
-
-        <!-- Support Conversation & Activity Trail (Chat Design with Date & Time) -->
-        <div class="ticket-chat-container">
-            <div class="ticket-chat-header">
-                <div class="ticket-chat-header-title">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <span>Support Conversation & Updates</span>
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 5px;">
-                    <span style="color: #10b981; font-size: 10px;">●</span> Active Thread
-                </div>
-            </div>
-
-            <!-- Scrollable Chat Stream (Dynamically populated from ticket chat thread) -->
-            <div class="ticket-chat-stream" id="ticketActivityList">
-                <!-- System Registered Event Bubble -->
-                <div class="chat-system-event">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span id="chatSystemAckText">Ticket Logged & Auto-Acknowledged by IT Service Desk Queue</span>
-                </div>
-            </div>
-
-            <!-- Chat Bottom Input Bar -->
-            <div class="chat-input-container">
-                <form id="ticketReplyForm" style="display: flex; gap: 10px; align-items: center; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 5px 8px 5px 14px; transition: border-color 0.2s;">
-                    <input type="text" id="ticketReplyInput" required placeholder="Type a message or update for IT technician..." style="flex: 1; border: none; outline: none; font-size: 13px; color: var(--navy-primary); background: transparent;">
-                    <button type="submit" class="btn-primary" style="padding: 8px 18px; border-radius: 6px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                        <span>Send</span>
-                    </button>
-                </form>
-            </div>
+        <span style="color: #cbd5e1; font-size: 12px;">•</span>
+        <div style="display: inline-flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Incident:</span>
+            <span style="font-size: 12px; font-weight: 700; color: var(--navy-primary);" id="detTicketDate">--</span>
         </div>
-
+        <span style="color: #cbd5e1; font-size: 12px;">•</span>
+        <div style="display: inline-flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Device:</span>
+            <span class="ticket-asset-pill" id="detTicketAsset" style="font-weight: 600; font-size: 11.5px; padding: 2px 8px;">--</span>
+        </div>
+        <span id="detTicketDescription" style="display: none;"></span>
     </div>
 
-    <div class="drawer-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; background: #f8fafc; flex-shrink: 0;">
-        <button type="button" class="btn-secondary" onclick="closeTicketDetailsDrawer()" style="padding: 9px 22px;">Close</button>
+    <!-- Full-Height Chat Stream Body (Scrollable, takes 100% remaining space) -->
+    <div class="ticket-chat-stream" id="ticketActivityList" style="flex: 1; min-height: 0; max-height: none; overflow-y: auto; padding: 20px 24px; background: #f8fafc; display: flex; flex-direction: column; gap: 14px;">
+        <!-- System Registered Event Bubble -->
+        <div class="chat-system-event">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span id="chatSystemAckText">Ticket Logged & Auto-Acknowledged by IT Service Desk Queue</span>
+        </div>
+    </div>
+
+    <!-- Chat Bottom Input Bar (Pinned at bottom of drawer) -->
+    <div class="chat-input-container" style="padding: 14px 24px; background: #ffffff; border-top: 1px solid var(--border-color); flex-shrink: 0;">
+        <form id="ticketReplyForm" style="display: flex; gap: 10px; align-items: center; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 6px 10px 6px 14px; transition: border-color 0.2s;">
+            <input type="text" id="ticketReplyInput" required placeholder="Type a message or update for IT technician..." style="flex: 1; border: none; outline: none; font-size: 13px; color: var(--navy-primary); background: transparent;">
+            <button type="submit" class="btn-primary" style="padding: 9px 20px; border-radius: 6px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                <span>Send</span>
+            </button>
+        </form>
     </div>
 </aside>
 
