@@ -516,150 +516,112 @@ include 'includes/topbar.php';
         <button type="button" class="drawer-close-btn" onclick="closeAdminTicketDrawer()" title="Close Drawer">&times;</button>
     </div>
 
-    <!-- Drawer Navigation Tabs (assets.php tab architecture) -->
-    <div class="drawer-tabs">
-        <button type="button" class="drawer-tab active" data-tab="overview" onclick="switchDrawerTab('overview')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-            Overview & Triage
-        </button>
-        <button type="button" class="drawer-tab" data-tab="chat" onclick="switchDrawerTab('chat')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-            Support Conversation <span id="drawerChatCountBadge" style="margin-left: 5px; background: var(--cyan-primary); color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0</span>
-        </button>
-    </div>
+    <!-- Split 2-Column Body: Left (Overview & Triage), Right (Support Conversation) -->
+    <div class="admin-split-drawer-body" id="adminDrawerContent" style="flex: 1; min-height: 0; display: flex; overflow: hidden;">
 
-    <!-- Drawer Content Panes -->
-    <div class="drawer-content" id="adminDrawerContent" style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
-
-        <!-- PANE 1: Overview & Triage (active by default) -->
-        <div class="drawer-tab-pane active" id="pane_overview" style="display: block; flex: 1; overflow-y: auto; padding: 22px;">
+        <!-- LEFT COLUMN: Overview & Triage (Scrollable Sidebar) -->
+        <div class="admin-drawer-col-left" id="pane_overview" style="width: 390px; flex-shrink: 0; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: #ffffff; box-sizing: border-box; overflow: hidden;">
             
-            <!-- Requester Profile Section (.drawer-section from assets.php) -->
-            <div class="drawer-section">
-                <div class="drawer-section-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    Employee / Requester Profile
+            <!-- Sub-bar matching right column height and border -->
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border-bottom: 1px solid var(--border-color); padding: 12px 22px; font-size: 12px; flex-shrink: 0;">
+                <div style="font-weight: 700; color: var(--navy-primary); display: flex; align-items: center; gap: 8px; font-size: 13.5px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>Overview & Incident Triage</span>
                 </div>
-                <div class="drawer-spec-grid">
-                    <div class="drawer-spec-item">
-                        <div class="label">Requester Name</div>
-                        <div class="value" id="drawerReqName" style="font-weight: 700; color: var(--navy-primary);">—</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Employee Code</div>
-                        <div class="value" id="drawerReqCode" style="font-family: monospace;">—</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Department</div>
-                        <div class="value" id="drawerReqDept">—</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Office Location</div>
-                        <div class="value" id="drawerReqLocation">—</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Official Email</div>
-                        <div class="value" id="drawerReqEmail">—</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Contact Phone</div>
-                        <div class="value" id="drawerReqPhone">—</div>
-                    </div>
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
+                    <span>Ticket Specs</span>
                 </div>
             </div>
 
-            <!-- Incident & Device Attributes (.drawer-section) -->
-            <div class="drawer-section">
-                <div class="drawer-section-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                    Incident & Device Attributes
+            <!-- Scrollable content area with no horizontal overflow -->
+            <div style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box;">
+                
+                <!-- Requester Profile Section (.drawer-section from assets.php) -->
+                <div class="drawer-section" style="margin-bottom: 0;">
+                    <div class="drawer-section-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        Employee / Requester Profile
+                    </div>
+                    <div class="drawer-spec-grid" style="box-sizing: border-box;">
+                        <div class="drawer-spec-item">
+                            <div class="label">Requester Name</div>
+                            <div class="value" id="drawerReqName" style="font-weight: 700; color: var(--navy-primary); word-break: break-word;">—</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Employee Code</div>
+                            <div class="value" id="drawerReqCode" style="font-family: monospace; word-break: break-word;">—</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Department</div>
+                            <div class="value" id="drawerReqDept" style="word-break: break-word;">—</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Office Location</div>
+                            <div class="value" id="drawerReqLocation" style="word-break: break-word;">—</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Official Email</div>
+                            <div class="value" id="drawerReqEmail" style="word-break: break-all; font-size: 12px;">—</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Contact Phone</div>
+                            <div class="value" id="drawerReqPhone" style="word-break: break-word;">—</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="drawer-spec-grid">
-                    <div class="drawer-spec-item">
-                        <div class="label">Current Status</div>
-                        <div class="value"><span class="badge badge-status-progress" id="drawerSpecStatus">—</span></div>
+
+                <!-- Incident & Device Attributes (.drawer-section) -->
+                <div class="drawer-section" style="margin-bottom: 0;">
+                    <div class="drawer-section-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        Incident & Device Attributes
                     </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Urgency Priority</div>
-                        <div class="value"><span class="badge badge-high" id="drawerSpecUrgency">—</span></div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Affected Device</div>
-                        <div class="value" id="drawerSpecAsset" style="font-weight: 600; color: var(--navy-primary);">—</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Incident Category</div>
-                        <div class="value" id="drawerSpecCategory">—</div>
-                    </div>
-                    <div class="drawer-spec-item">
-                        <div class="label">Reported Timestamp</div>
-                        <div class="value" id="drawerSpecDate">—</div>
+                    <div class="drawer-spec-grid" style="box-sizing: border-box;">
+                        <div class="drawer-spec-item">
+                            <div class="label">Current Status</div>
+                            <div class="value"><span class="badge badge-status-progress" id="drawerSpecStatus">—</span></div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Urgency Priority</div>
+                            <div class="value"><span class="badge badge-high" id="drawerSpecUrgency">—</span></div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Affected Device</div>
+                            <div class="value" id="drawerSpecAsset" style="font-weight: 600; color: var(--navy-primary); word-break: break-word;">—</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Incident Category</div>
+                            <div class="value" id="drawerSpecCategory" style="word-break: break-word;">—</div>
+                        </div>
+                        <div class="drawer-spec-item">
+                            <div class="label">Reported Timestamp</div>
+                            <div class="value" id="drawerSpecDate" style="word-break: break-word; font-size: 12px;">—</div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Full Issue Description (.drawer-section) -->
+                <div class="drawer-section" style="margin-bottom: 0;">
+                    <div class="drawer-section-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Detailed Incident Description
+                    </div>
+                    <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; font-size: 12.5px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; box-sizing: border-box;" id="drawerFullDesc">
+                        Description goes here...
+                    </div>
+                </div>
+
             </div>
-
-            <!-- Full Issue Description (.drawer-section) -->
-            <div class="drawer-section">
-                <div class="drawer-section-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    Detailed Incident Description
-                </div>
-                <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 14px 16px; font-size: 13px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; word-break: break-word;" id="drawerFullDesc">
-                    Description goes here...
-                </div>
-            </div>
-
-            <!-- Administrative Triage Controls (.drawer-section) -->
-            <div class="drawer-section" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px;">
-                <div class="drawer-section-title" style="color: #1e40af; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        Administrative Triage Actions
-                    </div>
-                    <span style="font-size: 11px; color: #3b82f6; font-weight: 600;">Live Action</span>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                    <div>
-                        <label for="triageStatusSelect" style="display: block; font-size: 11.5px; font-weight: 600; color: #1e3a8a; margin-bottom: 4px;">Update Status</label>
-                        <select class="asset-filter-select" id="triageStatusSelect" style="width: 100%; border-color: #93c5fd; font-size: 12.5px;">
-                            <option value="open">Open / Triage</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="resolved">Resolved & Closed</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="triagePrioritySelect" style="display: block; font-size: 11.5px; font-weight: 600; color: #1e3a8a; margin-bottom: 4px;">Escalate Urgency</label>
-                        <select class="asset-filter-select" id="triagePrioritySelect" style="width: 100%; border-color: #93c5fd; font-size: 12.5px;">
-                            <option value="Urgent">Urgent (Immediate SLA)</option>
-                            <option value="High">High Priority</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low Priority</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 12px;">
-                    <label for="triageRemarkInput" style="display: block; font-size: 11.5px; font-weight: 600; color: #1e3a8a; margin-bottom: 4px;">Status Update Note / Message (Sent to Employee)</label>
-                    <input type="text" id="triageRemarkInput" placeholder="Optional remark (e.g. Technician assigned, work started, parts dispatched...)" style="width: 100%; padding: 8px 12px; border: 1.5px solid #93c5fd; border-radius: 6px; font-size: 12.5px; background: #ffffff; box-sizing: border-box; outline: none;">
-                </div>
-
-                <button type="button" class="btn-primary" id="btnUpdateAdminTriage" style="padding: 7px 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Save & Update Triage</span>
-                </button>
-            </div>
-
         </div>
 
-        <!-- PANE 2: Support Conversation Thread (Full-height modern chat stream) -->
-        <div class="drawer-tab-pane" id="pane_chat" style="display: none; flex: 1; min-height: 0; flex-direction: column; height: 100%;">
+        <!-- RIGHT COLUMN: Support Conversation Stream (Full-Height Chat) -->
+        <div class="admin-drawer-col-right" id="pane_chat" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: #f8fafc; height: 100%;">
             <!-- Sub-bar matching active thread status -->
-            <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border-bottom: 1px solid var(--border-color); padding: 10px 24px; font-size: 12px; flex-shrink: 0;">
-                <div style="font-weight: 700; color: var(--navy-primary); display: flex; align-items: center; gap: 7px; font-size: 13px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border-bottom: 1px solid var(--border-color); padding: 12px 24px; font-size: 12px; flex-shrink: 0;">
+                <div style="font-weight: 700; color: var(--navy-primary); display: flex; align-items: center; gap: 8px; font-size: 13.5px;">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--cyan-primary);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     <span>Support Conversation & Updates</span>
+                    <span id="drawerChatCountBadge" style="margin-left: 5px; background: var(--cyan-primary); color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0</span>
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 5px;">
                     <span style="color: #10b981; font-size: 10px;">●</span> Active Thread
@@ -671,24 +633,37 @@ include 'includes/topbar.php';
                 <!-- Populated dynamically via js/tickets.js -->
             </div>
 
-            <!-- Pinned Chat Bottom Input Bar for Admin -->
-            <div class="chat-input-container" style="padding: 14px 24px; background: #ffffff; border-top: 1px solid var(--border-color); flex-shrink: 0;">
-                <form id="adminDrawerChatForm" style="display: flex; gap: 10px; align-items: center; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 6px 10px 6px 14px; transition: border-color 0.2s;">
+            <!-- Pinned Chat Bottom Area with Triage Actions & Message Input -->
+            <div class="chat-input-container" style="padding: 12px 24px; background: #ffffff; border-top: 1px solid var(--border-color); flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
+                <!-- Administrative Triage Quick Action Bar directly in Chat -->
+                <div class="chat-triage-panel" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 270px;">
+                        <select class="asset-filter-select" id="triageStatusSelect" style="flex: 1; min-width: 130px; border: 1px solid #93c5fd; font-size: 12px; padding: 6px 8px; background: #ffffff; border-radius: 6px; font-weight: 600; color: #1e3a8a; height: 32px; outline: none;">
+                            <option value="open">Open / Triage</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="resolved">Resolved & Closed</option>
+                        </select>
+                        <input type="datetime-local" id="triageDateTimeInput" style="flex: 1; min-width: 160px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 11.5px; padding: 4px 8px; background: #ffffff; color: #1e3a8a; outline: none; height: 32px; box-sizing: border-box;">
+                    </div>
+
+                    <button type="button" class="btn-primary" id="btnUpdateAdminTriage" style="padding: 6px 14px; font-size: 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; height: 32px; cursor: pointer;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span>Save & Update</span>
+                    </button>
+                </div>
+
+                <!-- Chat Reply Form -->
+                <form id="adminDrawerChatForm" style="display: flex; gap: 10px; align-items: center; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 6px 10px 6px 14px; transition: border-color 0.2s; margin: 0;">
                     <input type="text" id="adminDrawerChatInput" required placeholder="Reply to employee as IT Administrator..." style="flex: 1; border: none; outline: none; font-size: 13px; color: var(--navy-primary); background: transparent;">
                     <button type="submit" class="btn-primary" style="padding: 9px 20px; border-radius: 6px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                        <span>Send Reply</span>
+                        <span>Send</span>
                     </button>
                 </form>
             </div>
         </div>
 
-    </div>
-
-    <!-- Drawer Footer (matching assets.php, shown on overview tab) -->
-    <div id="adminDrawerFooter" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: #f8fafc; flex-shrink: 0;">
-        <span style="font-size: 11.5px; color: var(--text-muted);">VIROS Enterprise IT Service Desk Engine</span>
-        <button type="button" class="btn-secondary" onclick="closeAdminTicketDrawer()" style="padding: 8px 20px;">Close Drawer</button>
     </div>
 </aside>
 

@@ -166,7 +166,7 @@ function initNewTicketForm() {
 
         const subjectVal = subjectEl ? subjectEl.value.trim() : '';
         const descVal = descEl ? descEl.value.trim() : '';
-        const assetVal = (assetEl && assetEl.value) ? assetEl.value.trim() : 'General Workstation / Laptop';
+        const assetVal = (assetEl && assetEl.value) ? assetEl.value.trim() : 'General Ticket';
         const priorityVal = (priorityEl && priorityEl.value) ? priorityEl.value.trim() : 'Medium';
         let rawDt = dtInput ? dtInput.value.trim() : '';
 
@@ -302,7 +302,7 @@ function insertTicketTableRow(tkt) {
         <td>
             <span class="ticket-asset-pill">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg>
-                ${escapeHtml(tkt.asset || 'General Workstation / Laptop')}
+                ${escapeHtml(tkt.asset || 'General Ticket')}
             </span>
         </td>
         <td>
@@ -354,7 +354,7 @@ function viewTicketDetails(tkt) {
     // Header & Meta Bar
     document.getElementById('detTicketId').textContent = tkt.id;
     document.getElementById('detTicketSubject').textContent = tkt.subject;
-    document.getElementById('detTicketAsset').textContent = tkt.asset || 'General Workstation / Laptop';
+    document.getElementById('detTicketAsset').textContent = tkt.asset || 'General Ticket';
     document.getElementById('detTicketDate').textContent = tkt.date || '';
 
     const descEl = document.getElementById('detTicketDescription');
@@ -425,18 +425,29 @@ function renderDrawerChatMessages(tkt) {
             const msgRow = document.createElement('div');
             msgRow.className = 'chat-message-row ' + (isOutgoing ? 'outgoing' : 'incoming');
 
-            msgRow.innerHTML = `
-                <div class="chat-bubble-wrap">
-                    <div class="chat-meta">
-                        <span class="chat-author">${escapeHtml(msg.author || (isOutgoing ? 'You' : 'IT Support'))}</span>
-                        <span class="chat-timestamp">${escapeHtml(msg.time || tkt.date)}</span>
+            if (isOutgoing) {
+                msgRow.innerHTML = `
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="chat-author">${escapeHtml(msg.author || 'You')}</span>
+                            <span class="chat-timestamp">${escapeHtml(msg.time || tkt.date)}</span>
+                        </div>
+                        <div class="chat-bubble">${escapeHtml(msg.text ? String(msg.text).trim() : '')}</div>
                     </div>
-                    <div class="chat-bubble">
-                        ${escapeHtml(msg.text)}
+                    <div class="chat-avatar user">${escapeHtml(msg.avatar || 'You')}</div>
+                `;
+            } else {
+                msgRow.innerHTML = `
+                    <div class="chat-avatar tech">${escapeHtml(msg.avatar || 'IT')}</div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="chat-author">${escapeHtml(msg.author || 'IT Support')}</span>
+                            <span class="chat-timestamp">${escapeHtml(msg.time || tkt.date)}</span>
+                        </div>
+                        <div class="chat-bubble">${escapeHtml(msg.text ? String(msg.text).trim() : '')}</div>
                     </div>
-                </div>
-                <div class="chat-avatar ${isOutgoing ? 'user' : 'tech'}">${escapeHtml(msg.avatar || (isOutgoing ? 'You' : 'IT'))}</div>
-            `;
+                `;
+            }
             chatStream.appendChild(msgRow);
         });
     } else {
@@ -449,9 +460,7 @@ function renderDrawerChatMessages(tkt) {
                     <span class="chat-author">You (Problem Report)</span>
                     <span class="chat-timestamp">${escapeHtml(tkt.date)}</span>
                 </div>
-                <div class="chat-bubble">
-                    ${escapeHtml(tkt.description || tkt.subject)}
-                </div>
+                <div class="chat-bubble">${escapeHtml((tkt.description || tkt.subject || '').trim())}</div>
             </div>
             <div class="chat-avatar user">You</div>
         `;
@@ -498,9 +507,7 @@ function initTicketReplyForm() {
                     <span class="chat-author">${escapeHtml(authorName)}</span>
                     <span class="chat-timestamp">${nowFormatted}</span>
                 </div>
-                <div class="chat-bubble">
-                    ${escapeHtml(text)}
-                </div>
+                <div class="chat-bubble">${escapeHtml(text ? String(text).trim() : '')}</div>
             </div>
             <div class="chat-avatar user">You</div>
         `;

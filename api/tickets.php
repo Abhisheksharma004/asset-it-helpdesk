@@ -359,6 +359,22 @@ if ($method === 'POST' && $action === 'update_triage') {
         $ticketId = intval($tRow['id']);
     }
 
+    // Parse and prepare selected Date & Time
+    $newDateTime = trim($input['date_time'] ?? '');
+    $dtObj = null;
+    if (!empty($newDateTime)) {
+        try {
+            $dtObj = new DateTime($newDateTime);
+        } catch (Exception $e) {
+            $dtObj = null;
+        }
+    }
+    if (!$dtObj) {
+        $dtObj = new DateTime();
+    }
+    $sqlDate = $dtObj->format('Y-m-d H:i:s');
+    $formattedDateTime = $dtObj->format('d M Y, h:i A');
+
     $updates = [];
     $params = [];
     if (!empty($newStatus)) {
@@ -369,7 +385,8 @@ if ($method === 'POST' && $action === 'update_triage') {
         $updates[] = "priority = ?";
         $params[] = $newPriority;
     }
-    $updates[] = "updated_at = GETDATE()";
+    $updates[] = "updated_at = ?";
+    $params[] = $sqlDate;
     $params[] = $ticketNo;
 
     $sql = "UPDATE support_tickets SET " . implode(', ', $updates) . " WHERE ticket_no = ?";
@@ -380,20 +397,27 @@ if ($method === 'POST' && $action === 'update_triage') {
         exit;
     }
 
-    // Compose status update message text
+    // Compose status update message text with selected date & time
     $isClosedOrResolved = (stripos($newStatus, 'resolved') !== false || stripos($newStatus, 'closed') !== false);
 
     if ($isClosedOrResolved) {
         if (!empty($customMessage)) {
-            $msgText = "Dear Sir/Ma'am, your IT support ticket has been successfully resolved and closed.\n\nResolution Details: " . $customMessage . "\n\nThank you for your patience and cooperation! If you face any further issue or require assistance, please feel free to reach out to the IT Service Desk.";
+            $msgText = "Dear Sir/Ma'am, your IT support ticket has been successfully resolved and closed.\n"
+                     . "🕒 Closed / Resolution Time: " . $formattedDateTime . "\n"
+                     . "Resolution Details: " . $customMessage . "\n"
+                     . "Thank you for your patience and cooperation! If you face any further issue or require assistance, please feel free to reach out to the IT Service Desk.";
         } else {
-            $msgText = "Dear Sir/Ma'am, your IT support ticket has been successfully resolved and closed by IT Service Desk.\n\nAll reported issues have been addressed. Thank you for your patience and cooperation! If you continue to experience any issue or require further assistance, feel free to reply here or raise a new request.";
+            $msgText = "Dear Sir/Ma'am, your IT support ticket has been successfully resolved and closed by IT Service Desk.\n"
+                     . "🕒 Closed / Resolution Time: " . $formattedDateTime . "\n"
+                     . "All reported issues have been addressed. Thank you for your patience and cooperation! If you continue to experience any issue or require further assistance, feel free to reply here or raise a new request.";
         }
     } elseif (!empty($customMessage)) {
-        $msgText = $customMessage;
+        $msgText = $customMessage . "\n🕒 Updated Time: " . $formattedDateTime;
     } else {
         if (stripos($newStatus, 'progress') !== false) {
-            $msgText = "Ticket status has been updated to 'In Progress' by " . $adminAuthor . ". Our IT technical team has taken up your request and is actively working on resolving it.";
+            $msgText = "Ticket status has been updated to 'In Progress' by " . $adminAuthor . ".\n"
+                     . "🕒 Status Update Time: " . $formattedDateTime . "\n"
+                     . "Our IT technical team has taken up your request and is actively working on resolving it.";
         } else {
             $parts = [];
             if (!empty($newStatus)) {
@@ -402,13 +426,9 @@ if ($method === 'POST' && $action === 'update_triage') {
             if (!empty($newPriority)) {
                 $parts[] = "Priority set to \"{$newPriority}\"";
             }
-            $msgText = implode(', ', $parts) . " by " . $adminAuthor . ".";
+            $msgText = implode(', ', $parts) . " by " . $adminAuthor . ".\n🕒 Date & Time: " . $formattedDateTime;
         }
     }
-
-    $nowObj = new DateTime();
-    $sqlDate = $nowObj->format('Y-m-d H:i:s');
-    $nowStr = $nowObj->format('d M Y, h:i A');
 
     // Save status change message into dedicated ticket_messages table
     $msgInsertSql = "INSERT INTO ticket_messages (ticket_no, ticket_id, sender_type, sender_name, sender_avatar, message, created_at) 
@@ -419,7 +439,7 @@ if ($method === 'POST' && $action === 'update_triage') {
         'author' => $adminAuthor,
         'avatar' => 'IT',
         'type'   => 'admin',
-        'time'   => $nowStr,
+        'time'   => $formattedDateTime,
         'text'   => $msgText
     ];
 

@@ -152,35 +152,11 @@ function resetAllFilters() {
 }
 window.resetAllFilters = resetAllFilters;
 
-// Drawer Tab Switcher (.drawer-tab / .drawer-tab-pane)
+// Drawer Tab Switcher (Unified 2-column view keeps both visible)
 function switchDrawerTab(tabName) {
-    const tabs = document.querySelectorAll('.drawer-tabs .drawer-tab');
-    tabs.forEach(tab => {
-        if (tab.getAttribute('data-tab') === tabName) {
-            tab.classList.add('active');
-        } else {
-            tab.classList.remove('active');
-        }
-    });
-
-    const paneOverview = document.getElementById('pane_overview');
-    const paneChat = document.getElementById('pane_chat');
-    const drawerFooter = document.getElementById('adminDrawerFooter');
-
-    if (tabName === 'chat') {
-        if (paneOverview) paneOverview.style.display = 'none';
-        if (paneChat) {
-            paneChat.style.display = 'flex';
-            const chatStream = document.getElementById('adminChatStream');
-            if (chatStream) {
-                setTimeout(() => { chatStream.scrollTop = chatStream.scrollHeight; }, 60);
-            }
-        }
-        if (drawerFooter) drawerFooter.style.display = 'none';
-    } else {
-        if (paneOverview) paneOverview.style.display = 'block';
-        if (paneChat) paneChat.style.display = 'none';
-        if (drawerFooter) drawerFooter.style.display = 'flex';
+    const chatStream = document.getElementById('adminChatStream');
+    if (chatStream) {
+        setTimeout(() => { chatStream.scrollTop = chatStream.scrollHeight; }, 60);
     }
 }
 window.switchDrawerTab = switchDrawerTab;
@@ -265,14 +241,11 @@ function openAdminTicketDrawer(ticketData) {
         statusSelect.value = ticketData.s_filter || (ticketData.status.toLowerCase().includes('progress') ? 'in-progress' : (ticketData.status.toLowerCase().includes('open') ? 'open' : 'resolved'));
     }
 
-    const prioritySelect = document.getElementById('triagePrioritySelect');
-    if (prioritySelect) {
-        prioritySelect.value = ticketData.priority || 'Medium';
-    }
-
-    const remarkInput = document.getElementById('triageRemarkInput');
-    if (remarkInput) {
-        remarkInput.value = '';
+    const dtInput = document.getElementById('triageDateTimeInput');
+    if (dtInput) {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        dtInput.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
     // Render Conversation Stream
@@ -291,8 +264,11 @@ function openAdminTicketDrawer(ticketData) {
         })
         .catch(e => console.warn('Could not refresh messages:', e));
 
-    // Default to Overview tab
-    switchDrawerTab('overview');
+    // Auto-scroll chat stream to latest message
+    const chatStream = document.getElementById('adminChatStream');
+    if (chatStream) {
+        setTimeout(() => { chatStream.scrollTop = chatStream.scrollHeight; }, 100);
+    }
 
     // Show Drawer & Backdrop
     if (backdrop) {
@@ -337,9 +313,7 @@ function renderDrawerChatStream(ticketData) {
                             <span class="chat-author">${escapeHtml(msg.author || 'IT Support')}</span>
                             <span class="chat-timestamp">${escapeHtml(msg.time || '')}</span>
                         </div>
-                        <div class="chat-bubble">
-                            ${escapeHtml(msg.text)}
-                        </div>
+                        <div class="chat-bubble">${escapeHtml(msg.text ? String(msg.text).trim() : '')}</div>
                     </div>
                     <div class="chat-avatar tech">${escapeHtml(msg.avatar || 'IT')}</div>
                 `;
@@ -351,9 +325,7 @@ function renderDrawerChatStream(ticketData) {
                             <span class="chat-author">${escapeHtml(msg.author || reqName)}</span>
                             <span class="chat-timestamp">${escapeHtml(msg.time || '')}</span>
                         </div>
-                        <div class="chat-bubble">
-                            ${escapeHtml(msg.text)}
-                        </div>
+                        <div class="chat-bubble">${escapeHtml(msg.text ? String(msg.text).trim() : '')}</div>
                     </div>
                 `;
             }
@@ -371,9 +343,7 @@ function renderDrawerChatStream(ticketData) {
                     <span class="chat-author">${escapeHtml(reqName)}</span>
                     <span class="chat-timestamp">${escapeHtml(ticketData.date)}</span>
                 </div>
-                <div class="chat-bubble">
-                    ${escapeHtml(ticketData.description || ticketData.subject)}
-                </div>
+                <div class="chat-bubble">${escapeHtml((ticketData.description || ticketData.subject || '').trim())}</div>
             </div>
         `;
         chatStream.appendChild(empBubble);
@@ -412,28 +382,15 @@ window.closeAdminTicketDrawer = closeAdminTicketDrawer;
 // Drawer Triage Save & Status Update
 function initDrawerAdminActions() {
     const updateBtn = document.getElementById('btnUpdateAdminTriage');
-    const statusSelect = document.getElementById('triageStatusSelect');
-    const remarkInput = document.getElementById('triageRemarkInput');
-
-    if (statusSelect && remarkInput) {
-        statusSelect.addEventListener('change', function() {
-            if (this.value === 'resolved') {
-                remarkInput.placeholder = "Resolution note (e.g. Replaced RAM, configured printer, user verified...)";
-            } else if (this.value === 'in-progress') {
-                remarkInput.placeholder = "Progress note (e.g. Technician assigned, diagnostic running...)";
-            } else {
-                remarkInput.placeholder = "Optional note for employee...";
-            }
-        });
-    }
-
     if (!updateBtn) return;
 
     updateBtn.addEventListener('click', function () {
         if (!currentOpenTicket) return;
 
         const newStatusKey = document.getElementById('triageStatusSelect').value;
-        const newPriorityVal = document.getElementById('triagePrioritySelect').value;
+        const dtInput = document.getElementById('triageDateTimeInput');
+        const dtValue = dtInput ? dtInput.value.trim() : '';
+        const priorityVal = currentOpenTicket.priority || 'Medium';
 
         let statusText = 'In Progress';
         let statusClass = 'badge-status-progress';
@@ -445,17 +402,10 @@ function initDrawerAdminActions() {
             statusClass = 'badge-status-resolved';
         }
 
-        let pClass = 'badge-medium';
-        if (newPriorityVal === 'Urgent') pClass = 'badge-urgent';
-        else if (newPriorityVal === 'High') pClass = 'badge-high';
-        else if (newPriorityVal === 'Low') pClass = 'badge-low';
-
         // Update currentOpenTicket object
         currentOpenTicket.status = statusText;
         currentOpenTicket.s_class = statusClass;
         currentOpenTicket.s_filter = newStatusKey;
-        currentOpenTicket.priority = newPriorityVal;
-        currentOpenTicket.p_class = pClass;
 
         // Update UI inside drawer
         const statusBadge = document.getElementById('drawerTicketStatusBadge');
@@ -470,41 +420,26 @@ function initDrawerAdminActions() {
             specStatus.className = 'badge ' + statusClass;
         }
 
-        const specUrgency = document.getElementById('drawerSpecUrgency');
-        if (specUrgency) {
-            specUrgency.textContent = newPriorityVal;
-            specUrgency.className = 'badge ' + pClass;
-        }
-
         // Update row in table
         const row = document.querySelector(`.ticket-data-row[data-id="${currentOpenTicket.id}"]`);
         if (row) {
             row.setAttribute('data-status', newStatusKey);
-            row.setAttribute('data-urgency', newPriorityVal.toLowerCase());
 
             const statusCell = row.querySelector('.col-ticket-status');
             if (statusCell) {
                 statusCell.innerHTML = `<span class="badge ${statusClass}" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">${statusText}</span>`;
             }
-
-            const priorityCell = row.querySelector('.col-ticket-urgency');
-            if (priorityCell) {
-                priorityCell.innerHTML = `<span class="badge ${pClass}" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">${newPriorityVal}</span>`;
-            }
         }
 
-        const remarkInput = document.getElementById('triageRemarkInput');
-        const remarkText = remarkInput ? remarkInput.value.trim() : '';
-
-        // Persist to backend API with message
+        // Persist to backend API with date_time
         fetch('api/tickets.php?action=update_triage', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 ticket_no: currentOpenTicket.id,
                 status: statusText,
-                priority: newPriorityVal,
-                message: remarkText
+                priority: priorityVal,
+                date_time: dtValue
             })
         })
         .then(res => res.json())
@@ -518,16 +453,15 @@ function initDrawerAdminActions() {
                     renderDrawerChatStream(currentOpenTicket);
                 }
             }
-            if (remarkInput) remarkInput.value = '';
         })
         .catch(err => console.warn('Triage update save error:', err));
 
         if (typeof showPortalToast === 'function') {
-            showPortalToast(`Ticket ${currentOpenTicket.id} triage updated successfully!`, 'success');
+            showPortalToast(`Ticket ${currentOpenTicket.id} status updated to "${statusText}"!`, 'success');
         } else if (typeof showToast === 'function') {
-            showToast(`Ticket ${currentOpenTicket.id} triage updated.`, 'success');
+            showToast(`Ticket ${currentOpenTicket.id} status updated.`, 'success');
         } else {
-            alert(`Ticket ${currentOpenTicket.id} updated: Status is now "${statusText}"!`);
+            alert(`Ticket ${currentOpenTicket.id} status updated to "${statusText}"!`);
         }
     });
 }
@@ -562,9 +496,7 @@ function initDrawerChatReply() {
                     <span class="chat-author">IT Service Desk Admin</span>
                     <span class="chat-timestamp">${nowFormatted}</span>
                 </div>
-                <div class="chat-bubble">
-                    ${escapeHtml(text)}
-                </div>
+                <div class="chat-bubble">${escapeHtml(text ? String(text).trim() : '')}</div>
             </div>
             <div class="chat-avatar tech">IT</div>
         `;
