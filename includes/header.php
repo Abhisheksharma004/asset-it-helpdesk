@@ -29,8 +29,10 @@ if (!isset($page_title)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?></title>
     <link rel="shortcut icon" href="<?php echo htmlspecialchars($orgFavicon); ?>" type="image/x-icon">
+    <script>
+        window.ORG_SETTINGS = <?php echo json_encode($orgHeaderSettings, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    </script>
     
     <!-- Core Stylesheets -->
     <link rel="stylesheet" href="css/dashboard.css?v=<?php echo file_exists(__DIR__ . '/../css/dashboard.css') ? filemtime(__DIR__ . '/../css/dashboard.css') : time(); ?>">

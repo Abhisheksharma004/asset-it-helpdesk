@@ -1217,6 +1217,7 @@ include 'includes/topbar.php';
     window.INITIAL_ASSIGNMENTS = <?php echo json_encode($initialAssignments, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     window.AVAILABLE_ASSETS = <?php echo json_encode($availableAssets, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     window.EMPLOYEES_LIST = <?php echo json_encode($employeesList, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    window.ORG_SETTINGS = <?php echo json_encode(function_exists('getOrganizationSettings') ? getOrganizationSettings() : [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 </script>
 
 <?php

@@ -1666,6 +1666,10 @@
         const notes = escapeHtml(item.notes || 'Equipment verified and allocated in good physical condition. Custodian agreed to corporate IT acceptable use policy.');
         const custodyStatus = escapeHtml(item.custody_status || 'Active');
 
+        const orgData = window.ORG_SETTINGS || {};
+        const orgLogo = orgData.primary_brand_logo || 'assets/images/logo.png';
+        const orgName = orgData.organization_legal_name || 'VIROS PORTAL';
+
         // Hardware Devices
         let assetsList = Array.isArray(item.assets) ? [...item.assets] : [];
         if (assetsList.length === 0 && (item.asset_tag || item.asset_name)) {
@@ -1789,7 +1793,7 @@
         }
         .header-logo img {
             max-height: 72px;
-            max-width: 170px;
+            max-width: 180px;
             object-fit: contain;
             display: block;
         }
@@ -1894,10 +1898,10 @@
         <table class="header-tbl">
             <tr>
                 <td class="header-logo">
-                    <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 72px; max-width: 170px; object-fit: contain;">
+                    <img src="${escapeHtml(orgLogo)}" alt="${escapeHtml(orgName)} Logo" style="max-height: 72px; max-width: 180px; object-fit: contain;">
                 </td>
                 <td class="header-title">
-                    <h1>VIROS PORTAL</h1>
+                    <h1>${escapeHtml(orgName)}</h1>
                     <div class="sub">IT Asset Management & Helpdesk</div>
                     <div class="doc-name">EQUIPMENT HANDOVER & CUSTODY SLIP</div>
                 </td>

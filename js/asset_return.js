@@ -936,10 +936,10 @@
         <table class="header-tbl">
             <tr>
                 <td class="header-logo">
-                    <img src="assets/images/logo.png" alt="Company Logo" style="max-height: 65px; max-width: 160px; object-fit: contain;">
+                    <img src="${escapeHtml(window.ORG_SETTINGS?.primary_brand_logo || 'assets/images/logo.png')}" alt="Company Logo" style="max-height: 70px; max-width: 180px; object-fit: contain;">
                 </td>
                 <td class="header-title">
-                    <h1>VIROS PORTAL</h1>
+                    <h1>${escapeHtml(window.ORG_SETTINGS?.organization_legal_name || 'VIROS PORTAL')}</h1>
                     <div class="sub">IT Asset Management & Helpdesk</div>
                     <div class="doc-name">EQUIPMENT RETURN NOC SLIP</div>
                 </td>
