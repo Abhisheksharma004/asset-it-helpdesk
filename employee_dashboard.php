@@ -34,173 +34,305 @@ if (isset($conn) && $conn !== false) {
     }
 }
 
-// Active Employee Profile Details
-$selectedEmpId = isset($_GET['emp']) ? intval($_GET['emp']) : 0;
-$activeEmployee = [
-    'name'        => $_SESSION['user_name'] ?? 'Abhishek Sharma',
-    'code'        => 'EMP-1004',
-    'designation' => 'Senior Software Engineer',
-    'department'  => 'Information Technology',
-    'email'       => 'abhishek.s@viros.in',
-    'location'    => 'Bangalore HQ (Floor 3)',
-    'custody'     => 'Verified & Active'
-];
+// Active Employee Profile Details - Dynamically resolved from GET, Session or DB
+$selectedEmpId = !empty($_GET['emp']) ? intval($_GET['emp']) : (!empty($_GET['id']) ? intval($_GET['id']) : 0);
+$sessionEmpId  = !empty($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
+$targetEmpMail = !empty($_GET['email']) ? trim($_GET['email']) : (!empty($_SESSION['user_email']) ? trim($_SESSION['user_email']) : '');
+$targetEmpCode = !empty($_GET['code']) ? trim($_GET['code']) : (!empty($_SESSION['user_username']) ? trim($_SESSION['user_username']) : '');
 
-if (isset($conn) && $conn !== false && !empty($_SESSION['user_email'])) {
-    $currStmt = sqlsrv_query($conn, "SELECT e.*, d.department_name, l.location_name FROM employees e LEFT JOIN departments d ON e.department_id = d.id LEFT JOIN locations l ON e.location_id = l.id WHERE LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)", [$_SESSION['user_email'], $_SESSION['user_username'] ?? '']);
-    if ($currStmt && ($currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC))) {
+$activeEmployee = null;
+
+if (isset($conn) && $conn !== false) {
+    $currStmt = null;
+    if ($selectedEmpId > 0) {
+        $currStmt = sqlsrv_query(
+            $conn, 
+            "SELECT e.*, d.department_name, l.location_name 
+             FROM employees e 
+             LEFT JOIN departments d ON e.department_id = d.id 
+             LEFT JOIN locations l ON e.location_id = l.id 
+             WHERE e.id = ?", 
+            [$selectedEmpId]
+        );
+    } elseif ($sessionEmpId > 0 || !empty($targetEmpMail) || !empty($targetEmpCode)) {
+        $currStmt = sqlsrv_query(
+            $conn, 
+            "SELECT e.*, d.department_name, l.location_name 
+             FROM employees e 
+             LEFT JOIN departments d ON e.department_id = d.id 
+             LEFT JOIN locations l ON e.location_id = l.id 
+             WHERE e.id = ? OR LOWER(e.email) = LOWER(?) OR LOWER(e.emp_code) = LOWER(?)", 
+            [$sessionEmpId, $targetEmpMail, $targetEmpCode]
+        );
+    }
+
+    if (!$currStmt || !($currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC))) {
+        $currStmt = sqlsrv_query(
+            $conn,
+            "SELECT TOP 1 e.*, d.department_name, l.location_name 
+             FROM employees e 
+             LEFT JOIN departments d ON e.department_id = d.id 
+             LEFT JOIN locations l ON e.location_id = l.id 
+             WHERE e.status = 'Active' OR e.status IS NULL 
+             ORDER BY e.id ASC"
+        );
+        if ($currStmt) {
+            $currRow = sqlsrv_fetch_array($currStmt, SQLSRV_FETCH_ASSOC);
+        }
+    }
+
+    if (!empty($currRow)) {
         $fullName = trim(($currRow['first_name'] ?? '') . ' ' . ($currRow['last_name'] ?? ''));
         $activeEmployee = [
-            'name'        => $fullName ?: ($_SESSION['user_name'] ?? 'Employee'),
-            'code'        => $currRow['emp_code'] ?? 'EMP-000',
-            'designation' => $currRow['designation'] ?: 'Staff Member',
-            'department'  => $currRow['department_name'] ?: ($_SESSION['user_dept'] ?? 'General'),
-            'email'       => $currRow['email'] ?? $_SESSION['user_email'],
-            'location'    => $currRow['location_name'] ?: 'HQ',
-            'custody'     => ($currRow['status'] === 'Active') ? 'Verified & Active' : 'Inactive'
+            'id'           => (int)$currRow['id'],
+            'name'         => $fullName ?: 'Employee',
+            'code'         => $currRow['emp_code'] ?? 'EMP-001',
+            'designation'  => !empty($currRow['designation']) ? $currRow['designation'] : 'Staff Member',
+            'department'   => !empty($currRow['department_name']) ? $currRow['department_name'] : 'General',
+            'email'        => $currRow['email'] ?? '',
+            'phone'        => !empty($currRow['phone']) ? $currRow['phone'] : 'Not Provided',
+            'location'     => !empty($currRow['location_name']) ? $currRow['location_name'] : 'Corporate Office',
+            'status'       => $currRow['status'] ?? 'Active',
+            'custody'      => (strtolower(trim($currRow['status'] ?? '')) === 'active') ? 'Verified & Active' : 'Inactive'
         ];
-    }
-} elseif (!empty($availableEmployees)) {
-    if ($selectedEmpId > 0) {
-        foreach ($availableEmployees as $ae) {
-            if ($ae['id'] === $selectedEmpId) {
-                $activeEmployee['name'] = $ae['name'];
-                $activeEmployee['code'] = $ae['code'];
-                $activeEmployee['designation'] = $ae['designation'];
-                $activeEmployee['email'] = $ae['email'];
-                break;
-            }
+
+        if (empty($_SESSION['user_id'])) {
+            $_SESSION['user_id']        = $activeEmployee['id'];
+            $_SESSION['user_name']      = $activeEmployee['name'];
+            $_SESSION['user_username']  = $activeEmployee['code'];
+            $_SESSION['user_email']     = $activeEmployee['email'];
+            $_SESSION['user_role']      = 'Employee';
+            $_SESSION['user_dept']      = $activeEmployee['department'];
+            $_SESSION['logged_in']      = true;
+            $_SESSION['is_first_login'] = 0;
         }
-    } else {
-        $ae = $availableEmployees[0];
-        $activeEmployee['name'] = $ae['name'];
-        $activeEmployee['code'] = $ae['code'];
-        $activeEmployee['designation'] = $ae['designation'];
-        $activeEmployee['email'] = $ae['email'];
+
+        if ($currStmt) {
+            sqlsrv_free_stmt($currStmt);
+        }
     }
 }
 
-// Employee Allocated Inventory Items
-$allocatedItems = [
-    [
-        'tag'       => 'AST2026001',
-        'name'      => 'Dell Latitude 5420 Laptop',
-        'specs'     => 'Intel Core i7-1185G7 • 16GB RAM • 512GB NVMe SSD',
-        'category'  => 'Computing / Laptop',
-        'type'      => 'hardware',
-        'serial'    => 'C02G40PZMD6T',
-        'date'      => '15 Jan 2025',
-        'condition' => 'Good',
-        'status'    => 'In Active Custody',
-        'badge'     => 'badge-resolved'
-    ],
-    [
-        'tag'       => 'AST2026048',
-        'name'      => 'Dell UltraSharp 24" USB-C Hub Monitor',
-        'specs'     => '1920x1080 IPS • USB-C 90W PD • Height Adjust',
-        'category'  => 'External Display',
-        'type'      => 'hardware',
-        'serial'    => 'CN-04D792-742',
-        'date'      => '15 Jan 2025',
-        'condition' => 'Excellent',
-        'status'    => 'In Active Custody',
-        'badge'     => 'badge-resolved'
-    ],
-    [
-        'tag'       => 'ACC-1002',
-        'name'      => 'Dell WD19S USB-C Docking Station',
-        'specs'     => '130W Power Delivery • Dual DisplayPort • HDMI',
-        'category'  => 'Docking Station',
-        'type'      => 'accessory',
-        'serial'    => 'WD19-98124-IN',
-        'date'      => '16 Jan 2025',
-        'condition' => 'Good',
-        'status'    => 'Issued & In Use',
-        'badge'     => 'badge-progress'
-    ],
-    [
-        'tag'       => 'ACC-1009',
-        'name'      => 'Logitech MX Keys Advanced Wireless Keyboard',
-        'specs'     => 'Bluetooth & Bolt Receiver • Smart Backlit Keys',
-        'category'  => 'Input Peripheral',
-        'type'      => 'accessory',
-        'serial'    => 'SN-829104-MX',
-        'date'      => '16 Jan 2025',
-        'condition' => 'Good',
-        'status'    => 'Issued & In Use',
-        'badge'     => 'badge-progress'
-    ],
-    [
-        'tag'       => 'ACC-1014',
-        'name'      => 'Logitech MX Master 3S Wireless Mouse',
-        'specs'     => '8K DPI Sensor • Quiet Clicks • MagSpeed Scroll',
-        'category'  => 'Input Peripheral',
-        'type'      => 'accessory',
-        'serial'    => 'SN-772109-MS',
-        'date'      => '16 Jan 2025',
-        'condition' => 'Good',
-        'status'    => 'Issued & In Use',
-        'badge'     => 'badge-progress'
-    ],
-    [
-        'tag'       => 'LIC-2001',
-        'name'      => 'Microsoft 365 E5 Enterprise Cloud License',
-        'specs'     => 'Office Apps • Exchange • Teams • SharePoint • Defender',
-        'category'  => 'Productivity Suite',
-        'type'      => 'software',
-        'serial'    => 'SSO Provisioned (' . htmlspecialchars($activeEmployee['email']) . ')',
-        'date'      => '10 Jan 2025',
-        'condition' => 'Valid',
-        'status'    => 'Active Subscription',
-        'badge'     => 'badge-resolved'
-    ],
-    [
-        'tag'       => 'LIC-2015',
-        'name'      => 'Adobe Creative Cloud All Apps Plan',
-        'specs'     => 'Photoshop • Illustrator • Premiere • Acrobat Pro',
-        'category'  => 'Design & Media',
-        'type'      => 'software',
-        'serial'    => 'Named User SSO License',
-        'date'      => '20 Feb 2025',
-        'condition' => 'Valid',
-        'status'    => 'Active Subscription',
-        'badge'     => 'badge-resolved'
-    ],
-    [
-        'tag'       => 'LIC-2023',
-        'name'      => 'JetBrains All Products Developer Pack',
-        'specs'     => 'IntelliJ IDEA • PhpStorm • WebStorm • DataGrip',
-        'category'  => 'Developer Tool',
-        'type'      => 'software',
-        'serial'    => 'JB-ENT-48912-LIC',
-        'date'      => '01 Mar 2025',
-        'condition' => 'Expiring Soon (60d)',
-        'status'    => 'Commercial Seat',
-        'badge'     => 'badge-urgent'
-    ],
-    [
-        'tag'       => 'LIC-2030',
-        'name'      => 'Slack Enterprise Grid Seat',
-        'specs'     => 'Unlimited Channels • Canvas • Huddles • 99.99% SLA',
-        'category'  => 'Collaboration',
-        'type'      => 'software',
-        'serial'    => 'Enterprise SSO Account',
-        'date'      => '10 Jan 2025',
-        'condition' => 'Valid',
-        'status'    => 'Active Subscription',
-        'badge'     => 'badge-resolved'
-    ]
-];
+if (!$activeEmployee) {
+    $activeEmployee = [
+        'id'           => 1,
+        'name'         => $_SESSION['user_name'] ?? 'Employee Member',
+        'code'         => $_SESSION['user_username'] ?? 'EMP-001',
+        'designation'  => 'Staff Member',
+        'department'   => $_SESSION['user_dept'] ?? 'General',
+        'email'        => $_SESSION['user_email'] ?? 'employee@viros.in',
+        'phone'        => 'Not Provided',
+        'location'     => 'Corporate Office',
+        'status'       => 'Active',
+        'custody'      => 'Verified & Active'
+    ];
+}
 
-// Calculate counts
-$hardwareCount = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'hardware'));
-$accessoryCount = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'accessory'));
-$softwareCount = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'software'));
+$emp_initials = '';
+foreach (explode(' ', trim($activeEmployee['name'])) as $w) {
+    if (!empty($w)) $emp_initials .= strtoupper($w[0]);
+    if (strlen($emp_initials) >= 2) break;
+}
+if (empty($emp_initials)) $emp_initials = 'EM';
+
+// -----------------------------------------------------------------------------
+// DYNAMIC FETCH: Real Custody Inventory for this employee from Database
+// -----------------------------------------------------------------------------
+$allocatedItems = [];
+$seenTags       = [];
+$activeSlipNo   = 'SLIP-' . date('Y') . '-' . str_pad($activeEmployee['id'], 4, '0', STR_PAD_LEFT);
+$activeSlipDate = date('d M Y');
+
+if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
+    $empId    = $activeEmployee['id'];
+    $empEmail = $activeEmployee['email'];
+    $empCode  = $activeEmployee['code'];
+    $empName  = $activeEmployee['name'];
+
+    // 1. Fetch from asset_assignments table
+    $assignSql = "SELECT a.* 
+                  FROM asset_assignments a 
+                  WHERE (a.employee_id = ? OR LOWER(a.employee_email) = LOWER(?) OR LOWER(a.emp_code) = LOWER(?))
+                    AND a.custody_status = 'Active'
+                  ORDER BY a.id DESC";
+    $assignStmt = sqlsrv_query($conn, $assignSql, [$empId, $empEmail, $empCode]);
+
+    if ($assignStmt) {
+        while ($r = sqlsrv_fetch_array($assignStmt, SQLSRV_FETCH_ASSOC)) {
+            $assignedDate = 'Recent';
+            if (!empty($r['assigned_date'])) {
+                $assignedDate = is_object($r['assigned_date']) 
+                    ? $r['assigned_date']->format('d M Y') 
+                    : date('d M Y', strtotime($r['assigned_date']));
+            }
+            if (!empty($r['slip_no'])) {
+                $activeSlipNo   = $r['slip_no'];
+                $activeSlipDate = $assignedDate;
+            }
+
+            // Primary Asset
+            if (!empty($r['asset_tag']) && !in_array($r['asset_tag'], $seenTags)) {
+                $seenTags[] = $r['asset_tag'];
+                $catLower   = strtolower($r['category'] ?? '');
+                $nameLower  = strtolower($r['asset_name'] ?? '');
+
+                $iconType = 'hardware';
+                $itemType = 'hardware';
+                if (strpos($catLower, 'laptop') !== false || strpos($nameLower, 'laptop') !== false) {
+                    $iconType = 'laptop';
+                } elseif (strpos($catLower, 'monitor') !== false || strpos($nameLower, 'monitor') !== false || strpos($catLower, 'display') !== false) {
+                    $iconType = 'monitor';
+                } elseif (strpos($catLower, 'desktop') !== false || strpos($nameLower, 'desktop') !== false) {
+                    $iconType = 'desktop';
+                } elseif (strpos($catLower, 'cable') !== false || strpos($catLower, 'accessory') !== false || strpos($catLower, 'mouse') !== false || strpos($catLower, 'keyboard') !== false) {
+                    $itemType = 'accessory';
+                    $iconType = 'accessory';
+                }
+
+                $specs = !empty($r['specs']) ? $r['specs'] : trim(($r['brand'] ?? '') . ' ' . ($r['model'] ?? ''));
+
+                $allocatedItems[] = [
+                    'tag'       => $r['asset_tag'],
+                    'name'      => !empty($r['asset_name']) ? $r['asset_name'] : 'Corporate Hardware Unit',
+                    'specs'     => $specs ?: 'Configured computing system',
+                    'category'  => !empty($r['category']) ? $r['category'] : 'Computing Unit',
+                    'type'      => $itemType,
+                    'serial'    => !empty($r['serial']) ? $r['serial'] : 'S/N: Not Specified',
+                    'date'      => $assignedDate,
+                    'condition' => !empty($r['condition']) ? $r['condition'] : 'Good',
+                    'status'    => 'In Active Custody',
+                    'badge'     => 'badge-resolved',
+                    'icon_type' => $iconType,
+                    'slip_no'   => $r['slip_no']
+                ];
+            }
+
+            // Bundled Assets from assets_json
+            if (!empty($r['assets_json'])) {
+                $bundledAssets = json_decode($r['assets_json'], true);
+                if (is_array($bundledAssets)) {
+                    foreach ($bundledAssets as $ba) {
+                        $baTag = $ba['tag'] ?? '';
+                        if (!empty($baTag) && !in_array($baTag, $seenTags)) {
+                            $seenTags[] = $baTag;
+                            $baCatLower = strtolower($ba['category'] ?? '');
+                            $baIcon = (strpos($baCatLower, 'laptop') !== false) ? 'laptop' : ((strpos($baCatLower, 'monitor') !== false) ? 'monitor' : 'hardware');
+
+                            $allocatedItems[] = [
+                                'tag'       => $baTag,
+                                'name'      => $ba['name'] ?? 'Hardware Unit',
+                                'specs'     => $ba['specs'] ?? trim(($ba['brand'] ?? '') . ' ' . ($ba['model'] ?? '')),
+                                'category'  => $ba['category'] ?? 'Hardware',
+                                'type'      => 'hardware',
+                                'serial'    => !empty($ba['serial']) ? $ba['serial'] : 'S/N: N/A',
+                                'date'      => $assignedDate,
+                                'condition' => $ba['condition'] ?? 'Good',
+                                'status'    => 'In Active Custody',
+                                'badge'     => 'badge-resolved',
+                                'icon_type' => $baIcon,
+                                'slip_no'   => $r['slip_no']
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Bundled Accessories from accessories_json
+            if (!empty($r['accessories_json'])) {
+                $accList = json_decode($r['accessories_json'], true);
+                if (is_array($accList)) {
+                    foreach ($accList as $acc) {
+                        $accTag = !empty($acc['sku']) ? $acc['sku'] : ('ACC-' . ($acc['id'] ?? uniqid()));
+                        if (in_array($accTag, $seenTags)) continue;
+                        $seenTags[] = $accTag;
+
+                        $accName  = $acc['name'] ?? 'Workstation Accessory';
+                        $accCat   = $acc['category'] ?? 'Peripheral';
+                        $accBrand = $acc['brand'] ?? '';
+                        $accQty   = $acc['qty'] ?? 1;
+
+                        $catLower = strtolower($accCat . ' ' . $accName);
+                        $iconType = 'accessory';
+                        if (strpos($catLower, 'keyboard') !== false) $iconType = 'keyboard';
+                        elseif (strpos($catLower, 'mouse') !== false) $iconType = 'mouse';
+                        elseif (strpos($catLower, 'headset') !== false || strpos($catLower, 'audio') !== false) $iconType = 'headset';
+                        elseif (strpos($catLower, 'dock') !== false) $iconType = 'dock';
+                        elseif (strpos($catLower, 'cable') !== false) $iconType = 'cable';
+
+                        $allocatedItems[] = [
+                            'tag'       => $accTag,
+                            'name'      => $accName,
+                            'specs'     => ($accBrand ? $accBrand . ' • ' : '') . 'Qty: ' . $accQty . ' Unit(s)',
+                            'category'  => $accCat ?: 'Workstation Accessory',
+                            'type'      => 'accessory',
+                            'serial'    => 'SKU: ' . $accTag,
+                            'date'      => $assignedDate,
+                            'condition' => 'Good',
+                            'status'    => 'Issued & In Use',
+                            'badge'     => 'badge-progress',
+                            'icon_type' => $iconType,
+                            'slip_no'   => $r['slip_no']
+                        ];
+                    }
+                }
+            }
+        }
+        sqlsrv_free_stmt($assignStmt);
+    }
+
+    // 2. Also check assets table directly (where assigned_to matches employee name or code)
+    $assetSql = "SELECT ast.* FROM assets ast WHERE (LOWER(ast.assigned_to) = LOWER(?) OR LOWER(ast.assigned_to) = LOWER(?)) AND ast.status = 'In Use'";
+    $assetStmt = sqlsrv_query($conn, $assetSql, [$empName, $empCode]);
+    if ($assetStmt) {
+        while ($ast = sqlsrv_fetch_array($assetStmt, SQLSRV_FETCH_ASSOC)) {
+            if (!empty($ast['tag']) && !in_array($ast['tag'], $seenTags)) {
+                $seenTags[] = $ast['tag'];
+                $specsParts = array_filter([$ast['processor'] ?? '', $ast['ram'] ?? '', $ast['storage'] ?? '', $ast['os'] ?? '']);
+                $specs = !empty($specsParts) ? implode(' • ', $specsParts) : trim(($ast['brand'] ?? '') . ' ' . ($ast['model'] ?? ''));
+
+                $catLower = strtolower($ast['category'] ?? '');
+                $iconType = (strpos($catLower, 'laptop') !== false) ? 'laptop' : ((strpos($catLower, 'monitor') !== false) ? 'monitor' : 'hardware');
+
+                $astDate = 'Recent';
+                if (!empty($ast['updated_at'])) {
+                    $astDate = is_object($ast['updated_at']) ? $ast['updated_at']->format('d M Y') : date('d M Y', strtotime($ast['updated_at']));
+                }
+
+                $allocatedItems[] = [
+                    'tag'       => $ast['tag'],
+                    'name'      => $ast['name'],
+                    'specs'     => $specs ?: 'Hardware computing unit',
+                    'category'  => $ast['category'] ?: 'Hardware',
+                    'type'      => 'hardware',
+                    'serial'    => !empty($ast['serial']) ? $ast['serial'] : 'S/N: Not Specified',
+                    'date'      => $astDate,
+                    'condition' => !empty($ast['condition']) ? $ast['condition'] : 'Good',
+                    'status'    => 'In Active Custody',
+                    'badge'     => 'badge-resolved',
+                    'icon_type' => $iconType,
+                    'slip_no'   => 'HS-' . $ast['tag']
+                ];
+            }
+        }
+        sqlsrv_free_stmt($assetStmt);
+    }
+}
+
+// Dynamic item counts
+$hardwareCount   = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'hardware'));
+$accessoryCount  = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'accessory'));
+$softwareCount   = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'software'));
 $totalItemsCount = count($allocatedItems);
 
-// Recent Support Requests for this employee ONLY
-$recentTickets = [];
-if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
+// -----------------------------------------------------------------------------
+// DYNAMIC FETCH: Real Support Tickets for this employee
+// -----------------------------------------------------------------------------
+$recentTickets        = [];
+$allTickets           = [];
+$openTicketsCount     = 0;
+$resolvedTicketsCount = 0;
+
+if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
     $empId   = intval($activeEmployee['id'] ?? 0);
     $empCode = trim($activeEmployee['code'] ?? '');
     $empName = trim($activeEmployee['name'] ?? '');
@@ -224,7 +356,7 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
         $whereSql = '(' . implode(' OR ', $whereEmp) . ')';
         $rtStmt = sqlsrv_query(
             $conn,
-            "SELECT TOP 5 * FROM support_tickets WHERE {$whereSql} ORDER BY incident_date DESC, id DESC",
+            "SELECT * FROM support_tickets WHERE {$whereSql} ORDER BY incident_date DESC, id DESC",
             $paramsEmp
         );
         if ($rtStmt) {
@@ -235,9 +367,14 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
                 elseif (!empty($dt)) $formattedDate = date('d M Y', strtotime($dt));
 
                 $st = $r['status'] ?? 'Open';
-                $sClass = 'badge-progress';
-                if (stripos($st, 'open') !== false) $sClass = 'badge-open';
-                elseif (stripos($st, 'resolved') !== false || stripos($st, 'closed') !== false) $sClass = 'badge-resolved';
+                $stLower = strtolower($st);
+                if (in_array($stLower, ['resolved', 'closed'])) {
+                    $resolvedTicketsCount++;
+                    $sClass = 'badge-resolved';
+                } else {
+                    $openTicketsCount++;
+                    $sClass = (stripos($stLower, 'open') !== false) ? 'badge-open' : 'badge-progress';
+                }
 
                 $prio = $r['priority'] ?? 'Medium';
                 $pClass = 'badge-medium';
@@ -245,7 +382,7 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
                 elseif ($prio === 'High') $pClass = 'badge-high';
                 elseif ($prio === 'Low') $pClass = 'badge-open';
 
-                $recentTickets[] = [
+                $item = [
                     'id'       => $r['ticket_no'],
                     'subject'  => $r['subject'],
                     'asset'    => $r['asset_name'] ?: 'Corporate Device',
@@ -254,12 +391,77 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
                     'status'   => $st,
                     's_class'  => $sClass,
                     'date'     => $formattedDate,
-                    'tech'     => 'IT Service Desk Queue'
+                    'tech'     => !empty($r['assigned_to']) ? $r['assigned_to'] : 'IT Service Desk Queue'
                 ];
+                $allTickets[] = $item;
             }
             sqlsrv_free_stmt($rtStmt);
         }
     }
+}
+$recentTickets = array_slice($allTickets, 0, 5);
+$totalTicketsCount = count($allTickets);
+
+// -----------------------------------------------------------------------------
+// DYNAMIC BREAKDOWN: Real Custody Distribution
+// -----------------------------------------------------------------------------
+$custodyDistribution = [];
+if ($totalItemsCount > 0) {
+    $catCounts = [];
+    foreach ($allocatedItems as $it) {
+        $cat = !empty($it['category']) ? $it['category'] : 'General Equipment';
+        $catCounts[$cat] = ($catCounts[$cat] ?? 0) + 1;
+    }
+    arsort($catCounts);
+    $colorOptions = ['progress-cyan', 'progress-navy', 'progress-green', 'progress-amber'];
+    $ci = 0;
+    foreach ($catCounts as $cName => $cnt) {
+        $pct = round(($cnt / $totalItemsCount) * 100);
+        $custodyDistribution[] = [
+            'name'       => $cName,
+            'count'      => $cnt,
+            'percentage' => $pct,
+            'color'      => $colorOptions[$ci % count($colorOptions)]
+        ];
+        $ci++;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// DYNAMIC TIMELINE: Real Custody & Ticket Activity
+// -----------------------------------------------------------------------------
+$recentActivities = [];
+if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
+    $actStmt = sqlsrv_query(
+        $conn,
+        "SELECT TOP 3 slip_no, asset_name, category, custody_status, assigned_date 
+         FROM asset_assignments 
+         WHERE (employee_id = ? OR LOWER(employee_email) = LOWER(?) OR LOWER(emp_code) = LOWER(?))
+         ORDER BY id DESC",
+        [$activeEmployee['id'], $activeEmployee['email'], $activeEmployee['code']]
+    );
+    if ($actStmt) {
+        while ($ar = sqlsrv_fetch_array($actStmt, SQLSRV_FETCH_ASSOC)) {
+            $aDate = 'Recent';
+            if (!empty($ar['assigned_date'])) {
+                $aDate = is_object($ar['assigned_date']) ? $ar['assigned_date']->format('d M Y') : date('d M Y', strtotime($ar['assigned_date']));
+            }
+            $icon = (stripos($ar['category'] ?? '', 'laptop') !== false) ? '💻' : ((stripos($ar['category'] ?? '', 'cable') !== false) ? '🔌' : '📦');
+            $recentActivities[] = [
+                'icon'  => $icon,
+                'title' => (!empty($ar['asset_name']) ? $ar['asset_name'] : 'IT Equipment') . ' recorded on ' . ($ar['slip_no'] ?? 'Custody Slip'),
+                'time'  => $aDate . ' • ' . ($ar['custody_status'] ?? 'Active') . ' Custody'
+            ];
+        }
+        sqlsrv_free_stmt($actStmt);
+    }
+}
+foreach (array_slice($recentTickets, 0, 2) as $t) {
+    $recentActivities[] = [
+        'icon'  => '🎫',
+        'title' => 'Ticket #' . $t['id'] . ': ' . $t['subject'],
+        'time'  => $t['date'] . ' • ' . $t['status']
+    ];
 }
 
 // First login password setup is handled on index.php via Smart Login Check
@@ -289,29 +491,16 @@ include 'includes/employee_topbar.php';
             </p>
         </div>
         <div class="welcome-stats" style="align-items: center; flex-wrap: wrap;">
-            <?php if (!empty($availableEmployees)): ?>
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <span style="font-size: 10.5px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; font-weight: 600;">Switch Demo Employee:</span>
-                    <select id="employeeProfileSelector" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 6px 12px; border-radius: 6px; font-size: 12px; outline: none; cursor: pointer;">
-                        <?php foreach ($availableEmployees as $ae): ?>
-                            <option value="<?php echo $ae['id']; ?>" style="color: #001938;" <?php echo ($ae['code'] === $activeEmployee['code']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($ae['name'] . ' (' . $ae['code'] . ')'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            <?php endif; ?>
-
             <div class="welcome-badge">
-                <div class="num" style="display: flex; align-items: center; justify-content: center; gap: 4px; color: #34d399;">
+                <div class="num" style="display: flex; align-items: center; justify-content: center; gap: 4px; color: <?php echo ($totalItemsCount > 0) ? '#34d399' : '#94a3b8'; ?>;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Verified
+                    <?php echo ($totalItemsCount > 0) ? 'Verified' : 'No Custody'; ?>
                 </div>
                 <div class="lbl">Custody Status</div>
             </div>
             <div class="welcome-badge">
                 <div class="num"><?php echo $totalItemsCount; ?> Items</div>
-                <div class="lbl">Hardware & Licenses</div>
+                <div class="lbl">In Active Custody</div>
             </div>
         </div>
     </div>
@@ -331,10 +520,10 @@ include 'includes/employee_topbar.php';
                     </svg>
                 </div>
             </div>
-            <div class="metric-value"><?php echo $hardwareCount; ?> Devices</div>
+            <div class="metric-value"><?php echo $hardwareCount; ?> Device<?php echo $hardwareCount === 1 ? '' : 's'; ?></div>
             <div class="metric-footer">
                 <span class="trend-up">● In Active Custody</span>
-                <span>• Laptop & Display</span>
+                <span>• Laptop & Computing</span>
             </div>
         </div>
 
@@ -349,44 +538,51 @@ include 'includes/employee_topbar.php';
                     </svg>
                 </div>
             </div>
-            <div class="metric-value"><?php echo $accessoryCount; ?> Peripherals</div>
+            <div class="metric-value"><?php echo $accessoryCount; ?> Peripheral<?php echo $accessoryCount === 1 ? '' : 's'; ?></div>
             <div class="metric-footer">
                 <span class="trend-neutral">● Allocated</span>
-                <span>• Dock, Keyboard & Mouse</span>
+                <span>• Peripherals & Cables</span>
             </div>
         </div>
 
-        <!-- Metric 3: Software Licenses -->
+        <!-- Metric 3: Active Support Requests -->
         <div class="metric-card">
             <div class="metric-top">
-                <span class="metric-title">Active Software Licenses</span>
-                <div class="metric-icon-wrap navy">
+                <span class="metric-title">Open Support Requests</span>
+                <div class="metric-icon-wrap <?php echo ($openTicketsCount > 0) ? 'urgent' : 'success'; ?>">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     </svg>
                 </div>
             </div>
-            <div class="metric-value"><?php echo $softwareCount; ?> Apps</div>
+            <div class="metric-value"><?php echo $openTicketsCount; ?> Open</div>
             <div class="metric-footer">
-                <span class="trend-up">● Valid Subscriptions</span>
-                <span>• M365, Adobe, IDE</span>
+                <?php if ($openTicketsCount > 0): ?>
+                    <span class="trend-urgent" style="color: #ef4444;">● In IT Queue</span>
+                    <span>• SLA Monitored</span>
+                <?php else: ?>
+                    <span class="trend-up">✓ All Resolved</span>
+                    <span>• No Pending Issues</span>
+                <?php endif; ?>
             </div>
         </div>
 
-        <!-- Metric 4: Open Support Tickets -->
+        <!-- Metric 4: Resolved / Total Tickets -->
         <div class="metric-card">
             <div class="metric-top">
-                <span class="metric-title">My Support Requests</span>
-                <div class="metric-icon-wrap success">
+                <span class="metric-title">Support Ticket History</span>
+                <div class="metric-icon-wrap navy">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                     </svg>
                 </div>
             </div>
-            <div class="metric-value"><?php echo count($recentTickets); ?> Tickets</div>
+            <div class="metric-value"><?php echo $totalTicketsCount; ?> Total</div>
             <div class="metric-footer">
-                <span class="trend-neutral">1 In Progress</span>
-                <span>• SLA: Today</span>
+                <span class="trend-neutral">● <?php echo $resolvedTicketsCount; ?> Closed / Resolved</span>
+                <span>• Tracked</span>
             </div>
         </div>
 
@@ -402,9 +598,9 @@ include 'includes/employee_topbar.php';
             <div class="content-card" id="secMyAssets">
                 <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
                     <div>
-                        <h2>My Allocated IT Equipment & Software</h2>
+                        <h2>My Allocated IT Equipment</h2>
                         <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                            Hardware and digital resources registered to your custody
+                            Hardware and peripherals registered to your official custody
                         </div>
                     </div>
                     
@@ -420,27 +616,12 @@ include 'includes/employee_topbar.php';
                             <button type="button" class="emp-tab-btn" data-filter="accessory">
                                 🎧 Accessories <span class="emp-tab-count"><?php echo $accessoryCount; ?></span>
                             </button>
-                            <button type="button" class="emp-tab-btn" data-filter="software">
-                                🔑 Software <span class="emp-tab-count"><?php echo $softwareCount; ?></span>
-                            </button>
+                            <?php if ($softwareCount > 0): ?>
+                                <button type="button" class="emp-tab-btn" data-filter="software">
+                                    🔑 Software <span class="emp-tab-count"><?php echo $softwareCount; ?></span>
+                                </button>
+                            <?php endif; ?>
                         </div>
-
-                        <!-- Request New Item Button -->
-                        <button type="button" class="quick-action-btn" onclick="openEmployeeRequestModal()" style="height: 32px; padding: 0 12px; font-size: 12px;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            Request Equipment
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Table Search Toolbar -->
-                <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: #f8fafc; display: flex; align-items: center; gap: 10px;">
-                    <div style="position: relative; flex: 1; max-width: 380px;">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 10px; top: 9px; color: var(--text-muted);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="empItemSearchInput" placeholder="Search by Tag, Name, Serial or Model..." style="width: 100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px 6px 32px; font-size: 12.5px; outline: none; background: #ffffff;">
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-left: auto;">
-                        Click <strong>Handover Slip</strong> to view or print official custody document.
                     </div>
                 </div>
 
@@ -453,73 +634,69 @@ include 'includes/employee_topbar.php';
                                 <th>Serial / Key</th>
                                 <th>Assigned Date</th>
                                 <th>Status / Condition</th>
-                                <th style="text-align: right; padding-right: 18px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($allocatedItems as $item): ?>
-                                <tr class="emp-item-row" data-type="<?php echo $item['type']; ?>">
-                                    <td>
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-weight: 700; color: var(--navy-primary); font-family: monospace; font-size: 12px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                                                <?php echo htmlspecialchars($item['tag']); ?>
-                                            </span>
-                                            <div>
-                                                <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
-                                                    <?php echo htmlspecialchars($item['name']); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style="font-size: 12.5px; font-weight: 600; color: var(--navy-primary);">
-                                            <?php echo htmlspecialchars($item['category']); ?>
-                                        </div>
-                                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
-                                            <?php echo htmlspecialchars($item['specs']); ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span style="font-family: monospace; font-size: 11.5px; color: var(--text-secondary); background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                                            <?php echo htmlspecialchars($item['serial']); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span style="font-size: 12px; color: var(--text-secondary);">
-                                            <?php echo htmlspecialchars($item['date']); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?php echo $item['badge']; ?>" style="font-size: 11px;">
-                                            <?php echo htmlspecialchars($item['status']); ?>
-                                        </span>
-                                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                                            Condition: <strong><?php echo htmlspecialchars($item['condition']); ?></strong>
-                                        </div>
-                                    </td>
-                                    <td style="text-align: right; padding-right: 18px;">
-                                        <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                            <?php if ($item['type'] === 'hardware'): ?>
-                                                <button type="button" class="card-btn" title="View Official Handover Slip" onclick="openEmployeeHandoverSlip('<?php echo $item['tag']; ?>')" style="padding: 4px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                                                    Handover Slip
-                                                </button>
-                                            <?php endif; ?>
-
-                                            <button type="button" class="card-btn" title="Report Fault or Issue" onclick="openEmployeeTicketModal('<?php echo $item['tag'] . ' - ' . $item['name']; ?>')" style="padding: 4px 8px; font-size: 11px; color: var(--warning); border-color: rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 4px;">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                                                Report Issue
-                                            </button>
+                            <?php if (empty($allocatedItems)): ?>
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 48px 20px; color: var(--text-secondary);">
+                                        <div style="font-size: 36px; margin-bottom: 8px;">💻</div>
+                                        <div style="font-weight: 700; color: var(--navy-primary); font-size: 14.5px;">No IT Equipment Currently Allocated</div>
+                                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px; max-width: 440px; margin-left: auto; margin-right: auto; line-height: 1.4;">
+                                            You currently do not have any company hardware or peripherals registered in your custody.
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($allocatedItems as $item): ?>
+                                    <tr class="emp-item-row" data-type="<?php echo $item['type']; ?>">
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span style="font-weight: 700; color: var(--navy-primary); font-family: monospace; font-size: 12px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                                    <?php echo htmlspecialchars($item['tag']); ?>
+                                                </span>
+                                                <div>
+                                                    <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
+                                                        <?php echo htmlspecialchars($item['name']); ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style="font-size: 12.5px; font-weight: 600; color: var(--navy-primary);">
+                                                <?php echo htmlspecialchars($item['category']); ?>
+                                            </div>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
+                                                <?php echo htmlspecialchars($item['specs']); ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span style="font-family: monospace; font-size: 11.5px; color: var(--text-secondary); background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                                <?php echo htmlspecialchars($item['serial']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span style="font-size: 12px; color: var(--text-secondary);">
+                                                <?php echo htmlspecialchars($item['date']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?php echo $item['badge']; ?>" style="font-size: 11px;">
+                                                <?php echo htmlspecialchars($item['status']); ?>
+                                            </span>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                                Condition: <strong><?php echo htmlspecialchars($item['condition']); ?></strong>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
 
                             <tr id="empNoItemsRow" style="display: none;">
-                                <td colspan="6" style="text-align: center; padding: 36px 16px; color: var(--text-secondary);">
+                                <td colspan="5" style="text-align: center; padding: 36px 16px; color: var(--text-secondary);">
                                     <div style="font-size: 28px; margin-bottom: 6px;">📦</div>
                                     <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">No matching items found</div>
-                                    <div style="font-size: 12px; margin-top: 4px; color: var(--text-muted);">Try adjusting your category tab filter or search query.</div>
+                                    <div style="font-size: 12px; margin-top: 4px; color: var(--text-muted);">Try adjusting your category tab filter.</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -562,9 +739,10 @@ include 'includes/employee_topbar.php';
                         <tbody>
                             <?php if (empty($recentTickets)): ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; padding: 32px 16px; color: var(--text-muted);">
-                                        <div style="font-weight: 600; color: var(--navy-primary); font-size: 13px;">No Support Tickets Logged</div>
-                                        <div style="font-size: 12px; margin-top: 3px;">You have no active technical tickets. Click "Raise New Ticket" if you require assistance.</div>
+                                    <td colspan="6" style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+                                        <div style="font-size: 28px; margin-bottom: 6px;">🎫</div>
+                                        <div style="font-weight: 700; color: var(--navy-primary); font-size: 13.5px;">No Support Tickets Logged</div>
+                                        <div style="font-size: 12px; margin-top: 3px;">You have no active technical tickets. Click "Raise New Ticket" if you require IT assistance.</div>
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -603,178 +781,33 @@ include 'includes/employee_topbar.php';
 
         </div>
 
-        <!-- Right Column: Self-Service Widgets & Information -->
+        <!-- Right Column: Custody Distribution -->
         <div class="dashboard-col-side" style="display: flex; flex-direction: column; gap: 24px; min-width: 0; width: 100%; max-width: 100%;">
 
-            <!-- Widget 1: Quick Self-Service Actions -->
-            <div class="content-card">
-                <div class="card-header">
-                    <h2>Quick Self-Service Actions</h2>
-                </div>
-                <div class="emp-quick-actions-grid">
-                    <!-- Action Tile 1: Report Fault -->
-                    <div class="emp-action-tile" onclick="openEmployeeTicketModal()">
-                        <div class="tile-icon amber">⚠️</div>
-                        <div class="tile-title">Report Device Fault</div>
-                        <div class="tile-desc">Hardware defect, broken display, battery drain</div>
-                    </div>
-
-                    <!-- Action Tile 2: Request Peripheral -->
-                    <div class="emp-action-tile" onclick="openEmployeeRequestModal('Accessory / Peripheral')">
-                        <div class="tile-icon cyan">🎧</div>
-                        <div class="tile-title">Request Accessory</div>
-                        <div class="tile-desc">Keyboard, mouse, USB-C adapter, or headset</div>
-                    </div>
-
-                    <!-- Action Tile 3: Request Software -->
-                    <div class="emp-action-tile" onclick="openEmployeeRequestModal('Software License')">
-                        <div class="tile-icon navy">🔑</div>
-                        <div class="tile-title">Software Access</div>
-                        <div class="tile-desc">Request Figma, JetBrains, or Cloud tools</div>
-                    </div>
-
-                    <!-- Action Tile 4: Handover Slip -->
-                    <div class="emp-action-tile" onclick="openEmployeeHandoverSlip()">
-                        <div class="tile-icon green">📄</div>
-                        <div class="tile-title">Handover Slip</div>
-                        <div class="tile-desc">View and print official custodian agreement</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Widget 2: Custody Distribution (Matching Dashboard style) -->
+            <!-- Custody Distribution (Dynamic Breakdown) -->
             <div class="content-card">
                 <div class="card-header">
                     <h2>My Custody Distribution</h2>
                 </div>
                 <div class="asset-category-list">
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Laptops & Computing</span>
-                            <strong>1 Unit (40%)</strong>
+                    <?php if (empty($custodyDistribution)): ?>
+                        <div style="padding: 24px 12px; text-align: center; color: var(--text-muted); font-size: 12.5px;">
+                            <div style="font-size: 24px; margin-bottom: 6px;">📦</div>
+                            <div>No IT assets currently assigned.</div>
                         </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-cyan" style="width: 40%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Displays & Visuals</span>
-                            <strong>1 Unit (30%)</strong>
-                        </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-navy" style="width: 30%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Peripherals & Input</span>
-                            <strong>3 Items (20%)</strong>
-                        </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-green" style="width: 20%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="category-row">
-                        <div class="category-meta">
-                            <span>Enterprise Software</span>
-                            <strong>4 Apps (10%)</strong>
-                        </div>
-                        <div class="category-progress">
-                            <div class="progress-fill progress-amber" style="width: 10%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Widget 3: IT Support Contact & Desk Info -->
-            <div class="content-card">
-                <div class="card-header">
-                    <h2>IT Support & Desk Information</h2>
-                </div>
-                <div class="it-support-card-body">
-                    <div class="it-support-item">
-                        <div class="it-support-icon">🏢</div>
-                        <div class="it-support-text">
-                            <div class="it-support-label">IT Service Desk Location</div>
-                            <div class="it-support-val">Floor 2, Hub A, Bangalore HQ</div>
-                        </div>
-                    </div>
-
-                    <div class="it-support-item">
-                        <div class="it-support-icon">📞</div>
-                        <div class="it-support-text">
-                            <div class="it-support-label">Internal Phone Extension</div>
-                            <div class="it-support-val">Ext: 204 • Helpdesk Hotline</div>
-                        </div>
-                    </div>
-
-                    <div class="it-support-item">
-                        <div class="it-support-icon">✉️</div>
-                        <div class="it-support-text">
-                            <div class="it-support-label">Support Email</div>
-                            <div class="it-support-val">itsupport@viros.in</div>
-                        </div>
-                    </div>
-
-                    <div class="it-support-item">
-                        <div class="it-support-icon">🕒</div>
-                        <div class="it-support-text">
-                            <div class="it-support-label">Operating Hours</div>
-                            <div class="it-support-val">Mon – Fri, 9:00 AM – 6:30 PM IST</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Widget 4: Recent Custody Activity -->
-            <div class="content-card">
-                <div class="card-header">
-                    <h2>Recent Custody Activity</h2>
-                </div>
-                <div class="activity-feed">
-                    <div class="activity-item">
-                        <div class="activity-dot">💻</div>
-                        <div class="activity-body">
-                            <div class="activity-text">
-                                <strong>Dell Latitude 5420</strong> custody confirmed & handover acknowledged.
+                    <?php else: ?>
+                        <?php foreach ($custodyDistribution as $cd): ?>
+                            <div class="category-row">
+                                <div class="category-meta">
+                                    <span><?php echo htmlspecialchars($cd['name']); ?></span>
+                                    <strong><?php echo $cd['count']; ?> Unit<?php echo $cd['count'] > 1 ? 's' : ''; ?> (<?php echo $cd['percentage']; ?>%)</strong>
+                                </div>
+                                <div class="category-progress">
+                                    <div class="progress-fill <?php echo $cd['color']; ?>" style="width: <?php echo $cd['percentage']; ?>%;"></div>
+                                </div>
                             </div>
-                            <div class="activity-time">15 Jan 2025 • Hardware Allocation</div>
-                        </div>
-                    </div>
-
-                    <div class="activity-item">
-                        <div class="activity-dot">🎧</div>
-                        <div class="activity-body">
-                            <div class="activity-text">
-                                <strong>Logitech MX Master 3S</strong> & <strong>MX Keys</strong> issued.
-                            </div>
-                            <div class="activity-time">16 Jan 2025 • Accessory Provisioning</div>
-                        </div>
-                    </div>
-
-                    <div class="activity-item">
-                        <div class="activity-dot">🔑</div>
-                        <div class="activity-body">
-                            <div class="activity-text">
-                                <strong>Adobe Creative Cloud</strong> enterprise seat assigned.
-                            </div>
-                            <div class="activity-time">20 Feb 2025 • License Provisioning</div>
-                        </div>
-                    </div>
-
-                    <div class="activity-item">
-                        <div class="activity-dot">🎫</div>
-                        <div class="activity-body">
-                            <div class="activity-text">
-                                Ticket <strong>#TKT10261082</strong> registered with IT Helpdesk.
-                            </div>
-                            <div class="activity-time">08 Oct 2026 • In Progress</div>
-                        </div>
-                    </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -785,65 +818,6 @@ include 'includes/employee_topbar.php';
 </main>
 
 
-<!-- =========================================================================
-     MODAL 2: REQUEST NEW EQUIPMENT / ACCESSORY / SOFTWARE
-     ========================================================================= -->
-<div class="modal-overlay" id="employeeRequestModal" style="display: none;">
-    <div class="modal-box" style="max-width: 500px;">
-        <div class="modal-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--cyan-light); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center; font-size: 16px;">
-                    📦
-                </div>
-                <h3 style="margin: 0;">Request IT Equipment or License</h3>
-            </div>
-            <button type="button" class="modal-close-btn">&times;</button>
-        </div>
-        <form id="employeeRequestForm">
-            <div class="modal-body" style="padding: 18px 20px;">
-                <div class="modal-form-group">
-                    <label>Item Type</label>
-                    <select class="modal-select" id="requestCategorySelect" required>
-                        <option value="Accessory / Peripheral">Accessory / Peripheral (Monitor, Dock, Keyboard, Mouse)</option>
-                        <option value="Software License">Software License / Cloud Tool</option>
-                        <option value="Hardware Upgrade">Hardware Upgrade (RAM, SSD, Laptop Replacement)</option>
-                        <option value="Temporary Loaner Device">Temporary Loaner Device (Project / Travel)</option>
-                    </select>
-                </div>
-
-                <div class="modal-form-group">
-                    <label>Item Required</label>
-                    <input type="text" class="modal-input" id="requestItemNameInput" placeholder="e.g. Ergonomic Keyboard, Type-C Multiport Dongle, Figma Seat..." required>
-                </div>
-
-                <div class="modal-form-group">
-                    <label>Business Justification</label>
-                    <textarea class="modal-textarea" placeholder="Why is this equipment or license required for your day-to-day responsibilities?" rows="3" required></textarea>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div class="modal-form-group">
-                        <label>Required By Date</label>
-                        <input type="date" class="modal-input" value="<?php echo date('Y-m-d', strtotime('+3 days')); ?>" required>
-                    </div>
-
-                    <div class="modal-form-group">
-                        <label>Delivery / Pickup Location</label>
-                        <select class="modal-select">
-                            <option value="Bangalore HQ">Bangalore HQ Desk</option>
-                            <option value="Remote / WFH Address">Remote / Home Address</option>
-                            <option value="Branch Office">Branch Office</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
-                <button type="button" class="btn-secondary modal-cancel-btn">Cancel</button>
-                <button type="submit" class="btn-primary">Submit Request</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <!-- =========================================================================
      MODAL 3: VIEW / PRINT OFFICIAL HANDOVER SLIP
@@ -869,8 +843,8 @@ include 'includes/employee_topbar.php';
                         <p style="font-size: 11px; color: #94a3b8;">Document Form: IT-AST-HND-2025/V1</p>
                     </div>
                     <div class="slip-title-box">
-                        <div class="slip-doc-no">SLIP #AST-HO-2025-0819</div>
-                        <div class="slip-date">Date Issued: 15-Jan-2025</div>
+                        <div class="slip-doc-no">SLIP #<?php echo htmlspecialchars($activeSlipNo); ?></div>
+                        <div class="slip-date">Date Issued: <?php echo htmlspecialchars($activeSlipDate); ?></div>
                     </div>
                 </div>
 
@@ -904,30 +878,22 @@ include 'includes/employee_topbar.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><strong>AST2026001</strong></td>
-                            <td>Dell Latitude 5420 Laptop (Core i7, 16GB, 512GB)</td>
-                            <td><code>C02G40PZMD6T</code></td>
-                            <td>Good</td>
-                        </tr>
-                        <tr>
-                            <td><strong>AST2026048</strong></td>
-                            <td>Dell UltraSharp 24" USB-C Monitor U2422HE</td>
-                            <td><code>CN-04D792-742</code></td>
-                            <td>Excellent</td>
-                        </tr>
-                        <tr>
-                            <td><strong>ACC-1002</strong></td>
-                            <td>Dell WD19S USB-C Docking Station 130W</td>
-                            <td><code>WD19-98124-IN</code></td>
-                            <td>Good</td>
-                        </tr>
-                        <tr>
-                            <td><strong>ACC-1009</strong></td>
-                            <td>Logitech MX Keys Wireless Keyboard</td>
-                            <td><code>SN-829104-MX</code></td>
-                            <td>Good</td>
-                        </tr>
+                        <?php if (empty($allocatedItems)): ?>
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                                    No active equipment items registered on this custody slip.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($allocatedItems as $ai): ?>
+                                <tr>
+                                    <td><strong><?php echo htmlspecialchars($ai['tag']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($ai['name'] . ' (' . $ai['specs'] . ')'); ?></td>
+                                    <td><code><?php echo htmlspecialchars($ai['serial']); ?></code></td>
+                                    <td><?php echo htmlspecialchars($ai['condition']); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
 

@@ -139,13 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
         openModal('employeeTicketModal');
     };
 
-    window.openEmployeeRequestModal = function (itemCategory = '') {
-        const catSelect = document.getElementById('requestCategorySelect');
-        if (catSelect && itemCategory) {
-            catSelect.value = itemCategory;
-        }
-        openModal('employeeRequestModal');
-    };
+    window.openEmployeeRequestModal = function () {};
 
     window.openEmployeeHandoverSlip = function (assetId = '') {
         openModal('employeeHandoverSlipModal');
@@ -201,22 +195,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 4. Form Submissions (Demo Toast & Interactivity)
 
-    const requestForm = document.getElementById('employeeRequestForm');
-    if (requestForm) {
-        requestForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const itemName = document.getElementById('requestItemNameInput')?.value || 'Hardware/Peripherals';
-
-            closeModal('employeeRequestModal');
-            requestForm.reset();
-
-            if (typeof showToast === 'function') {
-                showToast(`Request for "${itemName}" has been submitted to IT Procurement!`, 'success');
-            } else {
-                alert(`Request for "${itemName}" submitted!`);
-            }
-        });
-    }
 
     // 5. Change Password Form Submission
     const changePasswordForm = document.getElementById('changePasswordForm');
