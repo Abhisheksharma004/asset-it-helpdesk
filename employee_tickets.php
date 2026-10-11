@@ -166,7 +166,7 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
                     'ticket_no'   => $row['ticket_no'],
                     'subject'     => $row['subject'],
                     'category'    => $row['category'] ?: 'General IT Support',
-                    'asset'       => $row['asset_name'] ?: 'General Workstation / Laptop',
+                    'asset'       => $row['asset_name'] ?: 'NA',
                     'priority'    => $prio,
                     'p_class'     => $pClass,
                     'status'      => $st,
@@ -401,7 +401,7 @@ include 'includes/employee_topbar.php';
                             <td>
                                 <span class="ticket-asset-pill">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg>
-                                    <?php echo htmlspecialchars($tkt['asset'] ?: 'General Workstation / Laptop'); ?>
+                                    <?php echo htmlspecialchars($tkt['asset'] ?: 'NA'); ?>
                                 </span>
                             </td>
 

@@ -117,7 +117,7 @@ if ($method === 'POST' && $action === 'create') {
     $description = trim($input['description'] ?? '');
     $category    = trim($input['category'] ?? 'General IT Support');
     $priority    = trim($input['priority'] ?? 'Medium');
-    $assetName   = trim($input['asset_name'] ?? ($input['asset'] ?? 'General Workstation / Laptop'));
+    $assetName   = trim($input['asset_name'] ?? ($input['asset'] ?? 'NA'));
     $empId       = !empty($input['employee_id']) ? intval($input['employee_id']) : (!empty($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0);
     $empName     = trim($input['employee_name'] ?? ($_SESSION['user_name'] ?? 'Employee Member'));
     $empCode     = trim($input['emp_code'] ?? ($_SESSION['user_username'] ?? 'EMP-001'));
@@ -520,7 +520,7 @@ if ($stmt) {
             'status'      => $st,
             's_class'     => $sClass,
             's_filter'    => $sFilter,
-            'asset'       => $row['asset_name'] ?: 'General Workstation / Laptop',
+            'asset'       => $row['asset_name'] ?: 'NA',
             'date'        => $formattedDate,
             'requester'   => [
                 'name'       => $row['employee_name'],

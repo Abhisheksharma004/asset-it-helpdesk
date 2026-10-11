@@ -236,7 +236,7 @@ $is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_
 
         <!-- Settings (Single Item) -->
         <li class="nav-item">
-            <a href="#settings" class="nav-link <?php echo ($active_page === 'settings') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Portal Settings')">
+            <a href="settings.php" class="nav-link <?php echo ($active_page === 'settings') ? 'active' : ''; ?>">
                 <span class="nav-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3"></circle>
