@@ -514,14 +514,22 @@
 .password-input-wrap {
     position: relative;
     width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrap input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding-right: 38px !important;
 }
 
 .password-toggle-btn {
     position: absolute;
-    right: 12px;
+    right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    background: none;
+    background: transparent;
     border: none;
     color: var(--text-muted);
     cursor: pointer;
@@ -529,7 +537,10 @@
     align-items: center;
     justify-content: center;
     padding: 4px;
-    transition: color var(--transition);
+    line-height: 1;
+    border-radius: 4px;
+    transition: color var(--transition), background-color var(--transition);
+    z-index: 2;
 }
 
 .password-toggle-btn:hover {
@@ -627,6 +638,37 @@ input:focus + .slider {
 
 input:checked + .slider:before {
     transform: translateX(22px);
+}
+
+/* Compact Table Switch */
+.switch-sm {
+    width: 36px;
+    height: 20px;
+}
+
+.switch-sm .slider:before {
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+}
+
+.switch-sm input:checked + .slider:before {
+    transform: translateX(16px);
+}
+
+.user-status-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-status-label {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 48px;
+    user-select: none;
+    transition: color var(--transition);
 }
 
 /* --------------------------------------------------------------------------
@@ -1271,6 +1313,40 @@ input:checked + .slider:before {
     background: #f1f5f9;
     color: var(--text-primary);
     border-color: #cbd5e1;
+}
+
+/* Action Buttons */
+.table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.action-btn:hover {
+    border-color: var(--cyan-primary);
+    color: var(--cyan-primary);
+    background: var(--cyan-light);
+}
+
+.action-btn.delete-btn:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: var(--danger-light);
 }
 
 .btn-danger-outline {

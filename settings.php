@@ -29,6 +29,17 @@ $orgSettings = ($orgStmt && ($row = sqlsrv_fetch_array($orgStmt, SQLSRV_FETCH_AS
 ];
 if ($orgStmt) sqlsrv_free_stmt($orgStmt);
 
+// Fetch IT Technicians & Administrators from users table
+$techQuery = "SELECT id, username, email, full_name, role, phone, is_active FROM users ORDER BY id ASC";
+$techStmt = sqlsrv_query($conn, $techQuery);
+$technicians = [];
+if ($techStmt !== false) {
+    while ($tRow = sqlsrv_fetch_array($techStmt, SQLSRV_FETCH_ASSOC)) {
+        $technicians[] = $tRow;
+    }
+    sqlsrv_free_stmt($techStmt);
+}
+
 // Include Modular Layout Components
 include 'includes/header.php';
 include 'includes/sidebar.php';
@@ -320,7 +331,7 @@ include 'includes/topbar.php';
                                     <line x1="20" y1="8" x2="20" y2="14"></line>
                                     <line x1="23" y1="11" x2="17" y2="11"></line>
                                 </svg>
-                                Administrative Privileges & Key Personnel
+                                Administrative & Technician Management
                             </h3>
                             <p>Overview of system administrators and IT technicians who have elevated access to settings.</p>
                         </div>
@@ -344,54 +355,78 @@ include 'includes/topbar.php';
                                         <th>Email Address</th>
                                         <th>2FA Status</th>
                                         <th>Account Status</th>
+                                        <th style="width: 100px; text-align: center;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="techniciansTableBody">
-                                    <tr>
-                                        <td>
-                                            <div style="display: flex; align-items: center; gap: 10px;">
-                                                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--cyan-light); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">AS</div>
-                                                <div>
-                                                    <div style="font-weight: 600; color: var(--navy-primary);">Abhishek Sharma</div>
-                                                    <div style="font-size: 11px; color: var(--text-muted);">EMP-1001</div>
+                                    <?php if (!empty($technicians)): ?>
+                                        <?php foreach ($technicians as $tech): 
+                                            $tName = $tech['full_name'] ?? 'User';
+                                            $tUsername = $tech['username'] ?? ('EMP-' . $tech['id']);
+                                            $tRole = $tech['role'] ?? 'IT Support Desk';
+                                            $tEmail = $tech['email'] ?? '';
+                                            $isActive = ((int)($tech['is_active'] ?? 1) === 1);
+
+                                            $initials = '';
+                                            foreach (explode(' ', $tName) as $part) {
+                                                if (!empty($part)) $initials .= strtoupper(mb_substr($part, 0, 1));
+                                            }
+                                            $initials = substr($initials, 0, 2) ?: 'TC';
+
+                                            $pillClass = 'medium';
+                                            if ($tRole === 'Super Admin' || $tRole === 'Administrator') {
+                                                $pillClass = 'urgent';
+                                            } elseif ($tRole === 'IT Lead') {
+                                                $pillClass = 'high';
+                                            }
+                                        ?>
+                                        <tr data-id="<?php echo $tech['id']; ?>">
+                                            <td>
+                                                <div style="display: flex; align-items: center; gap: 10px;">
+                                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--cyan-light); color: var(--cyan-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;"><?php echo htmlspecialchars($initials); ?></div>
+                                                    <div>
+                                                        <div style="font-weight: 600; color: var(--navy-primary);"><?php echo htmlspecialchars($tName); ?></div>
+                                                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;"><?php echo htmlspecialchars($tUsername); ?></div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td><span class="priority-pill urgent">Super Admin</span></td>
-                                        <td>abhishek@viros.in</td>
-                                        <td><span style="color: var(--success); font-weight: 600; font-size: 12px;">✓ Enforced</span></td>
-                                        <td><span style="color: var(--success); font-weight: 600; font-size: 12px;">Active</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div style="display: flex; align-items: center; gap: 10px;">
-                                                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">RK</div>
-                                                <div>
-                                                    <div style="font-weight: 600; color: var(--navy-primary);">Rahul Kulkarni</div>
-                                                    <div style="font-size: 11px; color: var(--text-muted);">EMP-1002</div>
+                                            </td>
+                                            <td><span class="priority-pill <?php echo $pillClass; ?>"><?php echo htmlspecialchars($tRole); ?></span></td>
+                                            <td><?php echo htmlspecialchars($tEmail); ?></td>
+                                            <td><span style="color: var(--success); font-weight: 600; font-size: 12px;">✓ Enforced</span></td>
+                                            <td>
+                                                <div class="user-status-cell">
+                                                    <label class="switch switch-sm" title="Click to toggle Active / Inactive" style="margin: 0;">
+                                                        <input type="checkbox" class="user-status-toggle" data-id="<?php echo $tech['id']; ?>" <?php echo $isActive ? 'checked' : ''; ?>>
+                                                        <span class="slider"></span>
+                                                    </label>
+                                                    <span class="user-status-label" style="color: <?php echo $isActive ? 'var(--success)' : 'var(--danger)'; ?>;">
+                                                        <?php echo $isActive ? 'Active' : 'Inactive'; ?>
+                                                    </span>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td><span class="priority-pill high">IT Lead</span></td>
-                                        <td>rahul.k@viros.in</td>
-                                        <td><span style="color: var(--success); font-weight: 600; font-size: 12px;">✓ Enforced</span></td>
-                                        <td><span style="color: var(--success); font-weight: 600; font-size: 12px;">Active</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div style="display: flex; align-items: center; gap: 10px;">
-                                                <div style="width: 32px; height: 32px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">PS</div>
-                                                <div>
-                                                    <div style="font-weight: 600; color: var(--navy-primary);">Priya Sharma</div>
-                                                    <div style="font-size: 11px; color: var(--text-muted);">EMP-1003</div>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <div class="table-actions" style="justify-content: center;">
+                                                    <button type="button" class="action-btn edit-tech-btn" title="Edit Technician" data-id="<?php echo $tech['id']; ?>" data-name="<?php echo htmlspecialchars($tName); ?>" data-email="<?php echo htmlspecialchars($tEmail); ?>" data-role="<?php echo htmlspecialchars($tRole); ?>" data-phone="<?php echo htmlspecialchars($tech['phone'] ?? ''); ?>" data-username="<?php echo htmlspecialchars($tUsername); ?>" data-status="<?php echo $isActive ? 1 : 0; ?>">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                        </svg>
+                                                    </button>
+                                                    <button type="button" class="action-btn delete-btn delete-tech-btn" title="Delete Technician" data-id="<?php echo $tech['id']; ?>" data-name="<?php echo htmlspecialchars($tName); ?>">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                        </svg>
+                                                    </button>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td><span class="priority-pill medium">IT Support Desk</span></td>
-                                        <td>priya.s@viros.in</td>
-                                        <td><span style="color: var(--warning); font-weight: 600; font-size: 12px;">Pending</span></td>
-                                        <td><span style="color: var(--success); font-weight: 600; font-size: 12px;">Active</span></td>
-                                    </tr>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No technicians registered yet. Click "+ Add Technician" to add one.</td>
+                                        </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -404,10 +439,11 @@ include 'includes/topbar.php';
             <div class="modal-overlay" id="addTechnicianModal" style="display: none;">
                 <div class="modal-box" style="max-width: 520px;">
                     <div class="modal-header">
-                        <h3>Add IT Technician / Administrator</h3>
+                        <h3 id="techModalTitle">Add IT Technician / Administrator</h3>
                         <button type="button" class="modal-close-btn" id="closeTechModalBtn">&times;</button>
                     </div>
                     <form id="addTechnicianForm">
+                        <input type="hidden" id="techEditId" value="">
                         <div class="modal-body">
                             <div class="modal-form-group">
                                 <label for="techName">Full Name *</label>
@@ -453,6 +489,22 @@ include 'includes/topbar.php';
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="modal-form-group" style="margin-top: 14px; padding: 12px 14px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                <label style="display: flex; align-items: center; justify-content: space-between; margin: 0; cursor: pointer;">
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--navy-primary); font-size: 13px;">Account Status</div>
+                                        <div style="font-size: 11.5px; color: var(--text-muted); font-weight: normal;">Allow this user to sign in to the portal</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <label class="switch switch-sm" style="margin: 0;">
+                                            <input type="checkbox" id="techIsActive" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                        <span id="techStatusLabel" style="font-size: 12px; font-weight: 600; color: var(--success); min-width: 48px;">Active</span>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                         <div class="modal-footer">
