@@ -484,9 +484,19 @@ include 'includes/topbar.php';
             Showing <strong>1</strong> to <strong><?php echo $totalCount; ?></strong> of <strong><?php echo $totalCount; ?></strong> support tickets
         </div>
         <div class="pagination-controls" id="paginationControls">
-            <button type="button" class="page-btn disabled" disabled>&laquo;</button>
-            <button type="button" class="page-btn active">1</button>
-            <button type="button" class="page-btn disabled" disabled>&raquo;</button>
+            <button type="button" class="pagination-btn disabled" disabled aria-label="Previous Page">
+                <svg class="prev-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Prev</span>
+            </button>
+            <button type="button" class="pagination-btn pagination-num active" aria-current="page">1</button>
+            <button type="button" class="pagination-btn disabled" disabled aria-label="Next Page">
+                <span>Next</span>
+                <svg class="next-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
         </div>
     </div>
 

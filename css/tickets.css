@@ -1319,3 +1319,96 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   Pagination Controls & Buttons (.pagination-btn & .page-btn)
+   ========================================================================== */
+.pagination-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn,
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0 13px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #475569);
+    background: #ffffff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+    line-height: 1;
+    font-family: inherit;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.pagination-btn.pagination-num,
+.page-btn.pagination-num {
+    padding: 0 10px;
+    min-width: 36px;
+}
+
+.pagination-btn svg,
+.page-btn svg {
+    display: inline-block;
+    vertical-align: middle;
+    stroke: currentColor;
+    transition: transform 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled):not(.disabled),
+.page-btn:hover:not(:disabled):not(.disabled) {
+    background: var(--cyan-light, #e6f5f8);
+    border-color: var(--cyan-primary, #0093A7);
+    color: var(--cyan-primary, #0093A7);
+    box-shadow: 0 2px 8px rgba(0, 147, 167, 0.18);
+    transform: translateY(-1px);
+}
+
+.pagination-btn:hover:not(:disabled):not(.disabled) .prev-icon,
+.page-btn:hover:not(:disabled):not(.disabled) .prev-icon {
+    transform: translateX(-2px);
+}
+
+.pagination-btn:hover:not(:disabled):not(.disabled) .next-icon,
+.page-btn:hover:not(:disabled):not(.disabled) .next-icon {
+    transform: translateX(2px);
+}
+
+.pagination-btn.active,
+.page-btn.active {
+    background: linear-gradient(135deg, #0093A7 0%, #007A8A 100%) !important;
+    border-color: #0093A7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 10px rgba(0, 147, 167, 0.35) !important;
+    font-weight: 700 !important;
+    cursor: default;
+    pointer-events: none;
+}
+
+.pagination-btn:disabled,
+.pagination-btn.disabled,
+.page-btn:disabled,
+.page-btn.disabled {
+    opacity: 0.45;
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none !important;
+    transform: none !important;
+}

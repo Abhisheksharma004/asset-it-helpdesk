@@ -492,7 +492,6 @@
                 const tabBadge = document.getElementById('transferTabBadge');
                 const tbodyItems = document.getElementById('transferItemsTbody');
                 const selectionSummary = document.getElementById('transferSelectionSummary');
-                const selectAllChk = document.getElementById('selectAllTransferItems');
 
                 if (sName) sName.textContent = empName;
                 if (sCode) sCode.textContent = empCode;
@@ -526,13 +525,17 @@
                             </tr>
                         `;
                     } else {
+                        let itemIndex = 0;
+
                         // Assets
-                        assets.forEach((a, idx) => {
+                        assets.forEach((a) => {
+                            itemIndex++;
                             const tr = document.createElement('tr');
                             tr.className = 'return-item-row is-checked';
                             tr.innerHTML = `
-                                <td style="text-align: center;">
-                                    <input type="checkbox" class="transfer-item-check check-asset" value="${a.id}" data-tag="${escapeHtml(a.tag || '')}" data-name="${escapeHtml(a.name || '')}" data-slip="${escapeHtml(a.slip_no || 'SLIP')}" data-serial="${escapeHtml(a.serial || '')}" data-brand="${escapeHtml(a.brand || '')}" data-model="${escapeHtml(a.model || '')}" data-category="${escapeHtml(a.category || '')}" checked>
+                                <td style="text-align: center; font-weight: 600; color: var(--text-secondary); font-size: 12px;">
+                                    ${itemIndex}
+                                    <input type="hidden" class="check-asset" value="${a.id}" data-tag="${escapeHtml(a.tag || '')}" data-name="${escapeHtml(a.name || '')}" data-slip="${escapeHtml(a.slip_no || 'SLIP')}" data-serial="${escapeHtml(a.serial || '')}" data-brand="${escapeHtml(a.brand || '')}" data-model="${escapeHtml(a.model || '')}" data-category="${escapeHtml(a.category || '')}">
                                 </td>
                                 <td>
                                     <span class="slip-badge" style="background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:4px;font-weight:700;font-size:11px;border:1px solid #bae6fd;display:inline-block;">
@@ -561,7 +564,8 @@
                         });
 
                         // Accessories
-                        accessories.forEach((ac, idx) => {
+                        accessories.forEach((ac) => {
+                            itemIndex++;
                             const acName = typeof ac === 'string' ? ac : (ac.name || 'Item');
                             const acQty = typeof ac === 'object' && ac.qty ? ac.qty : 1;
                             const acSlip = typeof ac === 'object' && ac.slip_no ? ac.slip_no : 'SLIP';
@@ -569,8 +573,9 @@
                             const tr = document.createElement('tr');
                             tr.className = 'return-item-row is-checked';
                             tr.innerHTML = `
-                                <td style="text-align: center;">
-                                    <input type="checkbox" class="transfer-item-check check-acc" value="${escapeHtml(acName)}" data-qty="${escapeHtml(acQty)}" data-slip="${escapeHtml(acSlip)}" checked>
+                                <td style="text-align: center; font-weight: 600; color: var(--text-secondary); font-size: 12px;">
+                                    ${itemIndex}
+                                    <input type="hidden" class="check-acc" value="${escapeHtml(acName)}" data-qty="${escapeHtml(acQty)}" data-slip="${escapeHtml(acSlip)}">
                                 </td>
                                 <td>
                                     <span class="slip-badge" style="background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:4px;font-weight:700;font-size:11px;border:1px solid #cbd5e1;display:inline-block;">
@@ -595,32 +600,13 @@
                     }
                 }
 
-                function updateSummary() {
-                    const checks = Array.from(document.querySelectorAll('#transferItemsTbody .transfer-item-check'));
-                    const checked = checks.filter(c => c.checked).length;
-                    if (selectionSummary) {
-                        selectionSummary.textContent = `${checked} of ${checks.length} items selected for transfer`;
-                    }
-                    if (selectAllChk) {
-                        selectAllChk.checked = checks.length > 0 && checked === checks.length;
+                if (selectionSummary) {
+                    if (totalItemsCount > 0) {
+                        selectionSummary.textContent = `All ${totalItemsCount} items selected (Full Equipment)`;
+                    } else {
+                        selectionSummary.textContent = 'No items assigned';
                     }
                 }
-
-                // Attach change listeners to items
-                tbodyItems.querySelectorAll('.transfer-item-check').forEach(chk => {
-                    chk.addEventListener('change', updateSummary);
-                });
-
-                if (selectAllChk) {
-                    selectAllChk.onchange = function () {
-                        tbodyItems.querySelectorAll('.transfer-item-check').forEach(chk => {
-                            chk.checked = selectAllChk.checked;
-                        });
-                        updateSummary();
-                    };
-                }
-
-                updateSummary();
                 if (sourcePreviewBox) sourcePreviewBox.style.display = 'block';
             });
         }
@@ -700,7 +686,7 @@
                     return;
                 }
 
-                const checkedAssets = Array.from(document.querySelectorAll('#transferItemsTbody .check-asset:checked')).map(c => ({
+                const checkedAssets = Array.from(document.querySelectorAll('#transferItemsTbody .check-asset')).map(c => ({
                     id: parseInt(c.value, 10),
                     tag: c.dataset.tag,
                     name: c.dataset.name,
@@ -711,15 +697,15 @@
                     category: c.dataset.category || ''
                 }));
 
-                const checkedAcc = Array.from(document.querySelectorAll('#transferItemsTbody .check-acc:checked')).map(c => ({
+                const checkedAcc = Array.from(document.querySelectorAll('#transferItemsTbody .check-acc')).map(c => ({
                     name: c.value,
                     qty: parseInt(c.dataset.qty || 1, 10),
                     slip_no: c.dataset.slip
                 }));
 
                 if (checkedAssets.length === 0 && checkedAcc.length === 0) {
-                    showNotification('Please select at least one asset or accessory to transfer in Step 2.', 'warning');
-                    window.switchTransferModalTab('equipment');
+                    showNotification('Selected source custodian has no active equipment assigned to transfer.', 'warning');
+                    window.switchTransferModalTab('source');
                     return;
                 }
 

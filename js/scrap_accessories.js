@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const rows = table.querySelectorAll("tbody tr");
 
         rows.forEach(function (row) {
+            if (row.id === "noRecordsRow") return;
             const rowText = row.textContent.toLowerCase();
             const rowStatus = row.getAttribute("data-status") || "";
             const rowReason = row.getAttribute("data-reason") || "";
@@ -54,6 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let writtenOff = 0;
 
         rows.forEach(function (row) {
+            if (row.id === "noRecordsRow" || !row.hasAttribute("data-status")) return;
             total++;
             const st = (row.getAttribute("data-status") || "").toLowerCase().trim();
             if (st === "yard") yard++;

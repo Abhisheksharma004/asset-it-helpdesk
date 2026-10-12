@@ -806,17 +806,15 @@ include 'includes/topbar.php';
                 <div class="modal-tab-pane" id="modal_pane_equipment">
                     <div class="modal-form-group" style="margin-bottom: 14px;">
                         <label style="display: flex; align-items: center; justify-content: space-between;">
-                            <span>Select Equipment &amp; Accessories To Transfer</span>
-                            <span class="asset-count-badge" id="transferSelectionSummary" style="background: #e0f2fe; color: #0284c7; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">Select items</span>
+                            <span>Equipment &amp; Accessories To Transfer (Full Equipment)</span>
+                            <span class="asset-count-badge" id="transferSelectionSummary" style="background: #e0f2fe; color: #0284c7; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">All equipment selected</span>
                         </label>
 
                         <div class="return-items-table-wrap">
                             <table class="return-items-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 36px; text-align: center;">
-                                            <input type="checkbox" id="selectAllTransferItems" checked title="Select All">
-                                        </th>
+                                        <th style="width: 40px; text-align: center;">#</th>
                                         <th style="width: 130px;">Handover Slip</th>
                                         <th>Item &amp; Description</th>
                                         <th style="width: 85px; text-align: center;">Type</th>

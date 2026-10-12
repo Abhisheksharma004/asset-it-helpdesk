@@ -213,7 +213,7 @@ if (isset($conn) && $conn !== false) {
                 'return_notes'      => $row['return_notes'] ?? 'Equipment inspected and returned to storage depot.'
             ];
 
-            $isReturned = ($row['custody_status'] === 'Returned') || in_array(intval($row['id']), $seenAssignmentIds);
+            $isReturned = ($row['custody_status'] === 'Returned');
             $isTransferred = ($row['custody_status'] === 'Transferred') || (stripos($row['custody_status'] ?? '', 'Transferred') !== false);
 
             if ($isReturned) {
@@ -221,7 +221,9 @@ if (isset($conn) && $conn !== false) {
                     $returnedAllocations[] = $item;
                 }
             } elseif (!$isTransferred) {
-                $activeAllocations[] = $item;
+                if (count($assetsList) > 0 || count($accList) > 0) {
+                    $activeAllocations[] = $item;
+                }
             }
         }
         sqlsrv_free_stmt($allocStmt);

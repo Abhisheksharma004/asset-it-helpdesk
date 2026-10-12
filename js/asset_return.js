@@ -1687,6 +1687,9 @@
                                 });
                                 selectActiveAlloc.value = '';
                                 if (allocPreviewBox) allocPreviewBox.style.display = 'none';
+                                if (window.SearchableSelect && typeof window.SearchableSelect.sync === 'function') {
+                                    window.SearchableSelect.sync(selectActiveAlloc);
+                                }
                             }
 
                             // Update in-stock count
