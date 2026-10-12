@@ -120,26 +120,34 @@ $dbAssets = [];
 if (isset($conn) && $conn !== false) {
     // Prefetch all components currently linked to assets in components table
     $installedComponentsByAsset = [];
-    $icStmt = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, brand, model, specs, status, installed_asset FROM components WHERE installed_asset IS NOT NULL AND installed_asset != ''");
+    $allComponentsStatusMap = [];
+    $icStmt = sqlsrv_query($conn, "SELECT id, sku, serial, name, category, brand, model, specs, status, installed_asset FROM components");
     if ($icStmt !== false) {
         while ($icRow = sqlsrv_fetch_array($icStmt, SQLSRV_FETCH_ASSOC)) {
-            $instAsset = trim(strval($icRow['installed_asset']));
-            if (!isset($installedComponentsByAsset[$instAsset])) {
-                $installedComponentsByAsset[$instAsset] = [];
+            $cId = intval($icRow['id']);
+            $allComponentsStatusMap[$cId] = $icRow;
+            if (!empty($icRow['serial'])) $allComponentsStatusMap['sn_' . trim(strval($icRow['serial']))] = $icRow;
+            if (!empty($icRow['sku'])) $allComponentsStatusMap['sku_' . trim(strval($icRow['sku']))] = $icRow;
+
+            $instAsset = trim(strval($icRow['installed_asset'] ?? ''));
+            if ($instAsset !== '') {
+                if (!isset($installedComponentsByAsset[$instAsset])) {
+                    $installedComponentsByAsset[$instAsset] = [];
+                }
+                $installedComponentsByAsset[$instAsset][] = [
+                    'component_id' => $cId,
+                    'id'           => $cId,
+                    'name'         => $icRow['name'] ?? '',
+                    'serial'       => $icRow['serial'] ?? '',
+                    'tag'          => $icRow['sku'] ?? '',
+                    'sku'          => $icRow['sku'] ?? '',
+                    'category'     => $icRow['category'] ?? '',
+                    'brand'        => $icRow['brand'] ?? '',
+                    'model'        => $icRow['model'] ?? '',
+                    'specs'        => $icRow['specs'] ?? '',
+                    'status'       => $icRow['status'] ?? 'Installed'
+                ];
             }
-            $installedComponentsByAsset[$instAsset][] = [
-                'component_id' => intval($icRow['id']),
-                'id'           => intval($icRow['id']),
-                'name'         => $icRow['name'] ?? '',
-                'serial'       => $icRow['serial'] ?? '',
-                'tag'          => $icRow['sku'] ?? '',
-                'sku'          => $icRow['sku'] ?? '',
-                'category'     => $icRow['category'] ?? '',
-                'brand'        => $icRow['brand'] ?? '',
-                'model'        => $icRow['model'] ?? '',
-                'specs'        => $icRow['specs'] ?? '',
-                'status'       => $icRow['status'] ?? 'Installed'
-            ];
         }
         sqlsrv_free_stmt($icStmt);
     }
@@ -198,6 +206,34 @@ if (isset($conn) && $conn !== false) {
                     }
                 }
             }
+
+            // Cross-reference live status from components table for all attached components
+            foreach ($components as &$compItem) {
+                $matchedComp = null;
+                $cid = intval($compItem['component_id'] ?? ($compItem['id'] ?? 0));
+                if ($cid > 0 && isset($allComponentsStatusMap[$cid])) {
+                    $matchedComp = $allComponentsStatusMap[$cid];
+                } elseif (!empty($compItem['serial']) && isset($allComponentsStatusMap['sn_' . trim(strval($compItem['serial']))])) {
+                    $matchedComp = $allComponentsStatusMap['sn_' . trim(strval($compItem['serial']))];
+                } elseif (!empty($compItem['sku']) && isset($allComponentsStatusMap['sku_' . trim(strval($compItem['sku']))])) {
+                    $matchedComp = $allComponentsStatusMap['sku_' . trim(strval($compItem['sku']))];
+                } elseif (!empty($compItem['tag']) && isset($allComponentsStatusMap['sku_' . trim(strval($compItem['tag']))])) {
+                    $matchedComp = $allComponentsStatusMap['sku_' . trim(strval($compItem['tag']))];
+                }
+
+                if ($matchedComp !== null) {
+                    $compItem['status'] = $matchedComp['status'];
+                    if (empty($compItem['name'])) $compItem['name'] = $matchedComp['name'];
+                    if (empty($compItem['category'])) $compItem['category'] = $matchedComp['category'];
+                    if (empty($compItem['brand'])) $compItem['brand'] = $matchedComp['brand'];
+                    if (empty($compItem['model'])) $compItem['model'] = $matchedComp['model'];
+                    if (empty($compItem['specs'])) $compItem['specs'] = $matchedComp['specs'];
+                } elseif (empty($compItem['status'])) {
+                    $compItem['status'] = 'Installed';
+                }
+            }
+            unset($compItem);
+
             $history = [];
             $tickets = [];
             $dbAssets[] = [

@@ -734,10 +734,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cSpecs = c.specs ? `<div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">${escapeHtml(c.specs)}</div>` : '';
                 const cBrandModel = (c.brand || c.model) ? `<div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">${escapeHtml([c.brand, c.model].filter(Boolean).join(' '))}</div>` : '';
 
+                const rawStatus = (c.status || 'Installed').toString().trim();
+                let statusBadgeHtml = `<span class="warranty-pill warranty-active" style="font-size: 11px;">Installed</span>`;
+                let iconBoxStyle = 'background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;';
+
+                if (rawStatus.toLowerCase() === 'scrapped') {
+                    statusBadgeHtml = `<span class="warranty-pill" style="font-size: 11px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; font-weight: 600;">Scrapped</span>`;
+                    iconBoxStyle = 'background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;';
+                } else if (rawStatus.toLowerCase() === 'under repair' || rawStatus.toLowerCase() === 'defective') {
+                    statusBadgeHtml = `<span class="warranty-pill" style="font-size: 11px; background: #fef3c7; color: #d97706; border: 1px solid #fde68a; font-weight: 600;">Under Repair</span>`;
+                    iconBoxStyle = 'background: #fffbeb; color: #d97706; border: 1px solid #fde68a;';
+                } else if (rawStatus.toLowerCase() === 'available') {
+                    statusBadgeHtml = `<span class="warranty-pill" style="font-size: 11px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 600;">Available</span>`;
+                    iconBoxStyle = 'background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;';
+                } else {
+                    statusBadgeHtml = `<span class="warranty-pill warranty-active" style="font-size: 11px;">${escapeHtml(rawStatus)}</span>`;
+                }
+
                 return `
                     <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 9px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
                         <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
-                            <div style="width: 36px; height: 36px; border-radius: 8px; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <div style="width: 36px; height: 36px; border-radius: 8px; ${iconBoxStyle} display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="4" y="4" width="16" height="16" rx="2"></rect>
                                     <rect x="9" y="9" width="6" height="6"></rect>
@@ -765,7 +782,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         </div>
                         <div style="flex-shrink: 0; text-align: right;">
-                            <span class="warranty-pill warranty-active" style="font-size: 11px;">Installed</span>
+                            ${statusBadgeHtml}
                         </div>
                     </div>
                 `;

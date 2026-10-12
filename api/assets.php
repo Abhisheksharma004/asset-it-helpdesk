@@ -226,7 +226,7 @@ function syncAssetComponents($conn, $assetId, $assetTag = '', $assetName = '', $
         $linkPlaceholders = implode(',', array_fill(0, count($matchedComponentIds), '?'));
         $linkSql = "UPDATE components 
                     SET installed_asset = ?, 
-                        status = 'Installed', 
+                        status = CASE WHEN status = 'Scrapped' THEN 'Scrapped' ELSE 'Installed' END, 
                         location = ?, 
                         updated_at = GETDATE() 
                     WHERE id IN ($linkPlaceholders)";
@@ -340,6 +340,44 @@ function formatAssetRow($row) {
                 }
             }
         }
+    }
+
+    // Cross-reference live status from components table for all attached components
+    if (!empty($components) && isset($conn) && $conn !== false) {
+        foreach ($components as &$compItem) {
+            $cid = intval($compItem['component_id'] ?? ($compItem['id'] ?? 0));
+            $cSerial = trim(strval($compItem['serial'] ?? ''));
+            $cSku = trim(strval($compItem['sku'] ?? ($compItem['tag'] ?? '')));
+
+            $conds = [];
+            $checkParams = [];
+            if ($cid > 0) {
+                $conds[] = "id = ?";
+                $checkParams[] = $cid;
+            }
+            if (!empty($cSerial)) {
+                $conds[] = "serial = ?";
+                $checkParams[] = $cSerial;
+            }
+            if (!empty($cSku)) {
+                $conds[] = "sku = ?";
+                $checkParams[] = $cSku;
+            }
+
+            if (!empty($conds)) {
+                $chkStmt = sqlsrv_query($conn, "SELECT TOP 1 status, name, category, brand, model, specs FROM components WHERE " . implode(' OR ', $conds), $checkParams);
+                if ($chkStmt && ($mRow = sqlsrv_fetch_array($chkStmt, SQLSRV_FETCH_ASSOC))) {
+                    $compItem['status'] = $mRow['status'];
+                    if (empty($compItem['name'])) $compItem['name'] = $mRow['name'];
+                    if (empty($compItem['category'])) $compItem['category'] = $mRow['category'];
+                }
+                if ($chkStmt) sqlsrv_free_stmt($chkStmt);
+            }
+            if (empty($compItem['status'])) {
+                $compItem['status'] = 'Installed';
+            }
+        }
+        unset($compItem);
     }
 
     $history = [];

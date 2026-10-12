@@ -392,14 +392,9 @@ include 'includes/topbar.php';
                     <div class="modal-form-group">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <label for="scrapQty" style="margin-bottom: 0;">Quantity to Scrap *</label>
-                            <span id="availableStockBadge" class="stock-badge-available" style="display: none; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">
-                                Available: <span id="availableStockVal">0</span> pcs
-                            </span>
+                            
                         </div>
                         <input type="number" id="scrapQty" min="1" value="1" required placeholder="Enter quantity">
-                        <div id="scrapQtyError" class="stock-alert-msg">
-                            Quantity cannot exceed available stock (<span id="maxAllowedStock">0</span> max)!
-                        </div>
                     </div>
                     <div class="modal-form-group">
                         <label for="scrapReason">Scrap Reason / Defect *</label>
