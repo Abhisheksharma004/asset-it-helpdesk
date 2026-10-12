@@ -30,23 +30,6 @@
 
         <div class="header-right">
             
-            <?php if (empty($hide_topbar_actions) && ($active_page ?? '') !== 'dashboard'): ?>
-            <button class="quick-action-btn" id="openTicketModalBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                New Ticket
-            </button>
-
-            <button class="icon-btn" title="Notifications" onclick="showToast('You have 3 unread IT alerts', 'info')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                </svg>
-                <span class="badge-dot"></span>
-            </button>
-            <?php endif; ?>
 
             <?php
             $topbar_name = $_SESSION['user_name'] ?? 'Abhishek Sharma';

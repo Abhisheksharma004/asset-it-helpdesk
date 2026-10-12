@@ -325,7 +325,6 @@ $utilizationPct = $totalAssets > 0 ? round(($inUseAssets / $totalAssets) * 100, 
 // Include Modular Components
 include 'includes/header.php';
 include 'includes/sidebar.php';
-$hide_topbar_actions = true;
 include 'includes/topbar.php';
 ?>
 
