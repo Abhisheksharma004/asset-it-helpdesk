@@ -2183,58 +2183,186 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof showToast === 'function') showToast(`Exported ${filtered.length} assets to CSV`, 'success');
     };
 
+    let stagedAssetImportData = [];
+
     window.openImportModal = function () {
         const modal = document.getElementById('importModal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+        }
+        resetAssetImportModal();
     };
 
     window.closeImportModal = function () {
         const modal = document.getElementById('importModal');
-        if (modal) modal.style.display = 'none';
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('active');
+        }
+        resetAssetImportModal();
     };
 
-    // CSV File Import Handler
-    const csvFileInput = document.getElementById('csvAssetFile');
-    if (csvFileInput) {
-        csvFileInput.addEventListener('change', function (e) {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
+    function resetAssetImportModal() {
+        stagedAssetImportData = [];
+        const fileInput = document.getElementById('csvAssetFile');
+        const previewCard = document.getElementById('assetFilePreviewCard');
+        const dropzone = document.getElementById('csvAssetDropzone');
+        const startBtn = document.getElementById('startAssetImportBtn');
 
-            const reader = new FileReader();
-            reader.onload = function (evt) {
-                const text = evt.target.result;
-                const rows = parseCsvContent(text);
-                if (!rows || rows.length === 0) {
-                    if (typeof showToast === 'function') showToast('No valid asset rows found in CSV file', 'warning');
-                    return;
-                }
+        if (fileInput) fileInput.value = '';
+        if (previewCard) previewCard.style.display = 'none';
+        if (dropzone) dropzone.style.display = 'block';
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.innerHTML = 'Import Assets';
+        }
+    }
 
-                if (typeof showToast === 'function') showToast(`Importing ${rows.length} assets into database...`, 'info');
+    // Download Sample Template CSV (Includes all Asset fields, Asset Tag auto-generated, no components, no assigned to)
+    function handleDownloadAssetTemplate() {
+        const headers = [
+            'Asset Name',
+            'Category',
+            'Brand',
+            'Model',
+            'Serial Number',
+            'Status',
+            'Condition',
+            'Location',
+            'Department',
+            'Processor',
+            'RAM',
+            'Storage',
+            'Operating System',
+            'MAC Address',
+            'IP Address',
+            'Vendor',
+            'PO Number',
+            'Purchase Date',
+            'Purchase Cost (INR)',
+            'Warranty Expiry'
+        ];
 
-                fetch(getApiUrl(), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'import', items: rows })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.success) {
-                        if (typeof showToast === 'function') showToast(data.message || `Successfully imported ${rows.length} assets!`, 'success');
-                        closeImportModal();
-                        loadAssetsFromDB();
-                    } else {
-                        if (typeof showToast === 'function') showToast((data && data.message) || 'CSV import failed', 'danger');
-                    }
-                    csvFileInput.value = '';
-                })
-                .catch(err => {
-                    console.error(err);
-                    if (typeof showToast === 'function') showToast('Network error during CSV import', 'danger');
-                    csvFileInput.value = '';
-                });
-            };
-            reader.readAsText(file);
-        });
+        const sampleRows = [
+            [
+                'Dell Latitude 5420 Laptop',
+                'Laptops & Ultrabooks',
+                'Dell',
+                'Latitude 5420',
+                'SN-DLL-5420-01',
+                'Available',
+                'Excellent',
+                'HQ - IT Lab Floor 2',
+                'Information Technology',
+                'Intel Core i5-1145G7',
+                '16GB DDR4',
+                '512GB NVMe SSD',
+                'Windows 11 Pro',
+                '00:1A:2B:3C:4D:5E',
+                '192.168.1.105',
+                'Dell Direct India',
+                'PO-2024-001',
+                '2024-01-15',
+                '65000',
+                '2027-01-15'
+            ],
+            [
+                'HP EliteBook 840 G8',
+                'Laptops & Ultrabooks',
+                'HP',
+                'EliteBook 840 G8',
+                'SN-HP-840-02',
+                'Available',
+                'Good',
+                'HQ - Store Room',
+                'Operations',
+                'Intel Core i7-1165G7',
+                '32GB DDR4',
+                '1TB NVMe SSD',
+                'Windows 11 Pro',
+                '00:2B:3C:4D:5E:6F',
+                '',
+                'HP Commercial Sales',
+                'PO-2024-004',
+                '2024-02-10',
+                '78000',
+                '2027-02-10'
+            ],
+            [
+                'Logitech MX Master 3S Mouse',
+                'Computer Accessories',
+                'Logitech',
+                'MX Master 3S',
+                '',
+                'Available',
+                'Good',
+                'Floor 3 IT Depot',
+                'Operations',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                'Amazon Business',
+                '',
+                '2024-03-01',
+                '8999',
+                '2025-03-01'
+            ]
+        ];
+
+        const csvContent = [
+            headers.join(','),
+            ...sampleRows.map(row => row.map(v => `"${(v || '').replace(/"/g, '""')}"`).join(','))
+        ].join('\r\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sample_assets_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Process Uploaded Asset CSV
+    function processUploadedAssetCsv(file) {
+        if (!file || !file.name.toLowerCase().endsWith('.csv')) {
+            if (typeof showToast === 'function') showToast('Please upload a valid .csv file.', 'danger');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const text = e.target.result;
+            const items = parseCsvContent(text);
+            if (!items || items.length === 0) {
+                if (typeof showToast === 'function') showToast('No valid asset records detected in CSV. Please ensure Asset Name is provided.', 'warning');
+                return;
+            }
+
+            stagedAssetImportData = items;
+
+            const previewCard = document.getElementById('assetFilePreviewCard');
+            const previewName = document.getElementById('assetPreviewFileName');
+            const previewMeta = document.getElementById('assetPreviewFileMeta');
+            const dropzone = document.getElementById('csvAssetDropzone');
+            const startBtn = document.getElementById('startAssetImportBtn');
+
+            if (previewCard) previewCard.style.display = 'flex';
+            if (previewName) previewName.textContent = file.name;
+            if (previewMeta) previewMeta.textContent = `${(file.size / 1024).toFixed(1)} KB • ${items.length} asset(s) ready to import`;
+            if (dropzone) dropzone.style.display = 'none';
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.innerHTML = `Import Assets (${items.length})`;
+            }
+        };
+        reader.readAsText(file);
     }
 
     function parseCsvContent(csvText) {
@@ -2277,28 +2405,161 @@ document.addEventListener('DOMContentLoaded', function () {
                 rowObj[h] = cols[idx] !== undefined ? cols[idx] : '';
             });
 
-            const tag = rowObj['assettagnumber'] || rowObj['assettag'] || rowObj['tag'] || '';
-            const name = rowObj['assetname'] || rowObj['name'] || '';
-            const category = rowObj['category'] || 'General';
-            const brand = rowObj['brand'] || '';
-            const model = rowObj['model'] || '';
-            const serial = rowObj['serialnumber'] || rowObj['serial'] || '';
-            const status = rowObj['status'] || 'Available';
-            const condition = rowObj['condition'] || 'Good';
-            const location = rowObj['location'] || '';
-            const department = rowObj['department'] || '';
-            const cost = parseFloat(rowObj['purchasecostinr'] || rowObj['cost'] || rowObj['purchasecost'] || '0') || 0;
-            const warranty = rowObj['warrantyexpiry'] || rowObj['warranty'] || '';
+            // Asset Name is the only required field
+            const name = (rowObj['assetname'] || rowObj['name'] || '').trim();
+            if (!name) continue;
 
-            if (name && serial) {
-                items.push({
-                    tag, name, category, brand, model, serial,
-                    status, condition, location, department,
-                    cost, warrantyExpiry: warranty
-                });
-            }
+            const category   = (rowObj['category'] || '').trim() || 'General';
+            const brand      = (rowObj['brand'] || '').trim();
+            const model      = (rowObj['model'] || '').trim();
+            const serial     = (rowObj['serialnumber'] || rowObj['serial'] || rowObj['serialno'] || '').trim();
+            const status     = (rowObj['status'] || '').trim() || 'Available';
+            const condition  = (rowObj['condition'] || '').trim() || 'Good';
+            const location   = (rowObj['location'] || '').trim();
+            const department = (rowObj['department'] || '').trim();
+
+            // Specs
+            const processor  = (rowObj['processor'] || rowObj['cpu'] || '').trim();
+            const ram        = (rowObj['ram'] || rowObj['memory'] || '').trim();
+            const storage    = (rowObj['storage'] || rowObj['hdd'] || rowObj['ssd'] || rowObj['disk'] || '').trim();
+            const os         = (rowObj['operatingsystem'] || rowObj['os'] || '').trim();
+            const macAddress = (rowObj['macaddress'] || rowObj['mac'] || '').trim();
+            const ipAddress  = (rowObj['ipaddress'] || rowObj['ip'] || '').trim();
+
+            // Financials
+            const vendor         = (rowObj['vendor'] || rowObj['supplier'] || '').trim();
+            const poNumber       = (rowObj['ponumber'] || rowObj['po'] || '').trim();
+            const purchaseDate   = (rowObj['purchasedate'] || rowObj['purchased'] || '').trim();
+            const cost           = parseFloat(rowObj['purchasecostinr'] || rowObj['cost'] || rowObj['purchasecost'] || rowObj['price'] || '0') || 0;
+            const warrantyExpiry = (rowObj['warrantyexpiry'] || rowObj['warranty'] || '').trim();
+
+            items.push({
+                name,
+                category,
+                brand,
+                model,
+                serial,
+                status,
+                condition,
+                location,
+                department,
+                processor,
+                ram,
+                storage,
+                os,
+                macAddress,
+                ipAddress,
+                vendor,
+                poNumber,
+                purchaseDate,
+                cost,
+                warrantyExpiry
+            });
         }
         return items;
+    }
+
+    // Bind Import Modal Events on DOM Ready
+    const csvDropzone = document.getElementById('csvAssetDropzone');
+    const csvFileInput = document.getElementById('csvAssetFile');
+    const removeFileBtn = document.getElementById('assetRemoveFileBtn');
+    const downloadTemplateBtn = document.getElementById('downloadAssetTemplateBtn');
+    const importAssetForm = document.getElementById('importAssetForm');
+
+    if (downloadTemplateBtn) {
+        downloadTemplateBtn.addEventListener('click', handleDownloadAssetTemplate);
+    }
+
+    if (csvDropzone && csvFileInput) {
+        csvDropzone.addEventListener('click', () => csvFileInput.click());
+
+        csvDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            csvDropzone.classList.add('dragover');
+        });
+
+        csvDropzone.addEventListener('dragleave', () => {
+            csvDropzone.classList.remove('dragover');
+        });
+
+        csvDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            csvDropzone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processUploadedAssetCsv(e.dataTransfer.files[0]);
+            }
+        });
+
+        csvFileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                processUploadedAssetCsv(e.target.files[0]);
+            }
+        });
+    }
+
+    if (removeFileBtn) {
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetAssetImportModal();
+        });
+    }
+
+    if (importAssetForm) {
+        importAssetForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!stagedAssetImportData || stagedAssetImportData.length === 0) {
+                if (typeof showToast === 'function') showToast('Please select a valid CSV file first.', 'warning');
+                return;
+            }
+
+            const duplicateHandlingEl = document.getElementById('duplicateAssetHandling');
+            const duplicateHandling = duplicateHandlingEl ? duplicateHandlingEl.value : 'skip';
+            const startBtn = document.getElementById('startAssetImportBtn');
+
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg> Importing Assets...`;
+            }
+
+            fetch(getApiUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'import',
+                    items: stagedAssetImportData,
+                    duplicate_handling: duplicateHandling
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = 'Import Assets';
+                }
+
+                if (data && data.success) {
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || `Successfully imported ${stagedAssetImportData.length} assets!`, 'success');
+                    }
+                    closeImportModal();
+                    loadAssetsFromDB();
+                } else {
+                    if (typeof showToast === 'function') {
+                        showToast((data && data.message) || 'Asset import failed.', 'danger');
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = 'Import Assets';
+                }
+                if (typeof showToast === 'function') {
+                    showToast('Server error occurred during CSV import.', 'danger');
+                }
+            });
+        });
     }
 
     // =========================================================================

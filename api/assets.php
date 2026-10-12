@@ -1142,41 +1142,128 @@ switch ($action) {
     // ACTION: import (Bulk Insert from CSV)
     // -------------------------------------------------------------------------
     case 'import':
-        $items = $input['items'] ?? [];
+        $items = $input['items'] ?? $input['rows'] ?? [];
+        $duplicateHandling = trim($input['duplicate_handling'] ?? $input['duplicateHandling'] ?? 'skip'); // 'skip' or 'update'
+
         if (!is_array($items) || empty($items)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'No asset records provided for import.']);
             exit;
         }
 
-        $insertedCount = 0;
-        foreach ($items as $item) {
-            $tag = trim($item['tag'] ?? '');
-            if (empty($tag)) {
-                $tag = getNextAssetTag($conn);
+        // Prepare sequential asset tag counter
+        $currentYear = date('Y');
+        $prefix = 'AST' . $currentYear;
+        $maxNum = 0;
+        $sqlTag = "SELECT tag FROM assets WHERE tag LIKE ? ORDER BY tag DESC";
+        $stmtTag = sqlsrv_query($conn, $sqlTag, [$prefix . '%']);
+        if ($stmtTag !== false) {
+            while ($rTag = sqlsrv_fetch_array($stmtTag, SQLSRV_FETCH_ASSOC)) {
+                $t = $rTag['tag'];
+                $numPart = substr($t, strlen($prefix));
+                if (is_numeric($numPart)) {
+                    $n = intval($numPart);
+                    if ($n > $maxNum) $maxNum = $n;
+                }
             }
-            $name = trim($item['name'] ?? '');
-            $serial = trim($item['serial'] ?? '');
-            if (empty($name) || empty($serial)) continue;
+            sqlsrv_free_stmt($stmtTag);
+        }
+        if ($maxNum === 0) {
+            $stmtAll = sqlsrv_query($conn, "SELECT COUNT(*) AS total FROM assets");
+            if ($stmtAll !== false) {
+                $r = sqlsrv_fetch_array($stmtAll, SQLSRV_FETCH_ASSOC);
+                $maxNum = intval($r['total'] ?? 0);
+                sqlsrv_free_stmt($stmtAll);
+            }
+        }
 
-            $category = trim($item['category'] ?? 'General');
-            $brand = trim($item['brand'] ?? '');
-            $model = trim($item['model'] ?? '');
-            $status = trim($item['status'] ?? 'Available');
-            $condition = trim($item['condition'] ?? 'Good');
-            $location = trim($item['location'] ?? '');
-            $department = trim($item['department'] ?? '');
-            $cost = floatval($item['cost'] ?? 0);
-            $warranty = trim($item['warrantyExpiry'] ?? '');
+        $insertedCount = 0;
+        $updatedCount  = 0;
+        $skippedCount  = 0;
+
+        foreach ($items as $item) {
+            $name = trim($item['name'] ?? '');
+            if (empty($name)) continue; // Asset Name is the only strictly required field
+
+            $serial         = trim($item['serial'] ?? '');
+            $category       = trim($item['category'] ?? '');
+            if (empty($category)) $category = 'General';
+            $brand          = trim($item['brand'] ?? '');
+            $model          = trim($item['model'] ?? '');
+            $status         = trim($item['status'] ?? '');
+            if (empty($status)) $status = 'Available';
+            $condition      = trim($item['condition'] ?? '');
+            if (empty($condition)) $condition = 'Good';
+            $location       = trim($item['location'] ?? '');
+            $department     = trim($item['department'] ?? '');
+
+            // Hardware Specs
+            $processor      = trim($item['processor'] ?? '');
+            $ram            = trim($item['ram'] ?? '');
+            $storage        = trim($item['storage'] ?? '');
+            $os             = trim($item['os'] ?? '');
+            $macAddress     = trim($item['macAddress'] ?? ($item['mac_address'] ?? ''));
+            $ipAddress      = trim($item['ipAddress'] ?? ($item['ip_address'] ?? ''));
+
+            // Financials & Procurement
+            $vendor         = trim($item['vendor'] ?? '');
+            $poNumber       = trim($item['poNumber'] ?? ($item['po_number'] ?? ''));
+            $purchaseDate   = trim($item['purchaseDate'] ?? ($item['purchase_date'] ?? ''));
+            $cost           = floatval($item['cost'] ?? 0);
+            $warrantyExpiry = trim($item['warrantyExpiry'] ?? ($item['warranty_expiry'] ?? ''));
+
+            // Duplicate Detection by Serial (if serial is non-empty)
+            $existingId = null;
+            if (!empty($serial)) {
+                $checkSql = "SELECT id, tag FROM assets WHERE serial = ? AND serial != ''";
+                $checkStmt = sqlsrv_query($conn, $checkSql, [$serial]);
+                if ($checkStmt && ($checkRow = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC))) {
+                    $existingId = $checkRow['id'];
+                }
+                if ($checkStmt) sqlsrv_free_stmt($checkStmt);
+            }
+
+            if ($existingId !== null) {
+                if ($duplicateHandling === 'update') {
+                    $updateSql = "UPDATE assets SET 
+                        name = ?, category = ?, brand = ?, model = ?, serial = ?, 
+                        status = ?, condition = ?, location = ?, department = ?,
+                        processor = ?, ram = ?, storage = ?, os = ?, mac_address = ?, ip_address = ?,
+                        vendor = ?, po_number = ?, purchase_date = ?, cost = ?, warranty_expiry = ?,
+                        updated_at = GETDATE() 
+                        WHERE id = ?";
+                    $uParams = [
+                        $name, $category, $brand, $model, $serial,
+                        $status, $condition, $location, $department,
+                        $processor, $ram, $storage, $os, $macAddress, $ipAddress,
+                        $vendor, $poNumber, $purchaseDate, $cost, $warrantyExpiry,
+                        $existingId
+                    ];
+                    $uRes = sqlsrv_query($conn, $updateSql, $uParams);
+                    if ($uRes !== false) {
+                        $updatedCount++;
+                    }
+                } else {
+                    $skippedCount++;
+                }
+                continue;
+            }
+
+            // Always auto-generate sequential unique tag for new imported asset
+            $maxNum++;
+            $tag = $prefix . str_pad($maxNum, 3, '0', STR_PAD_LEFT);
 
             $insertSql = "INSERT INTO assets (
-                tag, name, category, brand, model, serial, status, condition, location, department,
-                cost, warranty_expiry, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
+                tag, name, category, brand, model, serial, status, condition, location, department, assigned_to,
+                processor, ram, storage, os, mac_address, ip_address,
+                vendor, po_number, purchase_date, cost, warranty_expiry,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
 
             $res = sqlsrv_query($conn, $insertSql, [
                 $tag, $name, $category, $brand, $model, $serial, $status, $condition, $location, $department,
-                $cost, $warranty
+                $processor, $ram, $storage, $os, $macAddress, $ipAddress,
+                $vendor, $poNumber, $purchaseDate, $cost, $warrantyExpiry
             ]);
 
             if ($res !== false) {
@@ -1184,10 +1271,19 @@ switch ($action) {
             }
         }
 
+        $totalProcessed = $insertedCount + $updatedCount;
+        $msg = "Import completed: {$insertedCount} asset(s) added";
+        if ($updatedCount > 0) $msg .= ", {$updatedCount} updated";
+        if ($skippedCount > 0) $msg .= ", {$skippedCount} skipped (duplicates)";
+        $msg .= ".";
+
         echo json_encode([
-            'success' => true,
-            'message' => "Successfully imported $insertedCount asset(s) into database.",
-            'count'   => $insertedCount
+            'success'  => true,
+            'message'  => $msg,
+            'count'    => $totalProcessed,
+            'inserted' => $insertedCount,
+            'updated'  => $updatedCount,
+            'skipped'  => $skippedCount
         ]);
         exit;
 

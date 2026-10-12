@@ -1632,3 +1632,146 @@
     }
 }
 
+/* ==========================================================================
+   Import CSV Modal Design System
+   ========================================================================== */
+.import-template-box {
+    background: #f8fafc;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 6px);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.template-text {
+    font-size: 12.5px;
+    color: var(--text-secondary, #64748b);
+}
+
+.template-text strong {
+    color: var(--navy-primary, #0f172a);
+}
+
+.btn-template-download {
+    background: #ffffff;
+    border: 1px solid var(--cyan-primary, #0093a7);
+    color: var(--cyan-primary, #0093a7);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-template-download:hover {
+    background: var(--cyan-primary, #0093a7);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 147, 167, 0.2);
+}
+
+.dropzone-box {
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-md, 8px);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    background: #fafcff;
+    transition: all 0.25s ease;
+}
+
+.dropzone-box:hover,
+.dropzone-box.dragover,
+.dropzone-box.drag-over {
+    border-color: var(--cyan-primary, #0093a7);
+    background: #f0fdfa;
+    box-shadow: 0 0 0 4px rgba(0, 147, 167, 0.08);
+}
+
+.dropzone-icon {
+    margin-bottom: 8px;
+}
+
+.dropzone-text {
+    font-size: 13.5px;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 4px;
+}
+
+.dropzone-text strong {
+    color: var(--cyan-primary, #0093a7);
+}
+
+.dropzone-hint {
+    font-size: 11.5px;
+    color: var(--text-muted, #94a3b8);
+}
+
+.file-preview-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm, 6px);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.file-preview-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.file-icon-badge {
+    background: var(--cyan-primary, #0093a7);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.file-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+
+.file-meta {
+    font-size: 11.5px;
+    color: var(--text-muted, #94a3b8);
+}
+
+.btn-remove-file {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-file:hover {
+    color: #ef4444;
+    background: #fee2e2;
+}
+
+
