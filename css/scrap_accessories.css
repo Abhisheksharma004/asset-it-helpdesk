@@ -1,0 +1,523 @@
+/**
+ * Scrap Accessories Management Styles
+ * VIROS IT Asset & Helpdesk Portal
+ */
+
+/* Top Action Badges & Filters */
+.scrap-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.scrap-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    background: rgba(0, 147, 167, 0.1);
+    color: var(--cyan-primary);
+    border: 1px solid rgba(0, 147, 167, 0.2);
+}
+
+/* Scrap Metrics Grid */
+.scrap-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.scrap-metric-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.scrap-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.scrap-metric-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: transparent;
+}
+
+.scrap-metric-card.card-total::before { background: var(--cyan-primary); }
+.scrap-metric-card.card-yard::before { background: #d97706; }
+.scrap-metric-card.card-recycled::before { background: #059669; }
+.scrap-metric-card.card-salvage::before { background: #6366f1; }
+
+.scrap-metric-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.scrap-metric-icon.icon-cyan { background: rgba(0, 147, 167, 0.1); color: var(--cyan-primary); }
+.scrap-metric-icon.icon-amber { background: rgba(217, 119, 6, 0.1); color: #d97706; }
+.scrap-metric-icon.icon-green { background: rgba(5, 150, 105, 0.1); color: #059669; }
+.scrap-metric-icon.icon-indigo { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+
+.scrap-metric-body .metric-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.scrap-metric-body .metric-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--navy-deep);
+    margin-top: 2px;
+}
+
+/* Unified Single Row Toolbar */
+.scrap-unified-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.scrap-filter-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    overflow-x: auto;
+}
+
+.scrap-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.scrap-tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.scrap-tab-btn:hover {
+    background: var(--bg-surface);
+    color: var(--navy-deep);
+}
+
+.scrap-tab-btn.active {
+    background: rgba(0, 147, 167, 0.12);
+    color: var(--cyan-primary);
+    border-color: rgba(0, 147, 167, 0.3);
+}
+
+.scrap-tab-count {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.scrap-tab-btn.active .scrap-tab-count {
+    background: var(--cyan-primary);
+    color: #ffffff;
+}
+
+.scrap-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 7px 12px;
+    width: 280px;
+}
+
+.scrap-search-box input {
+    border: none;
+    outline: none;
+    font-size: 12.5px;
+    width: 100%;
+    background: transparent;
+}
+
+.scrap-select-filter {
+    padding: 7px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 12.5px;
+    color: var(--navy-deep);
+    outline: none;
+    cursor: pointer;
+    max-width: 220px;
+}
+
+/* Status Badges */
+.scrap-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+.status-yard {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.status-recycled {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.status-sold {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.status-written-off {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.reason-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.ref-code {
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cyan-primary);
+    background: rgba(0, 147, 167, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Official Corporate Slip Document Styles (Consistent with Handover & Transfer Slips) */
+.official-slip-sheet {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 24px 28px;
+    color: #0f172a;
+    font-size: 11.5px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.slip-header-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    border: none !important;
+}
+
+.slip-header-tbl td {
+    border: none !important;
+    padding: 4px 8px;
+    vertical-align: middle;
+}
+
+.slip-logo-cell {
+    width: 22%;
+    text-align: left;
+}
+
+.slip-logo-cell img {
+    max-height: 65px;
+    max-width: 170px;
+    object-fit: contain;
+    display: block;
+}
+
+.slip-title-cell {
+    text-align: center;
+}
+
+.slip-title-cell h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #001938;
+    text-transform: uppercase;
+}
+
+.slip-sub-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #475569;
+    margin-top: 2px;
+}
+
+.slip-doc-pill {
+    font-size: 12px;
+    font-weight: 800;
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    display: inline-block;
+    border-top: 1.5px solid #001938;
+    padding-top: 3px;
+    color: #0093A7;
+}
+
+.slip-meta-cell {
+    width: 28%;
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: right;
+    color: #1e293b;
+}
+
+.slip-sec-heading {
+    background: #f1f5f9;
+    font-weight: 700;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border: 1px solid #334155;
+    border-bottom: none;
+    margin-top: 12px;
+    color: #0f172a;
+    letter-spacing: 0.3px;
+}
+
+.slip-data-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.slip-data-tbl th,
+.slip-data-tbl td {
+    border: 1px solid #334155;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    vertical-align: middle;
+}
+
+.slip-data-tbl th {
+    background: #f8fafc;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: left;
+}
+
+.slip-lbl {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #334155;
+    width: 22%;
+}
+
+.slip-val {
+    color: #0f172a;
+    width: 28%;
+}
+
+.slip-code-mono {
+    font-family: monospace;
+    font-weight: 700;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11.5px;
+}
+
+.slip-status-tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.slip-declaration-box {
+    border: 1px solid #334155;
+    padding: 9px 12px;
+    font-size: 10.5px;
+    color: #334155;
+    background: #f8fafc;
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+.slip-signatures-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #334155;
+    border-top: none;
+    margin-top: 0;
+}
+
+.slip-signatures-tbl td {
+    border: none;
+    padding: 38px 14px 12px;
+    vertical-align: bottom;
+}
+
+.slip-sig-line {
+    border-top: 1.5px solid #0f172a;
+    padding-top: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.slip-sig-sub {
+    font-size: 10px;
+    color: #64748b;
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+/* Stock Indicator & Validation Helpers */
+.input-error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.stock-badge-available {
+    background: #ecfdf5 !important;
+    color: #065f46 !important;
+    border: 1px solid #a7f3d0 !important;
+}
+
+.stock-badge-empty {
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fecaca !important;
+}
+
+.stock-alert-msg {
+    display: none;
+    color: #dc2626;
+    font-size: 11.5px;
+    font-weight: 600;
+    margin-top: 5px;
+    line-height: 1.3;
+}
+
+/* ==================== PRINT STYLES ==================== */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm 12mm;
+    }
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    body * {
+        visibility: hidden;
+    }
+    .modal-overlay.active,
+    .modal-overlay.active .modal-box,
+    .modal-overlay.active .modal-body,
+    .modal-overlay.active .official-slip-sheet,
+    .modal-overlay.active .official-slip-sheet * {
+        visibility: visible;
+    }
+    .modal-overlay.active {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+    .modal-overlay.active .modal-box {
+        position: static !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+    }
+    .modal-header,
+    .modal-footer,
+    .sidebar,
+    .topbar,
+    .dashboard-content,
+    .modal-close-btn,
+    .btn {
+        display: none !important;
+    }
+    .official-slip-sheet {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+}
+
+
