@@ -139,6 +139,14 @@ include 'includes/topbar.php';
                 </svg>
                 Export CSV
             </button>
+            <button type="button" class="btn-secondary" id="openImportBtn" title="Import accessories from CSV" onclick="openImportModal()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Import CSV
+            </button>
             <button type="button" class="btn-primary" id="openAddModalBtn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -547,6 +555,80 @@ include 'includes/topbar.php';
         </form>
     </div>
 </div>
+
+<!-- =========================================================================
+     MODAL: Import Accessories from CSV (Portal Design System)
+     ========================================================================= -->
+<div class="modal-overlay" id="importModal">
+    <div class="modal-box" style="max-width: 520px;">
+        <div class="modal-header">
+            <h3>Import Accessories from CSV</h3>
+            <button type="button" class="modal-close-btn" id="closeImportModalBtn" onclick="closeImportModal()">&times;</button>
+        </div>
+        <form id="importAccessoryForm">
+            <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                <!-- Template Notice & Download -->
+                <div class="import-template-box">
+                    <div class="template-text">
+                        Download sample CSV template with accessory fields (SKU will be auto-generated).
+                    </div>
+                    <button type="button" class="btn-template-download" id="downloadAccTemplateBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Sample CSV
+                    </button>
+                </div>
+
+                <!-- Drag & Drop Upload Zone -->
+                <div class="dropzone-box" id="csvAccDropzone">
+                    <input type="file" id="csvAccFile" accept=".csv, text/csv" style="display: none;">
+                    <div class="dropzone-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color: var(--cyan-primary);">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="12" y2="12"></line>
+                            <line x1="15" y1="15" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
+                    <div class="dropzone-text">
+                        <strong>Click to browse</strong> or drag & drop CSV file here
+                    </div>
+                    <div class="dropzone-hint">Supports .csv files up to 5MB • Only Accessory Name is required</div>
+                </div>
+
+                <!-- Selected File Preview -->
+                <div class="file-preview-card" id="accFilePreviewCard" style="display: none;">
+                    <div class="file-preview-left">
+                        <div class="file-icon-badge">CSV</div>
+                        <div>
+                            <div class="file-name" id="accPreviewFileName">filename.csv</div>
+                            <div class="file-meta" id="accPreviewFileMeta">0 KB • 0 accessories ready to import</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-remove-file" id="accRemoveFileBtn" title="Remove file">&times;</button>
+                </div>
+
+                <!-- Duplicate Option -->
+                <div class="modal-form-group">
+                    <label for="duplicateAccHandling" style="display: block; font-size: 13px; font-weight: 600; color: var(--navy-primary); margin-bottom: 6px;">Duplicate Accessory Handling</label>
+                    <select id="duplicateAccHandling" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; background: #fff; color: var(--text-primary);">
+                        <option value="skip">Skip duplicates (keep existing stock)</option>
+                        <option value="update">Update existing accessories (update stock & details)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 16px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color, #e2e8f0); background: #f8fafc;">
+                <button type="button" class="btn-secondary" id="cancelImportModalBtn" onclick="closeImportModal()">Cancel</button>
+                <button type="submit" class="btn-primary" id="startAccImportBtn" disabled>Import Accessories</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Pass initial SQL Server dataset to client script -->
 <script>
     window.INITIAL_ACCESSORIES = <?php echo json_encode($initialAccessories, JSON_HEX_TAG | JSON_HEX_AMP); ?>;

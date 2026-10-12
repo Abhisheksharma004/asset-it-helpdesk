@@ -59,6 +59,23 @@
     const issueForm = document.getElementById('issueForm');
     const exportAccBtn = document.getElementById('exportAccBtn');
 
+    // Import Modal Elements
+    const importModal = document.getElementById('importModal');
+    const openImportBtn = document.getElementById('openImportBtn');
+    const closeImportModalBtn = document.getElementById('closeImportModalBtn');
+    const cancelImportModalBtn = document.getElementById('cancelImportModalBtn');
+    const downloadAccTemplateBtn = document.getElementById('downloadAccTemplateBtn');
+    const csvAccDropzone = document.getElementById('csvAccDropzone');
+    const csvAccFile = document.getElementById('csvAccFile');
+    const accFilePreviewCard = document.getElementById('accFilePreviewCard');
+    const accPreviewFileName = document.getElementById('accPreviewFileName');
+    const accPreviewFileMeta = document.getElementById('accPreviewFileMeta');
+    const accRemoveFileBtn = document.getElementById('accRemoveFileBtn');
+    const duplicateAccHandling = document.getElementById('duplicateAccHandling');
+    const startAccImportBtn = document.getElementById('startAccImportBtn');
+    const importAccessoryForm = document.getElementById('importAccessoryForm');
+    let stagedAccImportData = [];
+
     // Helper: Construct API URL with preview query if present
     function getApiUrl(params = {}) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -345,6 +362,58 @@
             exportAccBtn.addEventListener('click', handleExportCsv);
         }
 
+        // Import Modal Events
+        if (openImportBtn) {
+            openImportBtn.addEventListener('click', function () {
+                resetAccImportModal();
+                openModal(importModal);
+            });
+        }
+        if (closeImportModalBtn) closeImportModalBtn.addEventListener('click', () => closeModal(importModal));
+        if (cancelImportModalBtn) cancelImportModalBtn.addEventListener('click', () => closeModal(importModal));
+
+        if (downloadAccTemplateBtn) {
+            downloadAccTemplateBtn.addEventListener('click', handleDownloadAccTemplate);
+        }
+
+        if (csvAccDropzone && csvAccFile) {
+            csvAccDropzone.addEventListener('click', () => csvAccFile.click());
+
+            csvAccDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                csvAccDropzone.classList.add('dragover');
+            });
+
+            csvAccDropzone.addEventListener('dragleave', () => {
+                csvAccDropzone.classList.remove('dragover');
+            });
+
+            csvAccDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                csvAccDropzone.classList.remove('dragover');
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    processUploadedAccCsv(e.dataTransfer.files[0]);
+                }
+            });
+
+            csvAccFile.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    processUploadedAccCsv(e.target.files[0]);
+                }
+            });
+        }
+
+        if (accRemoveFileBtn) {
+            accRemoveFileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                resetAccImportModal();
+            });
+        }
+
+        if (importAccessoryForm) {
+            importAccessoryForm.addEventListener('submit', handleExecuteAccImport);
+        }
+
         // Close on Escape or click outside
         window.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
@@ -352,10 +421,11 @@
                 closeModal(editAccessoryModal);
                 closeModal(deleteAccessoryModal);
                 closeModal(issueModal);
+                closeModal(importModal);
             }
         });
 
-        [addAccessoryModal, editAccessoryModal, deleteAccessoryModal, issueModal].forEach(modal => {
+        [addAccessoryModal, editAccessoryModal, deleteAccessoryModal, issueModal, importModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) closeModal(modal);
@@ -805,9 +875,245 @@
         showNotification(`Exported ${list.length} accessories to CSV.`, 'success');
     }
 
+    // =========================================================================
+    // Import Accessories Functions (Portal Design System)
+    // =========================================================================
+    function resetAccImportModal() {
+        stagedAccImportData = [];
+        if (csvAccFile) csvAccFile.value = '';
+        if (accFilePreviewCard) accFilePreviewCard.style.display = 'none';
+        if (csvAccDropzone) csvAccDropzone.style.display = 'block';
+        if (startAccImportBtn) {
+            startAccImportBtn.disabled = true;
+            startAccImportBtn.innerHTML = 'Import Accessories';
+        }
+    }
+
+    function handleDownloadAccTemplate() {
+        const headers = [
+            'Accessory Name',
+            'Category',
+            'Branch Location',
+            'Brand',
+            'Model',
+            'Total Quantity',
+            'In Stock',
+            'Min Stock Alert',
+            'Storage Location'
+        ];
+
+        const sampleRows = [
+            [
+                'Logitech MX Master 3S Wireless Mouse',
+                'Keyboards & Mice',
+                'Corporate HQ - Mumbai',
+                'Logitech',
+                'MX Master 3S',
+                '120',
+                '34',
+                '15',
+                'HQ - New York Depot (Shelf A-02)'
+            ],
+            [
+                'Dell Pro Wireless Keyboard & Mouse KM5221W',
+                'Keyboards & Mice',
+                'Corporate HQ - Mumbai',
+                'Dell',
+                'KM5221W',
+                '250',
+                '58',
+                '25',
+                'HQ - New York Depot (Shelf A-05)'
+            ],
+            [
+                'Dell Thunderbolt 4 Dock WD22TB4',
+                'Docks & Hubs',
+                'Corporate HQ - Mumbai',
+                'Dell',
+                'WD22TB4 180W',
+                '85',
+                '19',
+                '10',
+                'HQ - New York Depot (Shelf C-01)'
+            ],
+            [
+                'Apple 96W USB-C Power Adapter',
+                'Chargers & Power Adapters',
+                'Delivery Center - Hyderabad',
+                'Apple',
+                '96W GaN Fast Charger',
+                '80',
+                '16',
+                '12',
+                'Austin Hub Depot (Shelf P-01)'
+            ]
+        ];
+
+        const csvContent = [
+            headers.join(','),
+            ...sampleRows.map(row => row.map(v => `"${(v || '').replace(/"/g, '""')}"`).join(','))
+        ].join('\r\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sample_accessories_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function processUploadedAccCsv(file) {
+        if (!file || !file.name.toLowerCase().endsWith('.csv')) {
+            showNotification('Please upload a valid .csv file.', 'warning');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const text = e.target.result;
+            const items = parseAccCsv(text);
+            if (!items || items.length === 0) {
+                showNotification('No valid accessory records detected in CSV. Please ensure Accessory Name is provided.', 'warning');
+                return;
+            }
+
+            stagedAccImportData = items;
+
+            if (accFilePreviewCard) accFilePreviewCard.style.display = 'flex';
+            if (accPreviewFileName) accPreviewFileName.textContent = file.name;
+            if (accPreviewFileMeta) accPreviewFileMeta.textContent = `${(file.size / 1024).toFixed(1)} KB • ${items.length} accessory item(s) ready to import`;
+            if (csvAccDropzone) csvAccDropzone.style.display = 'none';
+            if (startAccImportBtn) {
+                startAccImportBtn.disabled = false;
+                startAccImportBtn.innerHTML = `Import Accessories (${items.length})`;
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function parseAccCsv(csvText) {
+        const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length < 2) return [];
+
+        function parseLine(line) {
+            const values = [];
+            let inQuotes = false;
+            let current = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current.trim());
+            return values;
+        }
+
+        const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        const items = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const cols = parseLine(lines[i]);
+            if (!cols || cols.length === 0 || cols.every(c => !c)) continue;
+
+            const rowObj = {};
+            headers.forEach((h, idx) => {
+                rowObj[h] = cols[idx] !== undefined ? cols[idx] : '';
+            });
+
+            // Accessory Name is the only strictly required field
+            const name = (rowObj['accessoryname'] || rowObj['name'] || '').trim();
+            if (!name) continue;
+
+            const category        = (rowObj['category'] || '').trim() || 'Keyboards & Mice';
+            const branch_location = (rowObj['branchlocation'] || rowObj['branch'] || rowObj['location'] || '').trim();
+            const brand           = (rowObj['brand'] || '').trim();
+            const model           = (rowObj['model'] || '').trim();
+            const totalQty        = parseInt(rowObj['totalquantity'] || rowObj['totalqty'] || rowObj['quantity'] || rowObj['qty'] || '1', 10) || 1;
+            const inStock         = parseInt(rowObj['instock'] || rowObj['available'] || rowObj['stock'] || String(totalQty), 10);
+            const minStock        = parseInt(rowObj['minstockalert'] || rowObj['minstock'] || rowObj['reorderpoint'] || '5', 10) || 5;
+            const location        = (rowObj['storagelocation'] || rowObj['storagedepot'] || rowObj['shelf'] || 'HQ - New York Depot').trim();
+
+            items.push({
+                name,
+                category,
+                branch_location,
+                brand,
+                model,
+                total_qty: totalQty,
+                in_stock: isNaN(inStock) ? totalQty : inStock,
+                min_stock: minStock,
+                location: location || 'HQ - New York Depot'
+            });
+        }
+        return items;
+    }
+
+    function handleExecuteAccImport(e) {
+        e.preventDefault();
+        if (!stagedAccImportData || stagedAccImportData.length === 0) {
+            showNotification('Please select a valid CSV file first.', 'warning');
+            return;
+        }
+
+        const dupHandling = duplicateAccHandling ? duplicateAccHandling.value : 'skip';
+
+        if (startAccImportBtn) {
+            startAccImportBtn.disabled = true;
+            startAccImportBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg> Importing Accessories...`;
+        }
+
+        fetch(getApiUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'import',
+                items: stagedAccImportData,
+                duplicate_handling: dupHandling
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (startAccImportBtn) {
+                startAccImportBtn.disabled = false;
+                startAccImportBtn.innerHTML = 'Import Accessories';
+            }
+
+            if (data && data.success) {
+                showNotification(data.message || `Successfully imported ${stagedAccImportData.length} accessories!`, 'success');
+                closeModal(importModal);
+                loadAccessories();
+            } else {
+                showNotification((data && data.message) || 'Import failed.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (startAccImportBtn) {
+                startAccImportBtn.disabled = false;
+                startAccImportBtn.innerHTML = 'Import Accessories';
+            }
+            showNotification('Server error occurred during accessories import.', 'error');
+        });
+    }
+
     // Helpers
     function openModal(modal) {
         if (modal) {
+            modal.style.display = 'flex';
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -815,10 +1121,23 @@
 
     function closeModal(modal) {
         if (modal) {
+            modal.style.display = 'none';
             modal.classList.remove('active');
             document.body.style.overflow = '';
         }
     }
+
+    window.openImportModal = function () {
+        resetAccImportModal();
+        const modal = document.getElementById('importModal');
+        openModal(modal);
+    };
+
+    window.closeImportModal = function () {
+        const modal = document.getElementById('importModal');
+        closeModal(modal);
+        resetAccImportModal();
+    };
 
     function escapeHtml(str) {
         if (!str) return '';
@@ -840,6 +1159,7 @@
         openIssue: openIssueModal,
         openEdit: openEditModal,
         deleteItem: openDeleteModal,
+        openImport: window.openImportModal,
         reload: loadAccessories
     };
 

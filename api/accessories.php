@@ -406,6 +406,128 @@ if ($method === 'POST') {
         exit;
     }
 
+    // -------------------------------------------------------------------------
+    // ACTION: import (Bulk Insert from CSV)
+    // -------------------------------------------------------------------------
+    if ($action === 'import') {
+        $items = $input['items'] ?? $input['rows'] ?? [];
+        $duplicateHandling = trim($input['duplicate_handling'] ?? $input['duplicateHandling'] ?? 'skip'); // 'skip' or 'update'
+
+        if (!is_array($items) || empty($items)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'No accessory records provided for import.']);
+            exit;
+        }
+
+        // Prepare sequential SKU counter: ASO + MMYY + 3DIGITS
+        $now = new DateTime();
+        $prefix = 'ASO' . $now->format('my');
+        $maxNum = 0;
+        $sqlSku = "SELECT sku FROM accessories WHERE sku LIKE ? ORDER BY sku DESC";
+        $stmtSku = sqlsrv_query($conn, $sqlSku, [$prefix . '%']);
+        if ($stmtSku !== false) {
+            while ($rSku = sqlsrv_fetch_array($stmtSku, SQLSRV_FETCH_ASSOC)) {
+                $s = $rSku['sku'];
+                $serialPart = substr($s, strlen($prefix));
+                if (is_numeric($serialPart)) {
+                    $n = intval($serialPart);
+                    if ($n > $maxNum) $maxNum = $n;
+                }
+            }
+            sqlsrv_free_stmt($stmtSku);
+        }
+        if ($maxNum === 0) {
+            $cStmt = sqlsrv_query($conn, "SELECT COUNT(*) as cnt FROM accessories");
+            if ($cStmt !== false && ($cRow = sqlsrv_fetch_array($cStmt, SQLSRV_FETCH_ASSOC))) {
+                $maxNum = intval($cRow['cnt']);
+                sqlsrv_free_stmt($cStmt);
+            }
+        }
+
+        $insertedCount = 0;
+        $updatedCount  = 0;
+        $skippedCount  = 0;
+
+        foreach ($items as $item) {
+            $name = trim($item['name'] ?? '');
+            if (empty($name)) continue; // Accessory Name is the only strictly required field
+
+            $category        = trim($item['category'] ?? '');
+            if (empty($category)) $category = 'Keyboards & Mice';
+            $branch_location = trim($item['branch_location'] ?? ($item['branch'] ?? ''));
+            $brand           = trim($item['brand'] ?? '');
+            $model           = trim($item['model'] ?? '');
+            $totalQty        = intval($item['totalQty'] ?? ($item['total_qty'] ?? ($item['qty'] ?? 1)));
+            if ($totalQty <= 0) $totalQty = 1;
+            $inStock         = isset($item['inStock']) ? intval($item['inStock']) : (isset($item['in_stock']) ? intval($item['in_stock']) : $totalQty);
+            if ($inStock < 0) $inStock = $totalQty;
+            $minStock        = intval($item['minStock'] ?? ($item['min_stock'] ?? 5));
+            if ($minStock < 0) $minStock = 5;
+            $location        = trim($item['location'] ?? 'HQ - New York Depot');
+            if (empty($location)) $location = 'HQ - New York Depot';
+
+            // Check if duplicate accessory already exists by Name + Model / Brand
+            $existingId = null;
+            $checkSql = "SELECT id, total_qty, in_stock FROM accessories WHERE LOWER(name) = LOWER(?) AND (LOWER(brand) = LOWER(?) OR ? = '')";
+            $checkStmt = sqlsrv_query($conn, $checkSql, [$name, $brand, $brand]);
+            if ($checkStmt && ($checkRow = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC))) {
+                $existingId = $checkRow['id'];
+            }
+            if ($checkStmt) sqlsrv_free_stmt($checkStmt);
+
+            if ($existingId !== null) {
+                if ($duplicateHandling === 'update') {
+                    $updSql = "UPDATE accessories SET 
+                        category = ?, branch_location = ?, brand = ?, model = ?,
+                        total_qty = ?, in_stock = ?, min_stock = ?, location = ?,
+                        updated_at = GETDATE()
+                        WHERE id = ?";
+                    $uParams = [$category, $branch_location, $brand, $model, $totalQty, $inStock, $minStock, $location, $existingId];
+                    $uRes = sqlsrv_query($conn, $updSql, $uParams);
+                    if ($uRes !== false) {
+                        $updatedCount++;
+                    }
+                } else {
+                    $skippedCount++;
+                }
+                continue;
+            }
+
+            // Generate sequential SKU for new accessory
+            $maxNum++;
+            $sku = $prefix . str_pad($maxNum, 3, '0', STR_PAD_LEFT);
+
+            $insSql = "INSERT INTO accessories (
+                sku, name, category, branch_location, brand, model,
+                total_qty, in_stock, deployed, min_stock, location,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, GETDATE(), GETDATE())";
+
+            $insParams = [$sku, $name, $category, $branch_location, $brand, $model, $totalQty, $inStock, $minStock, $location];
+            $insStmt = sqlsrv_query($conn, $insSql, $insParams);
+
+            if ($insStmt !== false) {
+                $insertedCount++;
+            }
+        }
+
+        $totalProcessed = $insertedCount + $updatedCount;
+        $msg = "Import completed: {$insertedCount} accessory item(s) added";
+        if ($updatedCount > 0) $msg .= ", {$updatedCount} updated";
+        if ($skippedCount > 0) $msg .= ", {$skippedCount} skipped (duplicates)";
+        $msg .= ".";
+
+        echo json_encode([
+            'success'  => true,
+            'message'  => $msg,
+            'count'    => $totalProcessed,
+            'inserted' => $insertedCount,
+            'updated'  => $updatedCount,
+            'skipped'  => $skippedCount
+        ]);
+        exit;
+    }
+
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);
     exit;
