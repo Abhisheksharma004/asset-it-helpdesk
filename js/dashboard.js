@@ -79,15 +79,17 @@ document.addEventListener("DOMContentLoaded", function () {
     if (cancelTicketModalBtn) cancelTicketModalBtn.addEventListener("click", closeModal);
 
     // Close modal on overlay background click
-    ticketModal.addEventListener("click", function (e) {
-        if (e.target === ticketModal) {
-            closeModal();
-        }
-    });
+    if (ticketModal) {
+        ticketModal.addEventListener("click", function (e) {
+            if (e.target === ticketModal) {
+                closeModal();
+            }
+        });
+    }
 
     // Escape key to close modal
     document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape" && ticketModal.classList.contains("active")) {
+        if (e.key === "Escape" && ticketModal && ticketModal.classList.contains("active")) {
             closeModal();
         }
     });

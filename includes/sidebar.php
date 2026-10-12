@@ -13,8 +13,8 @@ if (!isset($active_page)) {
 // Check which dropdown groups should be open by default
 $is_master_open = in_array($active_page, ['master', 'master_category', 'master_accessory_category', 'master_component_category', 'master_department', 'master_location', 'master_vendor', 'master_employee', 'master_status']);
 $is_assets_open = in_array($active_page, ['assets', 'asset_management', 'accessories', 'accessories_management', 'components', 'component_management', 'asset_assignment', 'asset_transfer', 'asset_return', 'asset_repair', 'software', 'software_licenses', 'asset_barcode', 'hardware', 'assets_all']);
+$is_scrap_open = in_array($active_page, ['scrap', 'scrap_assets', 'scrap_components', 'scrap_parts', 'scrap_accessories', 'dismantle']);
 $is_tickets_open = in_array($active_page, ['tickets', 'tickets_all', 'tickets_open', 'tickets_progress', 'tickets_resolved']);
-$is_reports_open = in_array($active_page, ['reports', 'reports_audit', 'reports_sla', 'reports_warranty']);
 
 // Fetch Dynamic Organization Branding Settings
 if (!function_exists('getOrganizationSettings')) {
@@ -176,6 +176,43 @@ if (count($orgWords) > 1) {
             </ul>
         </li>
 
+        <!-- Scrap / Dismantle (Dropdown) -->
+        <li class="nav-item nav-item-dropdown <?php echo $is_scrap_open ? 'open' : ''; ?>">
+            <a href="javascript:void(0)" class="nav-link dropdown-toggle <?php echo $is_scrap_open ? 'active' : ''; ?>">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </span>
+                <span class="nav-text">Scrap / Dismantle</span>
+                <span class="dropdown-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </span>
+            </a>
+            <ul class="submenu">
+                <li>
+                    <a href="<?php echo file_exists(__DIR__ . '/../scrap_assets.php') ? 'scrap_assets.php' : '#scrap-assets'; ?>" class="submenu-link <?php echo ($active_page === 'scrap_assets') ? 'active' : ''; ?>" <?php echo !file_exists(__DIR__ . '/../scrap_assets.php') ? 'onclick="handleMenuClick(event, \'Scrap Assets\')"' : ''; ?>>
+                        <span>Assets</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?php echo file_exists(__DIR__ . '/../scrap_components.php') ? 'scrap_components.php' : '#scrap-components'; ?>" class="submenu-link <?php echo in_array($active_page, ['scrap_components', 'scrap_parts']) ? 'active' : ''; ?>" <?php echo !file_exists(__DIR__ . '/../scrap_components.php') ? 'onclick="handleMenuClick(event, \'Scrap Parts / Components\')"' : ''; ?>>
+                        <span>Parts / Components</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?php echo file_exists(__DIR__ . '/../scrap_accessories.php') ? 'scrap_accessories.php' : '#scrap-accessories'; ?>" class="submenu-link <?php echo ($active_page === 'scrap_accessories') ? 'active' : ''; ?>" <?php echo !file_exists(__DIR__ . '/../scrap_accessories.php') ? 'onclick="handleMenuClick(event, \'Scrap Accessories\')"' : ''; ?>>
+                        <span>Accessories</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
         <!-- Inventory Stock (Single Item) -->
         <!-- <li class="nav-item">
             <a href="#inventory" class="nav-link <?php echo ($active_page === 'inventory') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Inventory Stock')">
@@ -214,9 +251,9 @@ if (count($orgWords) > 1) {
             </a>
         </li> -->
 
-        <!-- DROPDOWN 3: Reports & Analytics -->
-        <li class="nav-item nav-item-dropdown <?php echo $is_reports_open ? 'open' : ''; ?>">
-            <a href="javascript:void(0)" class="nav-link dropdown-toggle <?php echo $is_reports_open ? 'active' : ''; ?>">
+        <!-- Reports (Single Item) -->
+        <li class="nav-item">
+            <a href="reports.php" class="nav-link <?php echo in_array($active_page, ['reports', 'reports_audit', 'reports_sla', 'reports_warranty']) ? 'active' : ''; ?>">
                 <span class="nav-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -224,30 +261,8 @@ if (count($orgWords) > 1) {
                         <line x1="6" y1="20" x2="6" y2="14"></line>
                     </svg>
                 </span>
-                <span class="nav-text">Reports & Analytics</span>
-                <span class="dropdown-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </span>
+                <span class="nav-text">Reports</span>
             </a>
-            <ul class="submenu">
-                <li>
-                    <a href="#reports-audit" class="submenu-link <?php echo ($active_page === 'reports_audit') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Asset Audit Report')">
-                        <span>Asset Audit</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#reports-sla" class="submenu-link <?php echo ($active_page === 'reports_sla') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Helpdesk SLA Performance')">
-                        <span>SLA Performance</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#reports-warranty" class="submenu-link <?php echo ($active_page === 'reports_warranty') ? 'active' : ''; ?>" onclick="handleMenuClick(event, 'Warranty & AMC Expiry')">
-                        <span>Warranty Expiry</span>
-                    </a>
-                </li>
-            </ul>
         </li>
 
         <!-- Settings (Single Item) -->

@@ -30,6 +30,7 @@
 
         <div class="header-right">
             
+            <?php if (empty($hide_topbar_actions) && ($active_page ?? '') !== 'dashboard'): ?>
             <button class="quick-action-btn" id="openTicketModalBtn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -45,6 +46,7 @@
                 </svg>
                 <span class="badge-dot"></span>
             </button>
+            <?php endif; ?>
 
             <?php
             $topbar_name = $_SESSION['user_name'] ?? 'Abhishek Sharma';

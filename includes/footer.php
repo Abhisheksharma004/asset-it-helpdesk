@@ -9,7 +9,7 @@
 ?>
         <!-- Dashboard Footer -->
         <footer class="dashboard-footer">
-            <div>© 2026 Viros Entrepreneurs IT Solutions Pvt. Ltd. All rights reserved.</div>
+            <div>© 2026 <a href="https://virosentrepreneurs.com" target="_blank">Viros Entrepreneurs IT Solutions Pvt. Ltd.</a> All rights reserved.</div>
             <div>
                 Design and Maintain by <a href="https://virosentrepreneurs.com" target="_blank">Viros</a>
             </div>
