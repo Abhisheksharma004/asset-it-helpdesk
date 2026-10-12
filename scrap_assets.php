@@ -458,8 +458,8 @@ include 'includes/topbar.php';
                                     <?php echo $sr['date']; ?>
                                 </td>
                                 <td style="text-align: right; white-space: nowrap;">
-                                    <div class="action-btn-group">
-                                        <button type="button" class="btn btn-outline btn-sm view-slip-btn" 
+                                    <div class="action-buttons-wrap" style="justify-content: flex-end; padding-right: 6px;">
+                                        <button type="button" class="action-icon-btn btn-view view-slip-btn" 
                                                 data-ref="<?php echo htmlspecialchars($sr['ref']); ?>" 
                                                 data-name="<?php echo htmlspecialchars($sr['name']); ?>" 
                                                 data-tag="<?php echo htmlspecialchars($sr['asset_tag']); ?>" 
@@ -476,14 +476,13 @@ include 'includes/topbar.php';
                                                 data-notes="<?php echo htmlspecialchars(!empty($sr['notes']) ? $sr['notes'] : 'Asset evaluated, found beyond economic repair, decommissioned from asset register.'); ?>" 
                                                 data-date="<?php echo htmlspecialchars($sr['date']); ?>"
                                                 data-components="<?php echo htmlspecialchars(is_array($sr['components_disposition'] ?? null) ? json_encode($sr['components_disposition']) : ($sr['components_disposition'] ?? '')); ?>"
-                                                style="padding: 4px 10px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; background: #fff; display: inline-flex; align-items: center; gap: 4px;">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                title="View Decommission Details & Slip">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                <circle cx="12" cy="10" r="3"></circle>
+                                                <circle cx="12" cy="12" r="3"></circle>
                                             </svg>
-                                            View
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-sm direct-print-slip-btn" 
+                                        <button type="button" class="action-icon-btn btn-qr direct-print-slip-btn" 
                                                 data-ref="<?php echo htmlspecialchars($sr['ref']); ?>" 
                                                 data-name="<?php echo htmlspecialchars($sr['name']); ?>" 
                                                 data-tag="<?php echo htmlspecialchars($sr['asset_tag']); ?>" 
@@ -500,8 +499,8 @@ include 'includes/topbar.php';
                                                 data-notes="<?php echo htmlspecialchars(!empty($sr['notes']) ? $sr['notes'] : 'Asset evaluated, found beyond economic repair, decommissioned from asset register.'); ?>" 
                                                 data-date="<?php echo htmlspecialchars($sr['date']); ?>"
                                                 data-components="<?php echo htmlspecialchars(is_array($sr['components_disposition'] ?? null) ? json_encode($sr['components_disposition']) : ($sr['components_disposition'] ?? '')); ?>"
-                                                style="padding: 4px 8px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; background: var(--cyan-primary); color: #fff;" title="Print Slip Directly">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;">
+                                                title="Print Official Scrap Slip">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
                                                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                                                 <rect x="6" y="14" width="12" height="8"></rect>
@@ -689,134 +688,144 @@ include 'includes/topbar.php';
     </div>
 </div>
 
-<!-- ==================== OFFICIAL SCRAP SLIP MODAL ==================== -->
-<div class="modal-overlay" id="scrapSlipModal">
-    <div class="modal-box" style="max-width: 780px;">
-        <div class="modal-header">
-            <h3>Official Asset Scrap & Decommissioning Slip</h3>
-            <button class="modal-close-btn" id="closeSlipModalBtn">&times;</button>
+<!-- ==================== SLIDE-OVER DRAWER (Official Asset Scrap & Decommissioning Slip) ==================== -->
+<div class="drawer-backdrop" id="scrapSlipBackdrop"></div>
+
+<aside class="asset-drawer" id="scrapSlipModal" style="width: 780px; max-width: 95vw;">
+    <div class="drawer-header">
+        <div class="drawer-header-left">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span class="asset-tag-badge" id="drawerSlipRef" style="font-size: 12px; font-weight: 700;">-</span>
+                    <span class="serial-badge" id="drawerSlipDate" style="font-size: 12px; font-weight: 600;">-</span>
+                </div>
+                <h3 style="margin-top: 4px; font-size: 16.5px; font-weight: 700; color: var(--navy-deep);">Asset Scrap &amp; Decommissioning Slip</h3>
+            </div>
         </div>
-        <div class="modal-body" style="padding: 24px;">
-            <div class="scrap-slip-container" id="printableSlipArea">
-                <!-- Slip Header -->
-                <div class="scrap-slip-header">
-                    <div class="scrap-slip-brand">
-                        <img src="<?php echo htmlspecialchars($orgLogo); ?>" alt="Organization Logo">
-                        <div class="scrap-slip-brand-info">
-                            <h2><?php echo htmlspecialchars($orgName); ?></h2>
-                            <p>IT Infrastructure & Asset Management Directorate</p>
-                        </div>
+        <button type="button" class="drawer-close-btn" id="closeSlipModalBtn" title="Close Drawer">&times;</button>
+    </div>
+
+    <div class="drawer-content" style="flex: 1; overflow-y: auto; padding: 20px 24px;">
+        <div class="scrap-slip-container" id="printableSlipArea">
+            <!-- Slip Header -->
+            <div class="scrap-slip-header">
+                <div class="scrap-slip-brand">
+                    <img src="<?php echo htmlspecialchars($orgLogo); ?>" alt="Organization Logo">
+                    <div class="scrap-slip-brand-info">
+                        <h2><?php echo htmlspecialchars($orgName); ?></h2>
+                        <p>IT Infrastructure &amp; Asset Management Directorate</p>
                     </div>
-                    <div class="scrap-slip-meta">
-                        <div class="scrap-slip-title">Official Asset Scrap Slip</div>
-                        <div class="scrap-slip-ref" id="slipRefCode">-</div>
-                        <div class="scrap-slip-date">Date: <span id="slipDate">-</span></div>
+                </div>
+                <div class="scrap-slip-meta">
+                    <div class="scrap-slip-title">Official Asset Scrap Slip</div>
+                    <div class="scrap-slip-ref" id="slipRefCode">-</div>
+                    <div class="scrap-slip-date">Date: <span id="slipDate">-</span></div>
+                </div>
+            </div>
+
+            <!-- Slip Grid Information -->
+            <div class="scrap-slip-grid">
+                <div class="scrap-slip-section">
+                    <div class="scrap-slip-section-title">Decommissioned Asset Details</div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Asset Tag:</span>
+                        <span class="scrap-slip-value" id="slipAssetTag" style="font-family: monospace; color: #1d4ed8;">-</span>
+                    </div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Device Name:</span>
+                        <span class="scrap-slip-value" id="slipAssetName">-</span>
+                    </div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Category:</span>
+                        <span class="scrap-slip-value" id="slipCategory">-</span>
+                    </div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Brand / Model:</span>
+                        <span class="scrap-slip-value" id="slipBrandModel">-</span>
+                    </div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Serial Number:</span>
+                        <span class="scrap-slip-value" id="slipSerial" style="font-family: monospace;">-</span>
+                    </div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Origin Branch:</span>
+                        <span class="scrap-slip-value" id="slipOriginLocation">-</span>
                     </div>
                 </div>
 
-                <!-- Slip Grid Information -->
-                <div class="scrap-slip-grid">
-                    <div class="scrap-slip-section">
-                        <div class="scrap-slip-section-title">Decommissioned Asset Details</div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Asset Tag:</span>
-                            <span class="scrap-slip-value" id="slipAssetTag" style="font-family: monospace; color: #1d4ed8;">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Device Name:</span>
-                            <span class="scrap-slip-value" id="slipAssetName">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Category:</span>
-                            <span class="scrap-slip-value" id="slipCategory">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Brand / Model:</span>
-                            <span class="scrap-slip-value" id="slipBrandModel">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Serial Number:</span>
-                            <span class="scrap-slip-value" id="slipSerial" style="font-family: monospace;">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Origin Branch:</span>
-                            <span class="scrap-slip-value" id="slipOriginLocation">-</span>
-                        </div>
+                <div class="scrap-slip-section">
+                    <div class="scrap-slip-section-title">Disposal & Valuation Details</div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Disposal Target:</span>
+                        <span class="scrap-slip-value" id="slipStatusText" style="color: #b45309; font-weight: 700;">-</span>
                     </div>
-
-                    <div class="scrap-slip-section">
-                        <div class="scrap-slip-section-title">Disposal & Valuation Details</div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Disposal Target:</span>
-                            <span class="scrap-slip-value" id="slipStatusText" style="color: #b45309; font-weight: 700;">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Storage Bin / Bay:</span>
-                            <span class="scrap-slip-value" id="slipYardLocation">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Salvage Valuation:</span>
-                            <span class="scrap-slip-value" id="slipSalvageVal" style="color: #0f172a; font-weight: 700;">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Condemnation Reason:</span>
-                            <span class="scrap-slip-value" id="slipReason" style="color: #b91c1c;">-</span>
-                        </div>
-                        <div class="scrap-slip-field">
-                            <span class="scrap-slip-label">Authorized Officer:</span>
-                            <span class="scrap-slip-value" id="slipApprover">-</span>
-                        </div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Storage Bin / Bay:</span>
+                        <span class="scrap-slip-value" id="slipYardLocation">-</span>
                     </div>
-                </div>
-
-                <!-- Attached Components Disposition in Slip -->
-                <div class="scrap-slip-notes-box" id="slipComponentsBox" style="display: none; margin-top: 14px; background: #f8fafc; border: 1px solid #e2e8f0;">
-                    <div class="scrap-slip-notes-label" style="display: flex; align-items: center; justify-content: space-between;">
-                        <span>Attached Hardware Components Disposition</span>
-                        <span id="slipComponentsCount" style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0 Parts</span>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Salvage Valuation:</span>
+                        <span class="scrap-slip-value" id="slipSalvageVal" style="color: #0f172a; font-weight: 700;">-</span>
                     </div>
-                    <div id="slipComponentsList" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;"></div>
-                </div>
-
-                <!-- Notes & Diagnostic Findings -->
-                <div class="scrap-slip-notes-box">
-                    <div class="scrap-slip-notes-label">Diagnostic Findings & Condemnation Assessment</div>
-                    <div class="scrap-slip-notes-text" id="slipNotesText">-</div>
-                </div>
-
-                <!-- Signatures -->
-                <div class="scrap-slip-signatures">
-                    <div class="scrap-slip-sign-box">
-                        <div class="scrap-slip-sign-line"></div>
-                        <div class="scrap-slip-sign-title">IT Asset Custodian</div>
-                        <div class="scrap-slip-sign-sub">Device Handed Over</div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Condemnation Reason:</span>
+                        <span class="scrap-slip-value" id="slipReason" style="color: #b91c1c;">-</span>
                     </div>
-                    <div class="scrap-slip-sign-box">
-                        <div class="scrap-slip-sign-line"></div>
-                        <div class="scrap-slip-sign-title">Technical Inspector</div>
-                        <div class="scrap-slip-sign-sub">Defect Verified & Certified</div>
-                    </div>
-                    <div class="scrap-slip-sign-box">
-                        <div class="scrap-slip-sign-line"></div>
-                        <div class="scrap-slip-sign-title">Authorized Disposal Officer</div>
-                        <div class="scrap-slip-sign-sub">Decommissioning Approval</div>
+                    <div class="scrap-slip-field">
+                        <span class="scrap-slip-label">Authorized Officer:</span>
+                        <span class="scrap-slip-value" id="slipApprover">-</span>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" id="closeSlipModalFooterBtn">Close</button>
-            <button type="button" class="btn-primary" id="printSlipBtn" style="display: flex; align-items: center; gap: 6px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                Print Official Slip
-            </button>
+
+            <!-- Attached Components Disposition in Slip -->
+            <div class="scrap-slip-notes-box" id="slipComponentsBox" style="display: none; margin-top: 14px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                <div class="scrap-slip-notes-label" style="display: flex; align-items: center; justify-content: space-between;">
+                    <span>Attached Hardware Components Disposition</span>
+                    <span id="slipComponentsCount" style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 1px 7px; border-radius: 10px; font-weight: 700;">0 Parts</span>
+                </div>
+                <div id="slipComponentsList" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
+
+            <!-- Notes & Diagnostic Findings -->
+            <div class="scrap-slip-notes-box">
+                <div class="scrap-slip-notes-label">Diagnostic Findings & Condemnation Assessment</div>
+                <div class="scrap-slip-notes-text" id="slipNotesText">-</div>
+            </div>
+
+            <!-- Signatures -->
+            <div class="scrap-slip-signatures">
+                <div class="scrap-slip-sign-box">
+                    <div class="scrap-slip-sign-line"></div>
+                    <div class="scrap-slip-sign-title">IT Asset Custodian</div>
+                    <div class="scrap-slip-sign-sub">Device Handed Over</div>
+                </div>
+                <div class="scrap-slip-sign-box">
+                    <div class="scrap-slip-sign-line"></div>
+                    <div class="scrap-slip-sign-title">Technical Inspector</div>
+                    <div class="scrap-slip-sign-sub">Defect Verified & Certified</div>
+                </div>
+                <div class="scrap-slip-sign-box">
+                    <div class="scrap-slip-sign-line"></div>
+                    <div class="scrap-slip-sign-title">Authorized Disposal Officer</div>
+                    <div class="scrap-slip-sign-sub">Decommissioning Approval</div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+
+    <div class="drawer-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #ffffff;">
+        <button type="button" class="btn-secondary" id="closeSlipModalFooterBtn">Close</button>
+        <button type="button" class="btn-primary" id="printSlipBtn" style="display: flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print Official Slip
+        </button>
+    </div>
+</aside>
 
 <script>
     window.ORG_NAME = <?php echo json_encode($orgName); ?>;

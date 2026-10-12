@@ -97,12 +97,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const serialInput = document.getElementById("scrapSerial");
     const hostAssetInput = document.getElementById("scrapHostAsset");
 
+    const slipBackdrop = document.getElementById("scrapSlipBackdrop");
+    const closeSlipModalFooterBtn = document.getElementById("closeSlipModalFooterBtn");
+
     function openModal(m) {
-        if (m) m.classList.add("active");
+        if (!m) return;
+        m.classList.add("active");
+        m.classList.add("open");
+        if (m === slipModal && slipBackdrop) {
+            slipBackdrop.classList.add("open");
+        }
+        document.body.style.overflow = "hidden";
     }
 
     function closeModal(m) {
-        if (m) m.classList.remove("active");
+        if (!m) return;
+        m.classList.remove("active");
+        m.classList.remove("open");
+        if (m === slipModal && slipBackdrop) {
+            slipBackdrop.classList.remove("open");
+        }
+        document.body.style.overflow = "";
     }
 
     // Auto populate serial and host asset on component selection
@@ -150,10 +165,16 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Close on overlay backdrop click
+    if (closeSlipModalFooterBtn && slipModal) {
+        closeSlipModalFooterBtn.addEventListener("click", function () {
+            closeModal(slipModal);
+        });
+    }
+
+    // Close on overlay / backdrop click
     window.addEventListener("click", function (e) {
         if (e.target === addModal) closeModal(addModal);
-        if (e.target === slipModal) closeModal(slipModal);
+        if (e.target === slipModal || e.target === slipBackdrop) closeModal(slipModal);
     });
 
     // Escape key handler
@@ -289,31 +310,35 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div style="font-size: 11px; opacity: 0.8;">By ${escapeHtml(recApprover)}</div>
                         </td>
                         <td style="padding: 12px 14px; text-align: right; white-space: nowrap;">
-                            <button type="button" class="btn btn-outline btn-sm view-slip-btn" 
-                                    data-ref="${escapeHtml(refId)}" data-name="${escapeHtml(compName)}" data-sku="${escapeHtml(sku)}" 
-                                    data-serial="${escapeHtml(serialNo)}" data-category="${escapeHtml(category)}" 
-                                    data-host="${escapeHtml(recHostAsset)}" data-qty="1" data-reason="${escapeHtml(recReason)}" 
-                                    data-location="${escapeHtml(recBinLocation)}" data-status="${escapeHtml(recStatusLabel)}" 
-                                    data-value="${recSalvageVal}" data-approver="${escapeHtml(recApprover)}" 
-                                    data-notes="${escapeHtml(recNotes)}" data-date="${dateStr}"
-                                    style="padding: 4px 8px; font-size: 11.5px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; background: #fff;">
-                                View Slip
-                            </button>
-                            <button type="button" class="btn btn-primary btn-sm direct-print-slip-btn" 
-                                    data-ref="${escapeHtml(refId)}" data-name="${escapeHtml(compName)}" data-sku="${escapeHtml(sku)}" 
-                                    data-serial="${escapeHtml(serialNo)}" data-category="${escapeHtml(category)}" 
-                                    data-host="${escapeHtml(recHostAsset)}" data-qty="1" data-reason="${escapeHtml(recReason)}" 
-                                    data-location="${escapeHtml(recBinLocation)}" data-status="${escapeHtml(recStatusLabel)}" 
-                                    data-value="${recSalvageVal}" data-approver="${escapeHtml(recApprover)}" 
-                                    data-notes="${escapeHtml(recNotes)}" data-date="${dateStr}"
-                                    style="padding: 4px 8px; font-size: 11.5px; border-radius: 4px; border: none; cursor: pointer; background: var(--cyan-primary); color: #fff; margin-left: 4px;" title="Print Slip Directly">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 2px;">
-                                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                    <rect x="6" y="14" width="12" height="8"></rect>
-                                </svg>
-                                Print
-                            </button>
+                            <div class="action-buttons-wrap" style="justify-content: flex-end; padding-right: 6px;">
+                                <button type="button" class="action-icon-btn btn-view view-slip-btn" 
+                                        data-ref="${escapeHtml(refId)}" data-name="${escapeHtml(compName)}" data-sku="${escapeHtml(sku)}" 
+                                        data-serial="${escapeHtml(serialNo)}" data-category="${escapeHtml(category)}" 
+                                        data-host="${escapeHtml(recHostAsset)}" data-qty="1" data-reason="${escapeHtml(recReason)}" 
+                                        data-location="${escapeHtml(recBinLocation)}" data-status="${escapeHtml(recStatusLabel)}" 
+                                        data-value="${recSalvageVal}" data-approver="${escapeHtml(recApprover)}" 
+                                        data-notes="${escapeHtml(recNotes)}" data-date="${dateStr}"
+                                        title="View Component Scrap Slip">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                                <button type="button" class="action-icon-btn btn-qr direct-print-slip-btn" 
+                                        data-ref="${escapeHtml(refId)}" data-name="${escapeHtml(compName)}" data-sku="${escapeHtml(sku)}" 
+                                        data-serial="${escapeHtml(serialNo)}" data-category="${escapeHtml(category)}" 
+                                        data-host="${escapeHtml(recHostAsset)}" data-qty="1" data-reason="${escapeHtml(recReason)}" 
+                                        data-location="${escapeHtml(recBinLocation)}" data-status="${escapeHtml(recStatusLabel)}" 
+                                        data-value="${recSalvageVal}" data-approver="${escapeHtml(recApprover)}" 
+                                        data-notes="${escapeHtml(recNotes)}" data-date="${dateStr}"
+                                        title="Print Official Component Scrap Slip">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                </button>
+                            </div>
                         </td>
                     `;
 
@@ -401,9 +426,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const refEl = document.getElementById("slipRefId");
         if (refEl) refEl.textContent = data.ref;
+        const drawerRef = document.getElementById("drawerCompRef");
+        if (drawerRef) drawerRef.textContent = data.ref;
 
         const dateEl = document.getElementById("slipDate");
         if (dateEl) dateEl.textContent = data.date;
+        const drawerDate = document.getElementById("drawerCompDate");
+        if (drawerDate) drawerDate.textContent = data.date;
 
         const dateAltEl = document.getElementById("slipDateAlt");
         if (dateAltEl) dateAltEl.textContent = data.date;

@@ -315,43 +315,47 @@ include 'includes/topbar.php';
                                 <div style="font-size: 11px; opacity: 0.8;">By <?php echo htmlspecialchars($sr['approver']); ?></div>
                             </td>
                             <td style="padding: 12px 14px; text-align: right; white-space: nowrap;">
-                                <button type="button" class="btn btn-outline btn-sm view-slip-btn" 
-                                        data-ref="<?php echo htmlspecialchars($sr['ref']); ?>" 
-                                        data-name="<?php echo htmlspecialchars($sr['name']); ?>" 
-                                        data-sku="<?php echo htmlspecialchars($sr['sku']); ?>" 
-                                        data-category="<?php echo htmlspecialchars($sr['category']); ?>" 
-                                        data-qty="<?php echo (int)$sr['qty']; ?>" 
-                                        data-reason="<?php echo htmlspecialchars($sr['reason']); ?>" 
-                                        data-location="<?php echo htmlspecialchars($sr['location']); ?>" 
-                                        data-status="<?php echo htmlspecialchars($sr['status_text']); ?>" 
-                                        data-value="<?php echo (float)$sr['salvage_val']; ?>" 
-                                        data-approver="<?php echo htmlspecialchars($sr['approver']); ?>" 
-                                        data-notes="<?php echo htmlspecialchars(!empty($sr['notes']) ? $sr['notes'] : 'Hardware verified defective, non-repairable, and approved for scrap write-off.'); ?>" 
-                                        data-date="<?php echo htmlspecialchars($sr['date']); ?>"
-                                        style="padding: 4px 8px; font-size: 11.5px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; background: #fff;">
-                                    View Slip
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm direct-print-slip-btn" 
-                                        data-ref="<?php echo htmlspecialchars($sr['ref']); ?>" 
-                                        data-name="<?php echo htmlspecialchars($sr['name']); ?>" 
-                                        data-sku="<?php echo htmlspecialchars($sr['sku']); ?>" 
-                                        data-category="<?php echo htmlspecialchars($sr['category']); ?>" 
-                                        data-qty="<?php echo (int)$sr['qty']; ?>" 
-                                        data-reason="<?php echo htmlspecialchars($sr['reason']); ?>" 
-                                        data-location="<?php echo htmlspecialchars($sr['location']); ?>" 
-                                        data-status="<?php echo htmlspecialchars($sr['status_text']); ?>" 
-                                        data-value="<?php echo (float)$sr['salvage_val']; ?>" 
-                                        data-approver="<?php echo htmlspecialchars($sr['approver']); ?>" 
-                                        data-notes="<?php echo htmlspecialchars(!empty($sr['notes']) ? $sr['notes'] : 'Hardware verified defective, non-repairable, and approved for scrap write-off.'); ?>" 
-                                        data-date="<?php echo htmlspecialchars($sr['date']); ?>"
-                                        style="padding: 4px 8px; font-size: 11.5px; border-radius: 4px; border: none; cursor: pointer; background: var(--cyan-primary); color: #fff; margin-left: 4px;" title="Print Slip Directly">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 2px;">
-                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                        <rect x="6" y="14" width="12" height="8"></rect>
-                                    </svg>
-                                    Print
-                                </button>
+                                <div class="action-buttons-wrap" style="justify-content: flex-end; padding-right: 6px;">
+                                    <button type="button" class="action-icon-btn btn-view view-slip-btn" 
+                                            data-ref="<?php echo htmlspecialchars($sr['ref']); ?>" 
+                                            data-name="<?php echo htmlspecialchars($sr['name']); ?>" 
+                                            data-sku="<?php echo htmlspecialchars($sr['sku']); ?>" 
+                                            data-category="<?php echo htmlspecialchars($sr['category']); ?>" 
+                                            data-qty="<?php echo (int)$sr['qty']; ?>" 
+                                            data-reason="<?php echo htmlspecialchars($sr['reason']); ?>" 
+                                            data-location="<?php echo htmlspecialchars($sr['location']); ?>" 
+                                            data-status="<?php echo htmlspecialchars($sr['status_text']); ?>" 
+                                            data-value="<?php echo (float)$sr['salvage_val']; ?>" 
+                                            data-approver="<?php echo htmlspecialchars($sr['approver']); ?>" 
+                                            data-notes="<?php echo htmlspecialchars(!empty($sr['notes']) ? $sr['notes'] : 'Hardware verified defective, non-repairable, and approved for scrap write-off.'); ?>" 
+                                            data-date="<?php echo htmlspecialchars($sr['date']); ?>"
+                                            title="View Accessory Scrap Slip">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="action-icon-btn btn-qr direct-print-slip-btn" 
+                                            data-ref="<?php echo htmlspecialchars($sr['ref']); ?>" 
+                                            data-name="<?php echo htmlspecialchars($sr['name']); ?>" 
+                                            data-sku="<?php echo htmlspecialchars($sr['sku']); ?>" 
+                                            data-category="<?php echo htmlspecialchars($sr['category']); ?>" 
+                                            data-qty="<?php echo (int)$sr['qty']; ?>" 
+                                            data-reason="<?php echo htmlspecialchars($sr['reason']); ?>" 
+                                            data-location="<?php echo htmlspecialchars($sr['location']); ?>" 
+                                            data-status="<?php echo htmlspecialchars($sr['status_text']); ?>" 
+                                            data-value="<?php echo (float)$sr['salvage_val']; ?>" 
+                                            data-approver="<?php echo htmlspecialchars($sr['approver']); ?>" 
+                                            data-notes="<?php echo htmlspecialchars(!empty($sr['notes']) ? $sr['notes'] : 'Hardware verified defective, non-repairable, and approved for scrap write-off.'); ?>" 
+                                            data-date="<?php echo htmlspecialchars($sr['date']); ?>"
+                                            title="Print Official Accessory Scrap Slip">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect x="6" y="14" width="12" height="8"></rect>
+                                        </svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -450,135 +454,138 @@ include 'includes/topbar.php';
     </div>
 </div>
 
-<!-- ==================== SCRAP DISPOSAL CERTIFICATE SLIP MODAL ==================== -->
-<div class="modal-overlay" id="scrapSlipModal">
-    <div class="modal-box" style="max-width: 840px; padding: 22px;">
-        <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--cyan-primary);">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                <h3 style="margin: 0; font-size: 16.5px; color: var(--navy-deep);">Scrap Disposal Slip Preview</h3>
-            </div>
-            <button class="modal-close-btn" id="closeSlipModalBtn">&times;</button>
-        </div>
-        <div class="modal-body" style="padding: 0; max-height: 75vh; overflow-y: auto;">
-            <div class="official-slip-sheet" id="officialScrapSlipContent">
-                <!-- 1. Document Header Table -->
-                <table class="slip-header-tbl">
-                    <tr>
-                        <td class="slip-logo-cell">
-                            <img src="<?php echo htmlspecialchars($orgLogo); ?>" alt="<?php echo htmlspecialchars($orgName); ?> Logo">
-                        </td>
-                        <td class="slip-title-cell">
-                            <h2><?php echo htmlspecialchars($orgName); ?></h2>
-                            <div class="slip-sub-title">IT Asset Management & Helpdesk</div>
-                            <div class="slip-doc-pill">PERIPHERAL DECOMMISSION & SCRAP DISPOSAL SLIP</div>
-                        </td>
-                        <td class="slip-meta-cell">
-                            <div><strong>Slip No:</strong> <span id="slipRefId" style="font-family: monospace; font-weight: 700;">SCR1026001</span></div>
-                            <div><strong>Date:</strong> <span id="slipDate">12 Oct 2026</span></div>
-                            <div><strong>Type:</strong> Scrap / Decommission</div>
-                            <div><strong>Status:</strong> <span id="slipStatusBadge" class="slip-status-tag">In Scrap Yard</span></div>
-                        </td>
-                    </tr>
-                </table>
+<!-- ==================== SLIDE-OVER DRAWER (Accessory Scrap Slip) ==================== -->
+<div class="drawer-backdrop" id="scrapSlipBackdrop"></div>
 
-                <!-- 2. Section 1: Item & Peripheral Details -->
-                <div class="slip-sec-heading">1. Decommissioned Peripheral / Accessory Details</div>
-                <table class="slip-data-tbl">
-                    <thead>
-                        <tr>
-                            <th style="width: 35px; text-align: center;">#</th>
-                            <th>Accessory Name & Specifications</th>
-                            <th style="width: 130px;">SKU Code</th>
-                            <th style="width: 130px;">Category</th>
-                            <th style="width: 80px; text-align: center;">Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="text-align: center;">1</td>
-                            <td><strong id="slipAccName">Dell 65W USB-C Power Adapter</strong></td>
-                            <td><span id="slipSku" class="slip-code-mono">ACC-CAB-004</span></td>
-                            <td id="slipCategory">Cables & Power</td>
-                            <td style="text-align: center;"><strong id="slipQty" style="font-size: 13px;">6 Units</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- 3. Section 2: Technical Diagnostics & Disposal Target -->
-                <div class="slip-sec-heading">2. Technical Diagnostics & Disposal Target</div>
-                <table class="slip-data-tbl">
-                    <tr>
-                        <td class="slip-lbl">Defect / Scrap Reason</td>
-                        <td class="slip-val" id="slipReason">Wire Frayed & Melted Pin</td>
-                        <td class="slip-lbl">Hardware Condition</td>
-                        <td class="slip-val" id="slipCondition">Beyond Economic Repair (BER)</td>
-                    </tr>
-                    <tr>
-                        <td class="slip-lbl">Storage / Bin Location</td>
-                        <td class="slip-val" id="slipLocation">IT Scrap Yard Bin 1</td>
-                        <td class="slip-lbl">Disposal Method / Target</td>
-                        <td class="slip-val" id="slipStatus">In Scrap Yard</td>
-                    </tr>
-                    <tr>
-                        <td class="slip-lbl">Estimated Salvage Realization</td>
-                        <td class="slip-val" id="slipValue" style="font-weight: 700; color: #0284c7;">₹300.00</td>
-                        <td class="slip-lbl">Decommission Date</td>
-                        <td class="slip-val" id="slipDateAlt">12 Oct 2026</td>
-                    </tr>
-                </table>
-
-                <!-- 4. Section 3: Diagnostic Findings & Remarks -->
-                <div class="slip-sec-heading">3. Diagnostic Findings & Remarks</div>
-                <table class="slip-data-tbl">
-                    <tr>
-                        <td class="slip-lbl" style="width: 22%;">Authorized By</td>
-                        <td class="slip-val" id="slipApprover" style="width: 28%; font-weight: 700;">Abhishek Sharma</td>
-                        <td class="slip-lbl" style="width: 20%;">Inspection Notes</td>
-                        <td class="slip-val" id="slipNotes" style="width: 30%;">Hardware verified defective and cleared for scrap disposal.</td>
-                    </tr>
-                </table>
-
-                <!-- 5. Section 4: Declaration & Environmental Compliance -->
-                <div class="slip-declaration-box">
-                    <strong>Official Decommission Certification:</strong> I hereby certify that the physical hardware / accessory items listed above have undergone technical diagnostic evaluation and are confirmed beyond economic repair (BER) or unserviceable. These items have been struck off from active inventory stock and scheduled for authorized scrap disposal / e-waste recycling in compliance with corporate asset disposal policies and e-waste management guidelines.
+<aside class="asset-drawer" id="scrapSlipModal" style="width: 820px; max-width: 95vw;">
+    <div class="drawer-header">
+        <div class="drawer-header-left">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span class="asset-tag-badge" id="drawerAccRef" style="font-size: 12px; font-weight: 700;">-</span>
+                    <span class="serial-badge" id="drawerAccDate" style="font-size: 12px; font-weight: 600;">-</span>
                 </div>
-
-                <!-- 6. Section 5: Tripartite Signatures -->
-                <table class="slip-signatures-tbl">
-                    <tr>
-                        <td style="width: 34%;">
-                            <div class="slip-sig-line">Inspecting IT Technician</div>
-                            <div class="slip-sig-sub">Signature: ________________<br>Date: ________________</div>
-                        </td>
-                        <td style="width: 33%; text-align: center;">
-                            <div class="slip-sig-line">Scrap Yard / Store Officer</div>
-                            <div class="slip-sig-sub">Signature: ________________<br>Date: ________________</div>
-                        </td>
-                        <td style="width: 33%; text-align: right;">
-                            <div class="slip-sig-line">Authorized IT Head / Seal</div>
-                            <div class="slip-sig-sub" id="slipApproverSub">Abhishek Sharma<br>IT Asset Dept &bull; Date: ________________</div>
-                        </td>
-                    </tr>
-                </table>
+                <h3 style="margin-top: 4px; font-size: 16.5px; font-weight: 700; color: var(--navy-deep);">Accessory Scrap &amp; Disposal Slip</h3>
             </div>
         </div>
-        <div class="modal-footer" style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color);">
-            <button type="button" class="btn-secondary" onclick="document.getElementById('scrapSlipModal').classList.remove('active')">Close</button>
-            <button type="button" class="btn-primary" id="printScrapSlipBtn" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; font-weight: 600;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                Print Official Slip
-            </button>
+        <button type="button" class="drawer-close-btn" id="closeSlipModalBtn" title="Close Drawer">&times;</button>
+    </div>
+
+    <div class="drawer-content" style="flex: 1; overflow-y: auto; padding: 20px 24px;">
+        <div class="official-slip-sheet" id="officialScrapSlipContent">
+            <!-- 1. Document Header Table -->
+            <table class="slip-header-tbl">
+                <tr>
+                    <td class="slip-logo-cell">
+                        <img src="<?php echo htmlspecialchars($orgLogo); ?>" alt="<?php echo htmlspecialchars($orgName); ?> Logo">
+                    </td>
+                    <td class="slip-title-cell">
+                        <h2><?php echo htmlspecialchars($orgName); ?></h2>
+                        <div class="slip-sub-title">IT Asset Management &amp; Helpdesk</div>
+                        <div class="slip-doc-pill">PERIPHERAL DECOMMISSION &amp; SCRAP DISPOSAL SLIP</div>
+                    </td>
+                    <td class="slip-meta-cell">
+                        <div><strong>Slip No:</strong> <span id="slipRefId" style="font-family: monospace; font-weight: 700;">SCR1026001</span></div>
+                        <div><strong>Date:</strong> <span id="slipDate">12 Oct 2026</span></div>
+                        <div><strong>Type:</strong> Scrap / Decommission</div>
+                        <div><strong>Status:</strong> <span id="slipStatusBadge" class="slip-status-tag">In Scrap Yard</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- 2. Section 1: Item & Peripheral Details -->
+            <div class="slip-sec-heading">1. Decommissioned Peripheral / Accessory Details</div>
+            <table class="slip-data-tbl">
+                <thead>
+                    <tr>
+                        <th style="width: 35px; text-align: center;">#</th>
+                        <th>Accessory Name &amp; Specifications</th>
+                        <th style="width: 130px;">SKU Code</th>
+                        <th style="width: 130px;">Category</th>
+                        <th style="width: 80px; text-align: center;">Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="text-align: center;">1</td>
+                        <td><strong id="slipAccName">Dell 65W USB-C Power Adapter</strong></td>
+                        <td><span id="slipSku" class="slip-code-mono">ACC-CAB-004</span></td>
+                        <td id="slipCategory">Cables &amp; Power</td>
+                        <td style="text-align: center;"><strong id="slipQty" style="font-size: 13px;">6 Units</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- 3. Section 2: Technical Diagnostics & Disposal Target -->
+            <div class="slip-sec-heading">2. Technical Diagnostics &amp; Disposal Target</div>
+            <table class="slip-data-tbl">
+                <tr>
+                    <td class="slip-lbl">Defect / Scrap Reason</td>
+                    <td class="slip-val" id="slipReason">Wire Frayed &amp; Melted Pin</td>
+                    <td class="slip-lbl">Hardware Condition</td>
+                    <td class="slip-val" id="slipCondition">Beyond Economic Repair (BER)</td>
+                </tr>
+                <tr>
+                    <td class="slip-lbl">Storage / Bin Location</td>
+                    <td class="slip-val" id="slipLocation">IT Scrap Yard Bin 1</td>
+                    <td class="slip-lbl">Disposal Method / Target</td>
+                    <td class="slip-val" id="slipStatus">In Scrap Yard</td>
+                </tr>
+                <tr>
+                    <td class="slip-lbl">Estimated Salvage Realization</td>
+                    <td class="slip-val" id="slipValue" style="font-weight: 700; color: #0284c7;">₹300.00</td>
+                    <td class="slip-lbl">Decommission Date</td>
+                    <td class="slip-val" id="slipDateAlt">12 Oct 2026</td>
+                </tr>
+            </table>
+
+            <!-- 4. Section 3: Diagnostic Findings & Remarks -->
+            <div class="slip-sec-heading">3. Diagnostic Findings &amp; Remarks</div>
+            <table class="slip-data-tbl">
+                <tr>
+                    <td class="slip-lbl" style="width: 22%;">Authorized By</td>
+                    <td class="slip-val" id="slipApprover" style="width: 28%; font-weight: 700;">Abhishek Sharma</td>
+                    <td class="slip-lbl" style="width: 20%;">Inspection Notes</td>
+                    <td class="slip-val" id="slipNotes" style="width: 30%;">Hardware verified defective and cleared for scrap disposal.</td>
+                </tr>
+            </table>
+
+            <!-- 5. Section 4: Declaration & Environmental Compliance -->
+            <div class="slip-declaration-box">
+                <strong>Official Decommission Certification:</strong> I hereby certify that the physical hardware / accessory items listed above have undergone technical diagnostic evaluation and are confirmed beyond economic repair (BER) or unserviceable. These items have been struck off from active inventory stock and scheduled for authorized scrap disposal / e-waste recycling in compliance with corporate asset disposal policies and e-waste management guidelines.
+            </div>
+
+            <!-- 6. Section 5: Tripartite Signatures -->
+            <table class="slip-signatures-tbl">
+                <tr>
+                    <td style="width: 34%;">
+                        <div class="slip-sig-line">Inspecting IT Technician</div>
+                        <div class="slip-sig-sub">Signature: ________________<br>Date: ________________</div>
+                    </td>
+                    <td style="width: 33%; text-align: center;">
+                        <div class="slip-sig-line">Scrap Yard / Store Officer</div>
+                        <div class="slip-sig-sub">Signature: ________________<br>Date: ________________</div>
+                    </td>
+                    <td style="width: 33%; text-align: right;">
+                        <div class="slip-sig-line">Authorized IT Head / Seal</div>
+                        <div class="slip-sig-sub" id="slipApproverSub">Abhishek Sharma<br>IT Asset Dept &bull; Date: ________________</div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
-</div>
+
+    <div class="drawer-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: #ffffff;">
+        <button type="button" class="btn-secondary" id="closeSlipModalFooterBtn">Close</button>
+        <button type="button" class="btn-primary" id="printScrapSlipBtn" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; font-weight: 600;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print Official Slip
+        </button>
+    </div>
+</aside>
 
 <?php include 'includes/footer.php'; ?>

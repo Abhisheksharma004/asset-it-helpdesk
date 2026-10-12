@@ -816,7 +816,7 @@
 .asset-drawer {
     position: fixed;
     top: 0;
-    right: -750px;
+    right: -950px;
     width: 720px;
     max-width: 95vw;
     height: 100vh;
