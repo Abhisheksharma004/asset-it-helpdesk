@@ -1,0 +1,568 @@
+/**
+ * Unified Reports & Compliance Audit Stylesheet
+ * VIROS IT Asset & Service Desk Portal
+ */
+
+:root {
+    --navy-deep: #001938;
+}
+
+/* ==================== PAGE HEADER ==================== */
+.page-header-bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 22px;
+}
+
+.page-header-title {
+    flex: 1;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.reports-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+}
+
+.reports-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    background: rgba(0, 147, 167, 0.1);
+    color: var(--cyan-primary);
+    border: 1px solid rgba(0, 147, 167, 0.2);
+}
+
+/* ==================== KPI CARDS GRID ==================== */
+.reports-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.reports-kpi-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.reports-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+
+.reports-kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+}
+
+.reports-kpi-card.kpi-assets::before { background: var(--cyan-primary); }
+.reports-kpi-card.kpi-licenses::before { background: #d97706; }
+.reports-kpi-card.kpi-tickets::before { background: #6366f1; }
+.reports-kpi-card.kpi-scrap::before { background: #059669; }
+
+.reports-kpi-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.reports-kpi-icon.icon-cyan { background: rgba(0, 147, 167, 0.1); color: var(--cyan-primary); }
+.reports-kpi-icon.icon-amber { background: rgba(217, 119, 6, 0.1); color: #d97706; }
+.reports-kpi-icon.icon-indigo { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+.reports-kpi-icon.icon-green { background: rgba(5, 150, 105, 0.1); color: #059669; }
+
+.reports-kpi-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.reports-kpi-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.reports-kpi-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--navy-deep);
+    margin: 4px 0 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.reports-kpi-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.reports-pill-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.pill-green { background: #ecfdf5; color: #047857; }
+.pill-cyan { background: #e0f2fe; color: #0284c7; }
+.pill-amber { background: #fef3c7; color: #b45309; }
+.pill-red { background: #fef2f2; color: #b91c1c; }
+
+/* ==================== MODULE TABS NAVIGATION ==================== */
+.reports-module-tabs-wrap {
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden; /* Strictly prevent any vertical scroll leaking */
+    width: 100%;
+}
+
+.reports-module-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden !important; /* Eliminate Windows scrollbar buttons */
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE/Edge */
+    width: 100%;
+}
+
+.reports-module-tabs::-webkit-scrollbar {
+    display: none !important; /* Chrome / Safari */
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.report-module-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    margin-bottom: -2px;
+}
+
+.report-module-tab:hover {
+    color: var(--navy-deep);
+}
+
+.report-module-tab.active {
+    color: var(--cyan-primary);
+    border-bottom-color: var(--cyan-primary);
+}
+
+.report-tab-badge {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.report-module-tab.active .report-tab-badge {
+    background: rgba(0, 147, 167, 0.15);
+    color: var(--cyan-primary);
+}
+
+/* ==================== TOOLBAR & FILTERS ==================== */
+.reports-toolbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.reports-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.reports-sub-filter-btn {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+}
+
+.reports-sub-filter-btn:hover {
+    background: var(--bg-surface);
+    color: var(--navy-deep);
+    border-color: #cbd5e1;
+}
+
+.reports-sub-filter-btn.active {
+    background: var(--navy-deep);
+    color: #ffffff;
+    border-color: var(--navy-deep);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.reports-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+}
+
+.reports-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 11px;
+    width: 220px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reports-search-box:focus-within {
+    border-color: var(--cyan-primary);
+    box-shadow: 0 0 0 3px rgba(0, 147, 167, 0.12);
+}
+
+.reports-search-box input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 12.5px;
+    width: 100%;
+    margin-left: 6px;
+    color: var(--navy-deep);
+}
+
+.reports-select-filter {
+    padding: 6.5px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 12.5px;
+    color: var(--navy-deep);
+    outline: none;
+    cursor: pointer;
+    width: 175px;
+    transition: border-color 0.2s ease;
+}
+
+.reports-select-filter:focus {
+    border-color: var(--cyan-primary);
+}
+
+@media (max-width: 1100px) {
+    .reports-toolbar-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    .reports-toolbar-left {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+    .reports-toolbar-left::-webkit-scrollbar {
+        display: none;
+    }
+    .reports-toolbar-right {
+        width: 100%;
+        display: flex;
+        gap: 10px;
+    }
+    .reports-search-box {
+        flex: 1;
+        width: auto;
+    }
+    .reports-select-filter {
+        flex: 1;
+        width: auto;
+    }
+}
+
+/* ==================== DATA TABLE STYLING ==================== */
+.reports-table-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.reports-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.reports-data-table thead tr {
+    background: var(--bg-surface);
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.reports-data-table th {
+    padding: 12px 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.reports-data-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.reports-data-table tbody tr:hover {
+    background: #fafbfc;
+}
+
+/* Table Tag & Mono Badges */
+.reports-code-tag {
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cyan-primary);
+    background: rgba(0, 147, 167, 0.08);
+    border: 1px solid rgba(0, 147, 167, 0.2);
+    padding: 2px 7px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.reports-serial-tag {
+    font-family: monospace;
+    font-size: 11.5px;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Status Badges */
+.reports-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-active, .status-inuse, .status-resolved {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.status-available, .status-open {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.status-maintenance, .status-progress, .status-yard {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.status-scrapped, .status-expired, .status-urgent, .status-writtenoff {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Table Footer / Summary Bar */
+.reports-table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    margin-top: 14px;
+    border-top: 1px solid var(--border-color);
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* ==================== PRINTABLE AUDIT SLIP (Visible in Print) ==================== */
+.print-only-header {
+    display: none;
+}
+
+.print-signatures-tbl {
+    display: none;
+}
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 10mm 12mm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    .sidebar,
+    .topbar,
+    .breadcrumb-nav,
+    .header-actions,
+    .reports-module-tabs-wrap,
+    .reports-toolbar-row,
+    .reports-table-footer,
+    .btn,
+    input,
+    select {
+        display: none !important;
+    }
+
+    .dashboard-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .reports-table-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    .print-only-header {
+        display: block !important;
+        border-bottom: 2px solid #001938;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+    }
+
+    .print-header-tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .print-header-tbl td {
+        border: none !important;
+        padding: 4px;
+        vertical-align: middle;
+    }
+
+    .print-signatures-tbl {
+        display: table !important;
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 30px;
+        page-break-inside: avoid;
+    }
+
+    .print-signatures-tbl td {
+        border: none !important;
+        padding: 10px 14px;
+        vertical-align: top;
+    }
+
+    .sig-line {
+        border-top: 1px solid #334155;
+        padding-top: 6px;
+        font-weight: 700;
+        font-size: 11px;
+    }
+
+    .reports-data-table {
+        font-size: 11px !important;
+    }
+
+    .reports-data-table th,
+    .reports-data-table td {
+        padding: 6px 8px !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+
+    .reports-kpi-grid {
+        gap: 10px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .reports-kpi-card {
+        padding: 10px !important;
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+}
