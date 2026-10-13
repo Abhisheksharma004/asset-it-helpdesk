@@ -372,7 +372,7 @@ include 'includes/topbar.php';
     <div class="modal-box" style="max-width: 600px;">
         <div class="modal-header">
             <h3>Record Scrap Accessory</h3>
-            <button class="modal-close-btn" id="closeRecordScrapModalBtn">&times;</button>
+            <button type="button" class="modal-close-btn" id="closeRecordScrapModalBtn" title="Close">&times;</button>
         </div>
         <form id="recordScrapForm">
             <div class="modal-body">
@@ -443,12 +443,12 @@ include 'includes/topbar.php';
 
                 <div class="modal-form-group">
                     <label for="scrapNotes">Technical Inspection Notes</label>
-                    <textarea id="scrapNotes" rows="2" style="width: 100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 13px;" placeholder="Optional details regarding diagnostic findings, inspection, or write-off reason..."></textarea>
+                    <textarea id="scrapNotes" rows="3" placeholder="Optional details regarding diagnostic findings, inspection, or write-off reason..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="cancelRecordScrapModalBtn">Cancel</button>
-                <button type="submit" class="btn-primary" id="saveScrapBtn">Confirm Scrap Entry</button>
+                <button type="button" class="btn btn-outline" id="cancelRecordScrapModalBtn" style="padding: 9px 18px; font-size: 13px; font-weight: 600; border: 1px solid var(--border-color); background: #fff; border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveScrapBtn" style="padding: 9px 20px; font-size: 13px; font-weight: 600; border-radius: 6px; background: var(--cyan-primary); color: #fff; border: none; cursor: pointer;">Confirm Scrap Entry</button>
             </div>
         </form>
     </div>

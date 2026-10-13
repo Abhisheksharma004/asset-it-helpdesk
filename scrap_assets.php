@@ -675,14 +675,14 @@ include 'includes/topbar.php';
 
                     <div class="modal-form-group">
                         <label for="scrapNotes">Technical Inspection Notes</label>
-                        <textarea id="scrapNotes" rows="3" style="width: 100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px; font-size: 13px; resize: vertical;" placeholder="Diagnostic findings, reason for condemnation, or salvage assessment..."></textarea>
+                        <textarea id="scrapNotes" rows="3" placeholder="Diagnostic findings, reason for condemnation, or salvage assessment..."></textarea>
                     </div>
                 </div>
 
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="cancelRecordScrapModalBtn">Cancel</button>
-                <button type="submit" class="btn-primary" id="saveScrapBtn">Confirm Scrap Asset</button>
+                <button type="button" class="btn btn-outline" id="cancelRecordScrapModalBtn" style="padding: 9px 18px; font-size: 13px; font-weight: 600; border: 1px solid var(--border-color); background: #fff; border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveScrapBtn" style="padding: 9px 20px; font-size: 13px; font-weight: 600; border-radius: 6px; background: var(--cyan-primary); color: #fff; border: none; cursor: pointer;">Confirm Scrap Asset</button>
             </div>
         </form>
     </div>

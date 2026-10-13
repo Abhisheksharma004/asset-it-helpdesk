@@ -312,14 +312,30 @@
     display: flex;
 }
 
-.modal-box {
+.modal-box,
+#recordScrapModal .modal-box {
     background: #ffffff;
     border-radius: 12px;
     width: 100%;
-    max-width: 600px;
+    max-width: 620px;
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    overflow: hidden;
+    overflow: hidden !important;
     animation: modalSlideIn 0.25s ease-out;
+    border: 1px solid var(--border-color);
+}
+
+.modal-box form,
+#recordScrapModal form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden !important;
+    margin: 0;
 }
 
 @keyframes modalSlideIn {
@@ -331,8 +347,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 16px 22px;
     border-bottom: 1px solid var(--border-color);
+    background: #ffffff;
+    flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -345,24 +363,53 @@
 .modal-close-btn {
     background: transparent;
     border: none;
-    font-size: 20px;
+    font-size: 22px;
     color: var(--text-secondary);
     cursor: pointer;
     line-height: 1;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
 }
 
 .modal-close-btn:hover {
-    color: var(--navy-deep);
+    color: #ef4444;
 }
 
-.modal-body {
-    padding: 20px;
-    max-height: 70vh;
-    overflow-y: auto;
+.modal-body,
+.modal-box .modal-body,
+#recordScrapModal .modal-body {
+    padding: 20px 22px;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+.modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .modal-form-group {
     margin-bottom: 14px;
+}
+
+.modal-form-group:last-child {
+    margin-bottom: 0;
 }
 
 .modal-form-group label {
@@ -379,7 +426,7 @@
 .modal-form-group select,
 .modal-form-group textarea {
     width: 100%;
-    padding: 8px 12px;
+    padding: 8.5px 12px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 13px;
@@ -388,6 +435,13 @@
     background: #ffffff;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
+    font-family: inherit;
+}
+
+.modal-form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+    line-height: 1.4;
 }
 
 .modal-form-group input:focus,
@@ -400,10 +454,13 @@
 .modal-footer {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 10px;
-    padding: 14px 20px;
+    padding: 14px 22px;
     border-top: 1px solid var(--border-color);
     background: #fafbfc;
+    flex-shrink: 0;
+    margin-top: auto;
 }
 
 /* Official Corporate Slip Document Styles */

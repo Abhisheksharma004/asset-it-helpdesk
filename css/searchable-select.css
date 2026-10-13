@@ -370,22 +370,10 @@
     padding-left: 18px;
 }
 
-/* Allow Modal Box to let custom select dropdown float without clipping */
-.modal-box,
-.modal-box-large,
-.modal-box form,
-.modal-box-large form,
-.modal-box .modal-body,
-.modal-box-large .modal-body,
-.modal-box .modal-tab-pane,
-.modal-box-large .modal-tab-pane,
-#transferModal .modal-body,
+/* Allow specific modals with tabs to let select dropdown float when needed */
 #transferModal .modal-tab-pane,
-#processReturnModal .modal-body,
-#processReturnModal .modal-tab-pane,
-#assignAssetModal .modal-body,
 #assignAssetModal .modal-tab-pane {
-    overflow: visible !important;
+    overflow: visible;
 }
 
 .modal-header {

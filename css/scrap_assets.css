@@ -538,26 +538,29 @@
     display: flex;
 }
 
-.modal-box {
+.modal-box,
+#recordScrapModal .modal-box {
     background: #ffffff;
     border-radius: 12px;
     width: 100%;
     max-width: 780px;
-    max-height: 88vh;
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden !important;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
     animation: modalSlideIn 0.2s ease-out;
     border: 1px solid var(--border-color);
 }
 
-.modal-box form {
+.modal-box form,
+#recordScrapModal form {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
-    overflow: hidden;
+    overflow: hidden !important;
     margin: 0;
 }
 
@@ -665,12 +668,30 @@
     }
 }
 
-.modal-body {
+.modal-body,
+.modal-box .modal-body,
+#recordScrapModal .modal-body {
     padding: 22px 24px;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     overscroll-behavior: contain;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+.modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .modal-footer {
@@ -682,6 +703,7 @@
     border-top: 1px solid var(--border-color);
     background: #f8fafc;
     flex-shrink: 0;
+    margin-top: auto;
 }
 
 .btn-secondary,
@@ -778,6 +800,13 @@
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
+    font-family: inherit;
+}
+
+.modal-form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+    line-height: 1.4;
 }
 
 .modal-form-group input:focus,
