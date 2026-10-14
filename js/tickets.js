@@ -251,24 +251,21 @@ function openAdminTicketDrawer(ticketData) {
     // Render Conversation Stream
     renderDrawerChatStream(ticketData);
 
-    // Fetch fresh live messages asynchronously from dedicated ticket_messages table
+    // Initial fresh live messages fetch
     fetch(`api/tickets.php?action=get_messages&ticket_no=${encodeURIComponent(ticketData.id)}`)
         .then(res => res.json())
         .then(data => {
             if (data.success && Array.isArray(data.messages)) {
                 ticketData.chat_thread = data.messages;
                 if (currentOpenTicket && currentOpenTicket.id === ticketData.id) {
-                    renderDrawerChatStream(ticketData);
+                    renderDrawerChatStream(ticketData, true);
                 }
             }
         })
         .catch(e => console.warn('Could not refresh messages:', e));
 
-    // Auto-scroll chat stream to latest message
-    const chatStream = document.getElementById('adminChatStream');
-    if (chatStream) {
-        setTimeout(() => { chatStream.scrollTop = chatStream.scrollHeight; }, 100);
-    }
+    // Start Live Real-time Polling for Active Drawer (every 2.5s)
+    startAdminChatPolling(ticketData.id);
 
     // Show Drawer & Backdrop
     if (backdrop) {
@@ -279,10 +276,162 @@ function openAdminTicketDrawer(ticketData) {
 }
 window.openAdminTicketDrawer = openAdminTicketDrawer;
 
-// Render Chat Conversation in Drawer
-function renderDrawerChatStream(ticketData) {
+// Subtle Audio Chime for Incoming Real-Time Chat (Web Audio API)
+function playMessageChime() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {
+        // Silently ignore if audio blocked by browser policy
+    }
+}
+
+// Real-Time Polling Engine for Admin Ticket Drawer
+let adminChatPollTimer = null;
+let isPollingAdminChat = false;
+
+function startAdminChatPolling(ticketId) {
+    stopAdminChatPolling();
+
+    adminChatPollTimer = setInterval(() => {
+        if (!currentOpenTicket || currentOpenTicket.id !== ticketId) {
+            stopAdminChatPolling();
+            return;
+        }
+        if (document.hidden) return; // Tab in background, skip cycle to save bandwidth
+        if (isPollingAdminChat) return;
+
+        isPollingAdminChat = true;
+        fetch(`api/tickets.php?action=get_messages&ticket_no=${encodeURIComponent(ticketId)}`)
+            .then(res => res.json())
+            .then(data => {
+                isPollingAdminChat = false;
+                if (!currentOpenTicket || currentOpenTicket.id !== ticketId) return;
+
+                if (data.success && Array.isArray(data.messages)) {
+                    const prevCount = Array.isArray(currentOpenTicket.chat_thread) ? currentOpenTicket.chat_thread.length : 0;
+                    const newCount = data.messages.length;
+
+                    let hasNewMessage = (newCount > prevCount);
+                    let contentChanged = false;
+
+                    // Check if content or IDs changed
+                    if (!hasNewMessage && newCount > 0 && prevCount > 0) {
+                        const lastLocal = currentOpenTicket.chat_thread[prevCount - 1];
+                        const lastRemote = data.messages[newCount - 1];
+                        if (lastLocal && lastRemote && (lastLocal.text !== lastRemote.text || lastLocal.id !== lastRemote.id)) {
+                            contentChanged = true;
+                        }
+                    }
+
+                    if (hasNewMessage || contentChanged) {
+                        const latest = data.messages[data.messages.length - 1];
+                        const wasIncoming = latest && (latest.type === 'employee' || latest.type === 'user');
+
+                        currentOpenTicket.chat_thread = data.messages;
+                        renderDrawerChatStream(currentOpenTicket);
+
+                        if (hasNewMessage && wasIncoming) {
+                            playMessageChime();
+                            if (typeof showToast === 'function') {
+                                showToast(`New message from ${latest.author || 'Employee'} on ticket #${ticketId}`, 'info');
+                            }
+                        }
+                    }
+
+                    // Real-time synchronization of Ticket Status if updated
+                    if (data.status && data.status !== currentOpenTicket.status) {
+                        currentOpenTicket.status = data.status;
+                        const statusBadge = document.getElementById('drawerTicketStatusBadge');
+                        if (statusBadge) statusBadge.textContent = data.status;
+                        const specStatus = document.getElementById('drawerSpecStatus');
+                        if (specStatus) specStatus.textContent = data.status;
+
+                        // Also update table row status if visible
+                        const row = document.querySelector(`.ticket-data-row[data-id="${ticketId}"]`);
+                        if (row) {
+                            const statusCell = row.querySelector('.col-ticket-status');
+                            if (statusCell) {
+                                statusCell.innerHTML = `<span class="badge badge-status-progress" style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;">${escapeHtml(data.status)}</span>`;
+                            }
+                        }
+                    }
+
+                    // Real-time synchronization of Typing Indicator
+                    updateAdminTypingIndicator(!!data.emp_typing, data.emp_typing_name || 'Employee');
+                }
+            })
+            .catch(e => {
+                isPollingAdminChat = false;
+            });
+    }, 1000);
+}
+
+function stopAdminChatPolling() {
+    if (adminChatPollTimer) {
+        clearInterval(adminChatPollTimer);
+        adminChatPollTimer = null;
+    }
+    isPollingAdminChat = false;
+    const typingRow = document.getElementById('adminTypingIndicatorRow');
+    if (typingRow) typingRow.remove();
+}
+
+// Render or Remove Typing Indicator in Admin Drawer
+function updateAdminTypingIndicator(isTyping, authorName = 'Employee') {
     const chatStream = document.getElementById('adminChatStream');
     if (!chatStream) return;
+    let indicator = document.getElementById('adminTypingIndicatorRow');
+
+    if (isTyping) {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'adminTypingIndicatorRow';
+            indicator.className = 'chat-message-row incoming typing-indicator-row';
+            const initials = authorName.trim().substring(0, 2).toUpperCase() || 'EM';
+            indicator.innerHTML = `
+                <div class="chat-avatar user">${escapeHtml(initials)}</div>
+                <div class="chat-bubble-wrap">
+                    <div class="typing-bubble">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-text">${escapeHtml(authorName)} is typing...</span>
+                    </div>
+                </div>
+            `;
+            chatStream.appendChild(indicator);
+            chatStream.scrollTop = chatStream.scrollHeight;
+        } else {
+            const textEl = indicator.querySelector('.typing-text');
+            if (textEl) textEl.textContent = `${authorName} is typing...`;
+        }
+    } else {
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+}
+
+// Render Chat Conversation in Drawer
+function renderDrawerChatStream(ticketData, forceScroll = false) {
+    const chatStream = document.getElementById('adminChatStream');
+    if (!chatStream) return;
+
+    // Detect if user was already at or near bottom
+    const wasNearBottom = forceScroll || (chatStream.scrollHeight - chatStream.scrollTop - chatStream.clientHeight < 120);
 
     chatStream.innerHTML = '';
     let messageCount = 0;
@@ -356,14 +505,26 @@ function renderDrawerChatStream(ticketData) {
         chatBadge.textContent = messageCount;
     }
 
-    // Scroll to bottom
-    setTimeout(() => {
-        chatStream.scrollTop = chatStream.scrollHeight;
-    }, 60);
+    // Scroll to bottom if user was near bottom or forced
+    if (wasNearBottom) {
+        setTimeout(() => {
+            chatStream.scrollTop = chatStream.scrollHeight;
+        }, 50);
+    }
 }
 
 // Close Drawer
 function closeAdminTicketDrawer() {
+    if (currentOpenTicket) {
+        fetch('api/tickets.php?action=typing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticket_no: currentOpenTicket.id, type: 'admin', status: 'stop' })
+        }).catch(() => {});
+    }
+
+    stopAdminChatPolling();
+
     const drawer = document.getElementById('adminTicketDrawer');
     const backdrop = document.getElementById('drawerBackdrop');
 
@@ -376,6 +537,7 @@ function closeAdminTicketDrawer() {
     }
 
     document.body.style.overflow = '';
+    currentOpenTicket = null;
 }
 window.closeAdminTicketDrawer = closeAdminTicketDrawer;
 
@@ -474,10 +636,42 @@ function initDrawerChatReply() {
 
     if (!form || !input || !chatStream) return;
 
+    let lastAdminTypingPing = 0;
+    function sendAdminTypingPing(ticketId, isTyping = true) {
+        const now = Date.now();
+        if (isTyping && now - lastAdminTypingPing < 2000) return;
+        lastAdminTypingPing = isTyping ? now : 0;
+        fetch('api/tickets.php?action=typing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ticket_no: ticketId,
+                type: 'admin',
+                status: isTyping ? 'start' : 'stop'
+            })
+        }).catch(() => {});
+    }
+
+    input.addEventListener('input', function () {
+        if (currentOpenTicket) {
+            sendAdminTypingPing(currentOpenTicket.id, true);
+        }
+    });
+
+    input.addEventListener('blur', function () {
+        if (currentOpenTicket) {
+            sendAdminTypingPing(currentOpenTicket.id, false);
+        }
+    });
+
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         const text = input.value.trim();
         if (!text) return;
+
+        if (currentOpenTicket) {
+            sendAdminTypingPing(currentOpenTicket.id, false);
+        }
 
         const nowFormatted = new Date().toLocaleString('en-GB', { 
             day: '2-digit', 

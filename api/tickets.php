@@ -56,6 +56,12 @@ BEGIN
         created_at DATETIME NOT NULL DEFAULT GETDATE()
     );
     CREATE INDEX idx_ticket_messages_ticket_no ON ticket_messages(ticket_no);
+END
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('support_tickets') AND name = 'admin_typing_at')
+BEGIN
+    ALTER TABLE support_tickets ADD admin_typing_at DATETIME NULL;
+    ALTER TABLE support_tickets ADD emp_typing_at DATETIME NULL;
+    ALTER TABLE support_tickets ADD typing_user_name NVARCHAR(150) NULL;
 END";
 sqlsrv_query($conn, $tableSetupSql);
 
@@ -269,12 +275,72 @@ if ($action === 'get_messages') {
     $map = fetchTicketMessagesMap($conn, [$ticketNo]);
     $messages = $map[$ticketNo] ?? [];
 
+    $ticketInfo = null;
+    $empTyping = false;
+    $adminTyping = false;
+    $empTypingName = 'Employee';
+
+    $tStmt = sqlsrv_query(
+        $conn, 
+        "SELECT status, priority, typing_user_name,
+                DATEDIFF(SECOND, emp_typing_at, GETDATE()) AS emp_diff,
+                DATEDIFF(SECOND, admin_typing_at, GETDATE()) AS admin_diff
+         FROM support_tickets 
+         WHERE ticket_no = ?", 
+        [$ticketNo]
+    );
+    if ($tStmt && ($tRow = sqlsrv_fetch_array($tStmt, SQLSRV_FETCH_ASSOC))) {
+        $ticketInfo = [
+            'status'   => $tRow['status'],
+            'priority' => $tRow['priority']
+        ];
+        if (isset($tRow['emp_diff']) && $tRow['emp_diff'] !== null && intval($tRow['emp_diff']) <= 4) {
+            $empTyping = true;
+            $empTypingName = !empty($tRow['typing_user_name']) ? $tRow['typing_user_name'] : 'Employee';
+        }
+        if (isset($tRow['admin_diff']) && $tRow['admin_diff'] !== null && intval($tRow['admin_diff']) <= 4) {
+            $adminTyping = true;
+        }
+    }
+
     echo json_encode([
-        'success'   => true,
-        'ticket_no' => $ticketNo,
-        'total'     => count($messages),
-        'messages'  => $messages
+        'success'         => true,
+        'ticket_no'       => $ticketNo,
+        'status'          => $ticketInfo['status'] ?? null,
+        'priority'        => $ticketInfo['priority'] ?? null,
+        'emp_typing'      => $empTyping,
+        'emp_typing_name' => $empTypingName,
+        'admin_typing'    => $adminTyping,
+        'total'           => count($messages),
+        'messages'        => $messages
     ]);
+    exit;
+}
+
+// ACTION: Post typing indicator ping
+if ($method === 'POST' && $action === 'typing') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $ticketNo = trim($input['ticket_no'] ?? ($input['id'] ?? ''));
+    $senderType = trim($input['type'] ?? 'employee'); // 'employee' or 'admin'
+    $userName = trim($input['name'] ?? ($_SESSION['user_name'] ?? ''));
+    $status = trim($input['status'] ?? 'start'); // 'start' or 'stop'
+
+    if (!empty($ticketNo)) {
+        if ($senderType === 'admin') {
+            if ($status === 'stop') {
+                sqlsrv_query($conn, "UPDATE support_tickets SET admin_typing_at = NULL WHERE ticket_no = ?", [$ticketNo]);
+            } else {
+                sqlsrv_query($conn, "UPDATE support_tickets SET admin_typing_at = GETDATE() WHERE ticket_no = ?", [$ticketNo]);
+            }
+        } else {
+            if ($status === 'stop') {
+                sqlsrv_query($conn, "UPDATE support_tickets SET emp_typing_at = NULL WHERE ticket_no = ?", [$ticketNo]);
+            } else {
+                sqlsrv_query($conn, "UPDATE support_tickets SET emp_typing_at = GETDATE(), typing_user_name = ? WHERE ticket_no = ?", [$userName, $ticketNo]);
+            }
+        }
+    }
+    echo json_encode(['success' => true]);
     exit;
 }
 
@@ -315,7 +381,13 @@ if ($method === 'POST' && $action === 'reply') {
         exit;
     }
 
-    // 2. Keep support_tickets updated_at timestamp updated
+    // 2. Clear typing timestamp on message send
+    if ($senderType === 'admin') {
+        sqlsrv_query($conn, "UPDATE support_tickets SET admin_typing_at = NULL, updated_at = GETDATE() WHERE id = ?", [$ticketId]);
+    } else {
+        sqlsrv_query($conn, "UPDATE support_tickets SET emp_typing_at = NULL, updated_at = GETDATE() WHERE id = ?", [$ticketId]);
+    }
+
     $newMsg = [
         'author' => $authorName,
         'avatar' => $avatar,
@@ -323,12 +395,6 @@ if ($method === 'POST' && $action === 'reply') {
         'time'   => $nowStr,
         'text'   => $messageText
     ];
-
-    sqlsrv_query(
-        $conn, 
-        "UPDATE support_tickets SET updated_at = GETDATE() WHERE id = ?", 
-        [$ticketId]
-    );
 
     echo json_encode([
         'success' => true,

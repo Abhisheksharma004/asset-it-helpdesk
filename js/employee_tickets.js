@@ -389,18 +389,21 @@ function viewTicketDetails(tkt) {
     // Render Chat Stream Dynamically with real timestamps
     renderDrawerChatMessages(tkt);
 
-    // Refresh messages asynchronously from dedicated ticket_messages table
+    // Initial fresh live messages fetch
     fetch(`api/tickets.php?action=get_messages&ticket_no=${encodeURIComponent(tkt.id)}`)
         .then(res => res.json())
         .then(data => {
             if (data.success && Array.isArray(data.messages)) {
                 tkt.chat_thread = data.messages;
                 if (currentOpenTicket && currentOpenTicket.id === tkt.id) {
-                    renderDrawerChatMessages(tkt);
+                    renderDrawerChatMessages(tkt, true);
                 }
             }
         })
         .catch(e => console.warn('Could not refresh messages:', e));
+
+    // Start Live Real-time Polling for Active Drawer (every 2.5s)
+    startEmployeeChatPolling(tkt.id);
 
     // Show Drawer
     if (backdrop) {
@@ -414,10 +417,159 @@ function viewTicketDetails(tkt) {
 }
 window.viewTicketDetails = viewTicketDetails;
 
-// Dynamically Render Chat Messages in Drawer
-function renderDrawerChatMessages(tkt) {
+// Subtle Audio Chime for Incoming Real-Time Chat (Web Audio API)
+function playMessageChime() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {
+        // Silently ignore if blocked by browser policy
+    }
+}
+
+// Real-Time Polling Engine for Employee Ticket Details Drawer
+let empChatPollTimer = null;
+let isPollingEmpChat = false;
+
+function startEmployeeChatPolling(ticketId) {
+    stopEmployeeChatPolling();
+
+    empChatPollTimer = setInterval(() => {
+        if (!currentOpenTicket || currentOpenTicket.id !== ticketId) {
+            stopEmployeeChatPolling();
+            return;
+        }
+        if (document.hidden) return; // Tab in background, skip cycle to save bandwidth
+        if (isPollingEmpChat) return;
+
+        isPollingEmpChat = true;
+        fetch(`api/tickets.php?action=get_messages&ticket_no=${encodeURIComponent(ticketId)}`)
+            .then(res => res.json())
+            .then(data => {
+                isPollingEmpChat = false;
+                if (!currentOpenTicket || currentOpenTicket.id !== ticketId) return;
+
+                if (data.success && Array.isArray(data.messages)) {
+                    const prevCount = Array.isArray(currentOpenTicket.chat_thread) ? currentOpenTicket.chat_thread.length : 0;
+                    const newCount = data.messages.length;
+
+                    let hasNewMessage = (newCount > prevCount);
+                    let contentChanged = false;
+
+                    // Check if content changed
+                    if (!hasNewMessage && newCount > 0 && prevCount > 0) {
+                        const lastLocal = currentOpenTicket.chat_thread[prevCount - 1];
+                        const lastRemote = data.messages[newCount - 1];
+                        if (lastLocal && lastRemote && (lastLocal.text !== lastRemote.text || lastLocal.id !== lastRemote.id)) {
+                            contentChanged = true;
+                        }
+                    }
+
+                    if (hasNewMessage || contentChanged) {
+                        const latest = data.messages[data.messages.length - 1];
+                        const wasIncoming = latest && (latest.type === 'admin' || latest.type === 'tech');
+
+                        currentOpenTicket.chat_thread = data.messages;
+                        renderDrawerChatMessages(currentOpenTicket);
+
+                        if (hasNewMessage && wasIncoming) {
+                            playMessageChime();
+                            if (typeof showPortalToast === 'function') {
+                                showPortalToast(`IT Helpdesk sent an update on ticket #${ticketId}`, 'info');
+                            }
+                        }
+                    }
+
+                    // Live synchronize status if updated by IT Support team
+                    if (data.status && data.status !== currentOpenTicket.status) {
+                        currentOpenTicket.status = data.status;
+                        const sBadge = document.getElementById('detTicketStatus');
+                        if (sBadge) sBadge.textContent = data.status;
+
+                        // Also update table row in DOM if present
+                        const row = document.querySelector(`.ticket-data-row[data-id="${ticketId}"]`);
+                        if (row) {
+                            const statusCell = row.querySelector('.col-ticket-status');
+                            if (statusCell) {
+                                statusCell.innerHTML = `<span class="badge badge-status-progress">${escapeHtml(data.status)}</span>`;
+                            }
+                        }
+                    }
+
+                    // Real-time synchronization of Typing Indicator
+                    updateEmployeeTypingIndicator(!!data.admin_typing, 'IT Service Desk');
+                }
+            })
+            .catch(e => {
+                isPollingEmpChat = false;
+            });
+    }, 1000);
+}
+
+function stopEmployeeChatPolling() {
+    if (empChatPollTimer) {
+        clearInterval(empChatPollTimer);
+        empChatPollTimer = null;
+    }
+    isPollingEmpChat = false;
+    const typingRow = document.getElementById('empTypingIndicatorRow');
+    if (typingRow) typingRow.remove();
+}
+
+// Render or Remove Typing Indicator in Employee Drawer
+function updateEmployeeTypingIndicator(isTyping, authorName = 'IT Service Desk') {
     const chatStream = document.getElementById('ticketActivityList');
     if (!chatStream) return;
+    let indicator = document.getElementById('empTypingIndicatorRow');
+
+    if (isTyping) {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'empTypingIndicatorRow';
+            indicator.className = 'chat-message-row incoming typing-indicator-row';
+            indicator.innerHTML = `
+                <div class="chat-avatar tech">IT</div>
+                <div class="chat-bubble-wrap">
+                    <div class="typing-bubble">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-text">${escapeHtml(authorName)} is typing...</span>
+                    </div>
+                </div>
+            `;
+            chatStream.appendChild(indicator);
+            chatStream.scrollTop = chatStream.scrollHeight;
+        } else {
+            const textEl = indicator.querySelector('.typing-text');
+            if (textEl) textEl.textContent = `${authorName} is typing...`;
+        }
+    } else {
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+}
+
+// Dynamically Render Chat Messages in Drawer
+function renderDrawerChatMessages(tkt, forceScroll = false) {
+    const chatStream = document.getElementById('ticketActivityList');
+    if (!chatStream) return;
+
+    // Detect if user was already near bottom
+    const wasNearBottom = forceScroll || (chatStream.scrollHeight - chatStream.scrollTop - chatStream.clientHeight < 120);
 
     chatStream.innerHTML = '';
 
@@ -479,22 +631,56 @@ function renderDrawerChatMessages(tkt) {
         chatStream.appendChild(empBubble);
     }
 
-    // Scroll to bottom
-    setTimeout(() => {
-        chatStream.scrollTop = chatStream.scrollHeight;
-    }, 80);
+    // Scroll to bottom if user was near bottom or forced
+    if (wasNearBottom) {
+        setTimeout(() => {
+            chatStream.scrollTop = chatStream.scrollHeight;
+        }, 50);
+    }
 }
 
 // Reply form inside ticket details (Chat message sender)
 function initTicketReplyForm() {
     const replyForm = document.getElementById('ticketReplyForm');
-    if (!replyForm) return;
+    const input = document.getElementById('ticketReplyInput');
+    if (!replyForm || !input) return;
+
+    let lastEmpTypingPing = 0;
+    function sendEmpTypingPing(ticketId, isTyping = true) {
+        const now = Date.now();
+        if (isTyping && now - lastEmpTypingPing < 2000) return;
+        lastEmpTypingPing = isTyping ? now : 0;
+        const emp = window.currentActiveEmployee || {};
+        fetch('api/tickets.php?action=typing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ticket_no: ticketId,
+                type: 'employee',
+                name: emp.name || 'Employee',
+                status: isTyping ? 'start' : 'stop'
+            })
+        }).catch(() => {});
+    }
+
+    input.addEventListener('input', function () {
+        if (currentOpenTicket) {
+            sendEmpTypingPing(currentOpenTicket.id, true);
+        }
+    });
+
+    input.addEventListener('blur', function () {
+        if (currentOpenTicket) {
+            sendEmpTypingPing(currentOpenTicket.id, false);
+        }
+    });
 
     replyForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const input = document.getElementById('ticketReplyInput');
         const text = input.value.trim();
         if (!text || !currentOpenTicket) return;
+
+        sendEmpTypingPing(currentOpenTicket.id, false);
 
         const chatStream = document.getElementById('ticketActivityList');
         const emp = window.currentActiveEmployee || {};
@@ -571,6 +757,16 @@ function initTicketReplyForm() {
 
 // Close Ticket Details Slide-Over Drawer
 function closeTicketDetailsDrawer() {
+    if (currentOpenTicket) {
+        fetch('api/tickets.php?action=typing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticket_no: currentOpenTicket.id, type: 'employee', status: 'stop' })
+        }).catch(() => {});
+    }
+
+    stopEmployeeChatPolling();
+
     const drawer = document.getElementById('ticketDetailsModal');
     const backdrop = document.getElementById('ticketDetailsBackdrop');
     if (drawer) {
@@ -593,6 +789,7 @@ function closeTicketDetailsDrawer() {
         }, 300);
     }
     document.body.style.overflow = '';
+    currentOpenTicket = null;
 }
 window.closeTicketDetailsDrawer = closeTicketDetailsDrawer;
 
