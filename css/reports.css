@@ -469,100 +469,251 @@
 @media print {
     @page {
         size: A4 landscape;
-        margin: 10mm 12mm;
+        margin: 8mm 10mm;
     }
 
-    * {
+    *, *::before, *::after {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        box-sizing: border-box !important;
     }
 
-    body {
+    html, body {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
+        display: block !important;
+        overflow: visible !important;
+        visibility: visible !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
     }
 
+    body * {
+        visibility: visible !important;
+    }
+
+    .app-container {
+        display: block !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: auto !important;
+    }
+
+    /* Hide non-printable navigation, header, sidebar, footer, interactive controls & KPI cards */
     .sidebar,
-    .topbar,
+    .top-header,
+    .dashboard-footer,
+    .modal-overlay,
     .breadcrumb-nav,
     .header-actions,
     .reports-module-tabs-wrap,
     .reports-toolbar-row,
-    .reports-table-footer,
+    .reports-kpi-grid,
+    .page-header-bar,
     .btn,
+    button,
     input,
     select {
         display: none !important;
     }
 
+    /* Completely hide all SVG icons, emoji icons and decorative icons in print */
+    svg,
+    .reports-kpi-icon,
+    i,
+    .icon {
+        display: none !important;
+    }
+
+    /* Reset layout offsets caused by fixed sidebar */
+    .main-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        display: block !important;
+        min-height: auto !important;
+    }
+
     .dashboard-content {
         margin: 0 !important;
         padding: 0 !important;
+        width: 100% !important;
+        display: block !important;
     }
 
     .reports-table-card {
         border: none !important;
         box-shadow: none !important;
         padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
     }
 
+    /* Clean Official Document Header */
     .print-only-header {
         display: block !important;
-        border-bottom: 2px solid #001938;
-        padding-bottom: 12px;
-        margin-bottom: 16px;
+        border-bottom: 2px solid #000000 !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 12px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     .print-header-tbl {
-        width: 100%;
-        border-collapse: collapse;
+        width: 100% !important;
+        border-collapse: collapse !important;
     }
 
     .print-header-tbl td {
         border: none !important;
-        padding: 4px;
-        vertical-align: middle;
+        padding: 2px 4px !important;
+        vertical-align: middle !important;
+        color: #000000 !important;
     }
 
+    /* Table panes management */
+    .report-module-pane {
+        display: none !important;
+    }
+
+    .report-module-pane.active {
+        display: block !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* Clean Simple Data Table for Print */
+    .reports-data-table {
+        width: 100% !important;
+        font-size: 10px !important;
+        border-collapse: collapse !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    .reports-data-table thead {
+        display: table-header-group !important;
+    }
+
+    .reports-data-table tbody {
+        display: table-row-group !important;
+    }
+
+    .reports-data-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        background: #ffffff !important;
+    }
+
+    .reports-data-table th {
+        background: #f1f5f9 !important;
+        font-weight: 700 !important;
+        color: #000000 !important;
+        text-transform: uppercase !important;
+        font-size: 9.5px !important;
+        letter-spacing: 0.3px !important;
+        padding: 5px 6px !important;
+        border: 1px solid #000000 !important;
+        text-align: left !important;
+    }
+
+    .reports-data-table td {
+        padding: 5px 6px !important;
+        border: 1px solid #475569 !important;
+        color: #000000 !important;
+        vertical-align: middle !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        background: #ffffff !important;
+    }
+
+    .reports-data-table td strong,
+    .reports-data-table td span,
+    .reports-data-table td div {
+        color: #000000 !important;
+    }
+
+    /* Clean Simple Text for Tags & Badges (No colorful boxes or icons) */
+    .reports-code-tag,
+    .reports-serial-tag {
+        font-family: monospace !important;
+        font-size: 9.5px !important;
+        font-weight: 600 !important;
+        color: #000000 !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        display: inline !important;
+    }
+
+    .reports-status-badge,
+    .reports-pill-sm {
+        background: transparent !important;
+        color: #000000 !important;
+        border: 1px solid #334155 !important;
+        padding: 1px 5px !important;
+        border-radius: 2px !important;
+        font-size: 9px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        display: inline-block !important;
+    }
+
+    /* Formal Table Footer Summary */
+    .reports-table-footer {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 6px 2px !important;
+        margin-top: 8px !important;
+        border-top: 1.5px solid #000000 !important;
+        font-size: 10.5px !important;
+        font-weight: 600 !important;
+        color: #000000 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .reports-table-footer div,
+    .reports-table-footer strong {
+        color: #000000 !important;
+    }
+
+    /* Official Tripartite Signatures Block */
     .print-signatures-tbl {
         display: table !important;
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 30px;
-        page-break-inside: avoid;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 24px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     .print-signatures-tbl td {
         border: none !important;
-        padding: 10px 14px;
-        vertical-align: top;
+        padding: 10px 14px !important;
+        vertical-align: top !important;
+        color: #000000 !important;
     }
 
     .sig-line {
-        border-top: 1px solid #334155;
-        padding-top: 6px;
-        font-weight: 700;
-        font-size: 11px;
-    }
-
-    .reports-data-table {
-        font-size: 11px !important;
-    }
-
-    .reports-data-table th,
-    .reports-data-table td {
-        padding: 6px 8px !important;
-        border: 1px solid #cbd5e1 !important;
-    }
-
-    .reports-kpi-grid {
-        gap: 10px !important;
-        margin-bottom: 16px !important;
-    }
-
-    .reports-kpi-card {
-        padding: 10px !important;
-        box-shadow: none !important;
-        border: 1px solid #cbd5e1 !important;
+        border-top: 1.5px solid #000000 !important;
+        padding-top: 5px !important;
+        font-weight: 700 !important;
+        font-size: 10.5px !important;
+        color: #000000 !important;
     }
 }

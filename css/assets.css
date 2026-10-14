@@ -1272,15 +1272,16 @@
     gap: 14px;
 }
 
-/* Print CSS */
+/* Print CSS for Asset Barcode Label */
 @media print {
-    body * {
+    body.printing-asset-label * {
         visibility: hidden !important;
     }
-    #printableAssetLabel, #printableAssetLabel * {
+    body.printing-asset-label #printableAssetLabel, 
+    body.printing-asset-label #printableAssetLabel * {
         visibility: visible !important;
     }
-    #printableAssetLabel {
+    body.printing-asset-label #printableAssetLabel {
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;

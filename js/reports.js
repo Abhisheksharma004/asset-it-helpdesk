@@ -65,6 +65,24 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    const MODULE_NAMES = {
+        assets: "Hardware Assets Registry",
+        licenses: "Software Licenses & Renewals",
+        tickets: "IT Helpdesk & Incident SLA",
+        scrap: "Scrap & Salvage Disposal Register"
+    };
+
+    function updatePrintHeaderInfo() {
+        const printTitle = document.getElementById("printHeaderTitle");
+        if (printTitle) {
+            printTitle.textContent = "OFFICIAL EXECUTIVE AUDIT REPORT: " + (MODULE_NAMES[currentModule] || "IT AUDIT REPORT").toUpperCase();
+        }
+        const printMod = document.getElementById("printHeaderModuleName");
+        if (printMod) {
+            printMod.textContent = MODULE_NAMES[currentModule] || "Active Audit Register";
+        }
+    }
+
     // 1. Module Tab Switching (Assets / Licenses / Tickets / Scrap)
     moduleTabs.forEach(tab => {
         tab.addEventListener("click", function () {
@@ -73,8 +91,16 @@ document.addEventListener("DOMContentLoaded", function () {
             currentModule = this.dataset.module;
 
             reportPanes.forEach(pane => {
-                pane.style.display = (pane.dataset.module === currentModule) ? "block" : "none";
+                const isCurrent = (pane.dataset.module === currentModule);
+                pane.style.display = isCurrent ? "block" : "none";
+                if (isCurrent) {
+                    pane.classList.add("active");
+                } else {
+                    pane.classList.remove("active");
+                }
             });
+
+            updatePrintHeaderInfo();
 
             // Reset search & subfilter on module switch
             if (searchInput) searchInput.value = "";
@@ -185,7 +211,14 @@ document.addEventListener("DOMContentLoaded", function () {
     // Initial setup
     renderSubFilters();
     populateCategoryFilter();
+    updatePrintHeaderInfo();
 });
+
+// Direct Print Slip Trigger
+function printReportSlip() {
+    window.print();
+}
+window.printReportSlip = printReportSlip;
 
 // CSV Export for active module
 function exportActiveReportCSV() {

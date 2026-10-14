@@ -11,7 +11,7 @@
         <footer class="dashboard-footer">
             <div>© 2026 <a href="https://virosentrepreneurs.com" target="_blank">Viros Entrepreneurs IT Solutions Pvt. Ltd.</a> All rights reserved.</div>
             <div>
-                Design and Maintain by <a href="https://virosentrepreneurs.com" target="_blank">Viros</a>
+                Design & Developed by <a style="font-style: italic" href="https://virosentrepreneurs.com" target="_blank">Viros Software Team</a>
             </div>
         </footer>
 
