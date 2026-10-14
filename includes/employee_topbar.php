@@ -13,6 +13,13 @@ foreach (explode(' ', trim($emp_topbar_name)) as $w) {
     if (strlen($emp_initials) >= 2) break;
 }
 if (empty($emp_initials)) $emp_initials = 'EM';
+
+// Fetch Dynamic Organization Settings (Helpline / Hotline)
+if (!function_exists('getOrganizationSettings')) {
+    require_once __DIR__ . '/../config/db.php';
+}
+$topbarOrgSettings = getOrganizationSettings();
+$emp_hotline_number = !empty($topbarOrgSettings['it_helpdesk_helpline']) ? trim($topbarOrgSettings['it_helpdesk_helpline']) : 'Ext 204';
 ?>
 <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
 <div class="main-wrapper" id="mainWrapper">
@@ -50,8 +57,8 @@ if (empty($emp_initials)) $emp_initials = 'EM';
             </button>
 
             <!-- IT Helpdesk Hotline Pill -->
-            <div style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; border: 1px solid var(--border-color); padding: 5px 12px; border-radius: 20px; font-size: 12px; color: var(--navy-primary); font-weight: 600;">
-                <span style="color: #059669; font-size: 10px;">●</span> IT Hotline: Ext 204
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; border: 1px solid var(--border-color); padding: 5px 12px; border-radius: 20px; font-size: 12px; color: var(--navy-primary); font-weight: 600;" title="IT Helpdesk Hotline: <?php echo htmlspecialchars($emp_hotline_number); ?>">
+                <span style="color: #059669; font-size: 10px;">●</span> IT Hotline: <?php echo htmlspecialchars($emp_hotline_number); ?>
             </div>
 
 

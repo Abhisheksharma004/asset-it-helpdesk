@@ -359,6 +359,11 @@ include 'includes/employee_topbar.php';
                             </div>
                         </div>
 
+                        <?php
+                        $profileOrgSettings = function_exists('getOrganizationSettings') ? getOrganizationSettings() : ($topbarOrgSettings ?? []);
+                        $profileHotline = !empty($profileOrgSettings['it_helpdesk_helpline']) ? trim($profileOrgSettings['it_helpdesk_helpline']) : ($emp_hotline_number ?? 'Ext 204');
+                        $profileEmail   = !empty($profileOrgSettings['support_desk_email']) ? trim($profileOrgSettings['support_desk_email']) : 'it@virosentrepreneurs.com';
+                        ?>
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="width: 36px; height: 36px; border-radius: 8px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -366,7 +371,7 @@ include 'includes/employee_topbar.php';
                                 </svg>
                             </div>
                             <div>
-                                <div style="font-size: 13px; font-weight: 700; color: #059669;">Internal Hotline: Ext 204</div>
+                                <div style="font-size: 13px; font-weight: 700; color: #059669;">Internal Hotline: <?php echo htmlspecialchars($profileHotline); ?></div>
                                 <div style="font-size: 11.5px; color: var(--text-muted);">Available Mon - Sat (9:00 AM - 7:00 PM)</div>
                             </div>
                         </div>
@@ -379,7 +384,7 @@ include 'includes/employee_topbar.php';
                                 </svg>
                             </div>
                             <div>
-                                <div style="font-size: 13px; font-weight: 700; color: #2563eb;">it.support@viros.in</div>
+                                <div style="font-size: 13px; font-weight: 700; color: #2563eb;"><?php echo htmlspecialchars($profileEmail); ?></div>
                                 <div style="font-size: 11.5px; color: var(--text-muted);">Official IT Helpdesk Ticketing Queue</div>
                             </div>
                         </div>
