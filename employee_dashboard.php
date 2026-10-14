@@ -319,9 +319,9 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee['id'])) {
 }
 
 // Dynamic item counts
-$hardwareCount   = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'hardware'));
-$accessoryCount  = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'accessory'));
-$softwareCount   = count(array_filter($allocatedItems, fn($i) => $i['type'] === 'software'));
+$hardwareCount   = count(array_filter($allocatedItems, function($i) { return isset($i['type']) && $i['type'] === 'hardware'; }));
+$accessoryCount  = count(array_filter($allocatedItems, function($i) { return isset($i['type']) && $i['type'] === 'accessory'; }));
+$softwareCount   = count(array_filter($allocatedItems, function($i) { return isset($i['type']) && $i['type'] === 'software'; }));
 $totalItemsCount = count($allocatedItems);
 
 // -----------------------------------------------------------------------------

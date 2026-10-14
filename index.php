@@ -151,7 +151,7 @@ $loginOrgName = !empty($orgSettings['organization_legal_name']) ? $orgSettings['
         </form>
 
         <div class="login-footer">
-            Design and Maintain by <a href="https://virosentrepreneurs.com" target="_blank">Viros</a>
+            Design & Developed by <a style="font-style: italic" href="https://virosentrepreneurs.com" target="_blank">Viros Software Team</a>
         </div>
 
     </div>

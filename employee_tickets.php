@@ -223,9 +223,9 @@ if (isset($conn) && $conn !== false && !empty($activeEmployee)) {
 
 // Compute summary counters
 $totalTicketsCount   = count($supportTickets);
-$inProgressCount     = count(array_filter($supportTickets, fn($t) => $t['s_filter'] === 'in-progress'));
-$resolvedCount       = count(array_filter($supportTickets, fn($t) => $t['s_filter'] === 'resolved'));
-$urgentHighCount     = count(array_filter($supportTickets, fn($t) => in_array($t['priority'], ['Urgent', 'High'])));
+$inProgressCount     = count(array_filter($supportTickets, function($t) { return isset($t['s_filter']) && $t['s_filter'] === 'in-progress'; }));
+$resolvedCount       = count(array_filter($supportTickets, function($t) { return isset($t['s_filter']) && $t['s_filter'] === 'resolved'; }));
+$urgentHighCount     = count(array_filter($supportTickets, function($t) { return isset($t['priority']) && in_array($t['priority'], ['Urgent', 'High']); }));
 
 // Layout Components
 include 'includes/header.php';
